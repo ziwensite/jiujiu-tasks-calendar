@@ -15,10 +15,10 @@ dayjs.extend(weekday);
 dayjs.extend(customParseFormat);
 
 // 农历月份名称
-const lunarMonthNames = ['', '正月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '冬月', '腊月'];
+export const lunarMonthNames = ['', '正月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '冬月', '腊月'];
 
 // 农历日期名称
-const lunarDayNames = ['', '初一', '初二', '初三', '初四', '初五', '初六', '初七', '初八', '初九', '初十',
+export const lunarDayNames = ['', '初一', '初二', '初三', '初四', '初五', '初六', '初七', '初八', '初九', '初十',
     '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十',
     '廿一', '廿二', '廿三', '廿四', '廿五', '廿六', '廿七', '廿八', '廿九', '三十'];
 
@@ -464,4 +464,149 @@ export function getQuarterEndDate(date: Date): Date {
     const quarter = getQuarter(date);
     const endMonth = quarter * 3;
     return new Date(date.getFullYear(), endMonth, 0);
+}
+
+/**
+ * 计算指定行和列的日期
+ * @param rowIndex 行索引
+ * @param colIndex 列索引
+ * @param currentYear 当前年份
+ * @param currentMonth 当前月份
+ * @param prevMonthDaysToShow 需要显示的上个月天数
+ * @param daysInMonth 本月总天数
+ * @returns 计算出的日期和是否为其他月份
+ */
+export function calculateCellDate(rowIndex: number, colIndex: number, currentYear: number, currentMonth: number, prevMonthDaysToShow: number, daysInMonth: number): { date: Date; isOtherMonth: boolean } {
+    const totalCells = rowIndex * 7 + colIndex;
+    let date: Date;
+    let isOtherMonth = false;
+
+    if (totalCells < prevMonthDaysToShow) {
+        // 上个月的日期
+        const prevMonth = currentMonth - 1;
+        const prevMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+        const prevMonthDays = getDaysInMonth(new Date(prevMonthYear, prevMonth));
+        const day = prevMonthDays - prevMonthDaysToShow + totalCells + 1;
+        date = new Date(prevMonthYear, prevMonth, day);
+        isOtherMonth = true;
+    } else if (totalCells < prevMonthDaysToShow + daysInMonth) {
+        // 当前月的日期
+        const day = totalCells - prevMonthDaysToShow + 1;
+        date = new Date(currentYear, currentMonth, day);
+    } else {
+        // 下个月的日期
+        const nextMonth = currentMonth + 1;
+        const nextMonthYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+        const day = totalCells - prevMonthDaysToShow - daysInMonth + 1;
+        date = new Date(nextMonthYear, nextMonth, day);
+        isOtherMonth = true;
+    }
+
+    return { date, isOtherMonth };
+}
+
+/**
+ * 计算当前周的起始日期（周一）
+ * @param rowIndex 行索引
+ * @param currentYear 当前年份
+ * @param currentMonth 当前月份
+ * @param prevMonthDaysToShow 需要显示的上个月天数
+ * @returns 周起始日期
+ */
+export function calculateWeekStartDate(rowIndex: number, currentYear: number, currentMonth: number, prevMonthDaysToShow: number): Date {
+    // 计算当前周的起始日期
+    const daysPassed = rowIndex * 7 - prevMonthDaysToShow;
+    const weekStartDate = new Date(currentYear, currentMonth, 1 + daysPassed);
+    
+    // 调整到周一
+    const adjustedWeekStartDate = new Date(weekStartDate);
+    const weekStartDayOfWeek = adjustedWeekStartDate.getDay();
+    const daysToMonday = weekStartDayOfWeek === 0 ? 6 : weekStartDayOfWeek - 1;
+    adjustedWeekStartDate.setDate(adjustedWeekStartDate.getDate() - daysToMonday);
+    
+    return adjustedWeekStartDate;
+}
+
+/**
+ * 计算日历月份的完整数据
+ * @param currentDate 当前日期
+ * @returns 日历月份数据
+ */
+export function calculateCalendarMonthData(currentDate: Date): {
+    currentYear: number;
+    currentMonth: number;
+    firstDay: Date;
+    startDay: number;
+    daysInMonth: number;
+    prevMonthDaysToShow: number;
+    currentRows: number;
+    lastDayOfPrevMonth: Date;
+    prevMonthDays: number;
+    prevMonth: number;
+    prevMonthYear: number;
+    firstDayOfNextMonth: Date;
+    nextMonth: number;
+    nextMonthYear: number;
+} {
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth();
+
+    // 计算月份第一天是星期几
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    let startDay = firstDay.getDay();
+    const daysInMonth = getDaysInMonth(currentDate);
+    
+    // 周一为第一天：如果第一天是周日，需要显示6天上个月的日期，否则显示startDay-1天
+    const prevMonthDaysToShow = startDay === 0 ? 6 : startDay - 1;
+    
+    // 计算需要的行数：(上个月需要显示的天数 + 本月天数 + 7 - 1) / 7 向上取整
+    const currentRows = Math.ceil((prevMonthDaysToShow + daysInMonth) / 7);
+
+    // 计算上个月的最后一天
+    const lastDayOfPrevMonth = new Date(currentYear, currentMonth, 0);
+    const prevMonthDays = lastDayOfPrevMonth.getDate();
+    const prevMonth = lastDayOfPrevMonth.getMonth();
+    const prevMonthYear = lastDayOfPrevMonth.getFullYear();
+    
+    // 计算下个月的第一天
+    const firstDayOfNextMonth = new Date(currentYear, currentMonth + 1, 1);
+    const nextMonth = firstDayOfNextMonth.getMonth();
+    const nextMonthYear = firstDayOfNextMonth.getFullYear();
+
+    return {
+        currentYear,
+        currentMonth,
+        firstDay,
+        startDay,
+        daysInMonth,
+        prevMonthDaysToShow,
+        currentRows,
+        lastDayOfPrevMonth,
+        prevMonthDays,
+        prevMonth,
+        prevMonthYear,
+        firstDayOfNextMonth,
+        nextMonth,
+        nextMonthYear
+    };
+}
+
+/**
+ * 计算月视图中当前行的所有日期
+ * @param rowIndex 行索引
+ * @param currentYear 当前年份
+ * @param currentMonth 当前月份
+ * @param prevMonthDaysToShow 需要显示的上个月天数
+ * @param daysInMonth 本月总天数
+ * @returns 当前行的所有日期
+ */
+export function calculateMonthRowDates(rowIndex: number, currentYear: number, currentMonth: number, prevMonthDaysToShow: number, daysInMonth: number): Array<{ date: Date; isOtherMonth: boolean }> {
+    const rowDates: Array<{ date: Date; isOtherMonth: boolean }> = [];
+    
+    for (let colIndex = 0; colIndex < 7; colIndex++) {
+        const { date, isOtherMonth } = calculateCellDate(rowIndex, colIndex, currentYear, currentMonth, prevMonthDaysToShow, daysInMonth);
+        rowDates.push({ date, isOtherMonth });
+    }
+    
+    return rowDates;
 }

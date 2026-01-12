@@ -1,5 +1,5 @@
 import { MyPlugin } from '../../../main';
-import { getLunarDate, getHolidayStatus, formatDate } from '../../../utils/dateUtils';
+import { getLunarDate, getHolidayStatus, formatDate, getWeekInfo, calculateCellDate, calculateWeekStartDate } from '../../../utils/dateUtils';
 import { noteExists } from '../../../services/noteService';
 
 export class CalendarRenderer {
@@ -12,18 +12,24 @@ export class CalendarRenderer {
     /**
      * 构建日历结构
      */
-    async buildCalendarStructure(container: HTMLElement, currentDate: Date, viewType: 'month' | 'year', navigationType: 'month' | 'year' = 'month') {
+    async buildCalendarStructure(container: HTMLElement, currentDate: Date, selectedDate: Date, viewType: 'month' | 'year' | 'week' | 'day' | 'schedule', navigationType: 'month' | 'year' = 'month') {
         if (viewType === 'month') {
-            await this.buildMonthView(container, currentDate, navigationType);
-        } else {
-            this.buildYearView(container, currentDate, navigationType);
+            await this.buildMonthView(container, currentDate, selectedDate, navigationType);
+        } else if (viewType === 'year') {
+            this.buildYearView(container, currentDate, selectedDate, navigationType);
+        } else if (viewType === 'week') {
+            await this.buildWeekView(container, currentDate, selectedDate, navigationType);
+        } else if (viewType === 'day') {
+            await this.buildDayView(container, currentDate, selectedDate, navigationType);
+        } else if (viewType === 'schedule') {
+            await this.buildScheduleView(container, currentDate, selectedDate, navigationType);
         }
     }
 
     /**
      * 构建月视图
      */
-    private async buildMonthView(container: HTMLElement, currentDate: Date, navigationType: 'month' | 'year' = 'month') {
+    private async buildMonthView(container: HTMLElement, currentDate: Date, selectedDate: Date, navigationType: 'month' | 'year' = 'month') {
         // 日历头部
         this.buildCalendarHeader(container, currentDate, navigationType);
 
@@ -40,7 +46,7 @@ export class CalendarRenderer {
     /**
      * 构建年视图
      */
-    private buildYearView(container: HTMLElement, currentDate: Date, navigationType: 'month' | 'year' = 'year') {
+    private buildYearView(container: HTMLElement, currentDate: Date, selectedDate: Date, navigationType: 'month' | 'year' = 'year') {
         // 日历头部
         this.buildCalendarHeader(container, currentDate, navigationType);
 
@@ -92,26 +98,33 @@ export class CalendarRenderer {
     private buildCalendarHeader(container: HTMLElement, currentDate: Date, navigationType: 'month' | 'year' = 'month') {
         const header = container.createEl("div", {cls: "calendar-header"});
         
-        // 单行：3等分布局，从左到右排列：今按钮、月份导航、年按钮
+        // 单行：从左到右排列：侧边栏按钮、导航、年按钮、今日按钮
         const singleRow = header.createEl("div", {cls: "calendar-header-row"});
         
-        // 左侧：今按钮
-        singleRow.createEl("div", { 
-            text: "今",
-            cls: "today-label today-unselected"
+        // 最左侧：侧边栏按钮
+        singleRow.createEl("div", {
+            text: "☰",
+            cls: "sidebar-toggle"
         });
         
-        // 中间：根据导航类型渲染不同的导航
+        // 左侧：根据导航类型渲染不同的导航
         if (navigationType === 'month') {
             this.buildMonthNavigation(singleRow, currentDate);
         } else {
             this.buildYearNavigation(singleRow, currentDate);
         }
         
-        // 右侧：年按钮
+        // 中间：年按钮
         singleRow.createEl("div", { 
             text: "年",
-            cls: "today-label year-label today-unselected"
+            cls: "calendar-header-label-year today-unselected"
+        });
+        
+        // 右侧：今按钮（显示今日的阳历数字）
+        const today = new Date();
+        singleRow.createEl("div", { 
+            text: `${today.getDate()}`,
+            cls: "calendar-header-label-today today-unselected"
         });
     }
 
@@ -144,7 +157,7 @@ export class CalendarRenderer {
         
         const monthContent = monthNavBody.createEl("div", {cls: "calendar-header-content"});
         monthContent.createEl("span", { 
-            text: `${currentDate.getMonth() + 1}月`,
+            text: `${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月`,
         });
         
         monthNavBody.createEl("span", {text: "›", cls: "nav-btn next-btn"});
@@ -211,12 +224,26 @@ export class CalendarRenderer {
     /**
      * 构建周数单元格
      */
-    private buildWeekNumberCell(row: HTMLElement, rowIndex: number, currentYear: number, currentMonth: number, prevMonthDaysToShow: number) {
+    private buildWeekNumberCell(row: HTMLElement, rowIndex: number, currentYear: number, currentMonth: number, prevMonthDaysToShow: number, weekStartDate?: Date) {
         const weekNumberCell = row.createEl("td", { cls: "week-number-cell" });
+        
+        // 计算当前周的起始日期（周一）
+        let targetWeekStartDate: Date;
+        if (weekStartDate) {
+            // 直接使用传入的周起始日期（用于周视图）
+            targetWeekStartDate = weekStartDate;
+        } else {
+            // 使用计算的周起始日期（用于月视图）
+            targetWeekStartDate = calculateWeekStartDate(rowIndex, currentYear, currentMonth, prevMonthDaysToShow);
+        }
+        
+        // 获取全年周数
+        const weekInfo = getWeekInfo(targetWeekStartDate);
+        const weekNumber = weekInfo.week;
         
         // 周数文本
         const weekNumberText = weekNumberCell.createEl("div", { 
-            text: `${rowIndex + 1}`,
+            text: `${weekNumber}`,
             cls: "week-number-text"
         });
         
@@ -227,33 +254,23 @@ export class CalendarRenderer {
     /**
      * 构建日期单元格
      */
-    private async buildDayCell(row: HTMLElement, rowIndex: number, dayIndex: number, currentYear: number, currentMonth: number, daysInMonth: number, prevMonthDaysToShow: number) {
+    private async buildDayCell(row: HTMLElement, rowIndex: number, dayIndex: number, currentYear: number, currentMonth: number, daysInMonth: number, prevMonthDaysToShow: number, specificDate?: Date) {
         const dayCell = row.createEl("td", {cls: "day-cell"});
 
         // 计算当前日期
-        const totalCells = rowIndex * 7 + dayIndex;
         let date: Date;
         let isOtherMonth = false;
-
-        if (totalCells < prevMonthDaysToShow) {
-            // 上个月的日期
-            const prevMonth = currentMonth - 1;
-            const prevMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-            const prevMonthDays = new Date(prevMonthYear, prevMonth + 1, 0).getDate();
-            const day = prevMonthDays - prevMonthDaysToShow + totalCells + 1;
-            date = new Date(prevMonthYear, prevMonth, day);
-            isOtherMonth = true;
-        } else if (totalCells < prevMonthDaysToShow + daysInMonth) {
-            // 当前月的日期
-            const day = totalCells - prevMonthDaysToShow + 1;
-            date = new Date(currentYear, currentMonth, day);
+        
+        if (specificDate) {
+            // 直接使用传入的日期（用于周视图）
+            date = specificDate;
+            // 检查是否是其他月份
+            isOtherMonth = date.getMonth() !== currentMonth;
         } else {
-            // 下个月的日期
-            const nextMonth = currentMonth + 1;
-            const nextMonthYear = currentMonth === 11 ? currentYear + 1 : currentYear;
-            const day = totalCells - prevMonthDaysToShow - daysInMonth + 1;
-            date = new Date(nextMonthYear, nextMonth, day);
-            isOtherMonth = true;
+            // 使用计算的日期（用于月视图）
+            const result = calculateCellDate(rowIndex, dayIndex, currentYear, currentMonth, prevMonthDaysToShow, daysInMonth);
+            date = result.date;
+            isOtherMonth = result.isOtherMonth;
         }
 
         if (isOtherMonth) {
@@ -442,6 +459,92 @@ export class CalendarRenderer {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * 构建周视图
+     */
+    private async buildWeekView(container: HTMLElement, currentDate: Date, selectedDate: Date, navigationType: 'month' | 'year' = 'month') {
+        // 日历头部
+        this.buildCalendarHeader(container, currentDate, navigationType);
+
+        // 日历表格
+        const calendarTable = container.createEl("table", {cls: "calendar-table"});
+
+        // 星期标题行
+        this.buildWeekHeader(calendarTable);
+
+        // 周数据行
+        await this.buildWeekDays(calendarTable, currentDate);
+    }
+
+    /**
+     * 构建日视图
+     */
+    private async buildDayView(container: HTMLElement, currentDate: Date, selectedDate: Date, navigationType: 'month' | 'year' = 'month') {
+        // 日历头部
+        this.buildCalendarHeader(container, currentDate, navigationType);
+
+        // 日视图容器
+        const dayViewContainer = container.createEl("div", {cls: "day-view-container"});
+        
+        // 日期显示
+        dayViewContainer.createEl("div", { 
+            text: `${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月${currentDate.getDate()}日`,
+            cls: "day-view-date"
+        });
+        
+        // 任务列表容器
+        dayViewContainer.createEl("div", {cls: "task-list-container"});
+    }
+
+    /**
+     * 构建日程视图
+     */
+    private async buildScheduleView(container: HTMLElement, currentDate: Date, selectedDate: Date, navigationType: 'month' | 'year' = 'month') {
+        // 日历头部
+        this.buildCalendarHeader(container, currentDate, navigationType);
+
+        // 日程视图容器
+        const scheduleViewContainer = container.createEl("div", {cls: "schedule-view-container"});
+        
+        // 日程标题
+        scheduleViewContainer.createEl("div", { 
+            text: "日程视图",
+            cls: "schedule-view-title"
+        });
+        
+        // 日程列表容器
+        scheduleViewContainer.createEl("div", {cls: "task-list-container"});
+    }
+
+    /**
+     * 构建周日数据行
+     */
+    private async buildWeekDays(table: HTMLElement, currentDate: Date) {
+        const tbody = table.createEl("tbody");
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth();
+        const currentDay = currentDate.getDate();
+
+        // 计算当前周的第一天（周一）
+        const firstDayOfWeek = new Date(currentYear, currentMonth, currentDay);
+        const dayOfWeek = firstDayOfWeek.getDay();
+        const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        firstDayOfWeek.setDate(currentDay - daysToMonday);
+
+        // 构建周行
+        const weekRow = tbody.createEl("tr");
+        
+        // 周数单元格
+        this.buildWeekNumberCell(weekRow, 0, currentYear, currentMonth, 0, firstDayOfWeek);
+
+        // 日期单元格
+        for (let i = 0; i < 7; i++) {
+            const currentDateInWeek = new Date(firstDayOfWeek);
+            currentDateInWeek.setDate(firstDayOfWeek.getDate() + i);
+            await this.buildDayCell(weekRow, 0, i, currentYear, currentMonth, 31, 0, currentDateInWeek);
         }
     }
 

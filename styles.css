@@ -25,7 +25,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 1em;
+    gap: 0.5em;
     margin-bottom: 0.5em;
     padding: 0.25em 0.5em;
     border-bottom: 1px solid var(--divider-color);
@@ -36,31 +36,186 @@
 /* 日历头部行容器 */
 .calendar-header-row {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
     width: 100%;
-    gap: 2em;
+    gap: 0.2em;
 }
 
-/* 左侧：今按钮 */
-.today-label:nth-child(1) {
+/* 侧边栏按钮 */
+.sidebar-toggle {
+    order: 7;
+    width: 2.5em;
+    height: 1.3em;
     text-align: center;
-}
-
-/* 中间：月份导航 */
-.calendar-header-block-month, .calendar-header-block-year {
-    display: flex;
+    border-radius: 0.3em;
+    font-weight: bold;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
     justify-content: center;
     align-items: center;
-    gap: 2px;
-    text-align: center;
-    min-width: 6em;
-    border-radius: 4px;
+    color: var(--text-normal);
+    background-color: transparent;
 }
 
-/* 右侧：年按钮 */
-.today-label:nth-child(2) {
+/* 侧边栏按钮悬停效果 */
+.sidebar-toggle:hover {
+    background-color: var(--interactive-hover);
+}
+
+/* 侧边栏样式 */
+.calendar-sidebar {
+    position: fixed;
+    top: 44px;
+    right: -280px;
+    width: 280px;
+    height: calc(100vh - 88px);
+    background-color: var(--background-primary);
+    border-left: 1px solid var(--divider-color);
+    z-index: 1000;
+    transition: right 0.3s ease;
+    padding: 1em;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+/* 侧边栏打开状态 */
+.calendar-sidebar.open {
+    right: 0;
+}
+
+/* 侧边栏遮罩 */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    display: none;
+}
+
+/* 侧边栏遮罩显示状态 */
+.sidebar-overlay.show {
+    display: block;
+}
+
+/* 侧边栏内容 */
+.sidebar-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+}
+
+/* 侧边栏标题 */
+.sidebar-title {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: var(--text-normal);
+    margin-bottom: 1em;
+    padding-bottom: 0.5em;
+    border-bottom: 1px solid var(--divider-color);
+}
+
+/* 侧边栏菜单项 */
+.sidebar-menu-item {
+    display: flex;
+    align-items: center;
+    padding: 0.8em;
+    border-radius: 0.5em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-normal);
+}
+
+/* 侧边栏菜单项悬停效果 */
+.sidebar-menu-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+/* 侧边栏菜单项图标 */
+.sidebar-menu-icon {
+    margin-right: 0.8em;
+    font-size: 1.2em;
+}
+
+/* 侧边栏菜单项文本 */
+.sidebar-menu-text {
+    flex: 1;
+    font-size: 1em;
+}
+
+/* 左侧：导航部分 */
+.calendar-header-block-month, .calendar-header-block-year {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 4px;
     text-align: center;
+    min-width: 8em;
+    border-radius: 4px;
+    order: 1;
+}
+
+/* 中间：年按钮 */
+.calendar-header-label-year {
+    order: 2;
+}
+
+/* 周按钮 */
+.calendar-header-label-week {
+    order: 3;
+}
+
+/* 日按钮 */
+.calendar-header-label-day {
+    order: 4;
+}
+
+/* 日程按钮 */
+.calendar-header-label-schedule {
+    order: 5;
+}
+
+/* 右侧：今日按钮 */
+.calendar-header-label-today {
+    order: 6;
+}
+
+/* 统一调整年、周、日、日程、今日按钮的宽度为两个字符 */
+.calendar-header-label-year,
+.calendar-header-label-week,
+.calendar-header-label-day,
+.calendar-header-label-schedule,
+.calendar-header-label-today {
+    width: 2.5em;
+    text-align: center;
+    border-radius: 0.3em;
+    transition: all 0.2s ease;
+}
+
+/* 点击背景调整为圆角矩形 */
+.calendar-header-label-year:hover,
+.calendar-header-label-week:hover,
+.calendar-header-label-day:hover,
+.calendar-header-label-schedule:hover,
+.calendar-header-label-today:hover {
+    background-color: var(--interactive-hover);
+    border-radius: 0.3em;
+}
+
+/* 选中状态 */
+.calendar-header-label-year.today-selected,
+.calendar-header-label-week.today-selected,
+.calendar-header-label-day.today-selected,
+.calendar-header-label-schedule.today-selected,
+.calendar-header-label-today.today-selected {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border-radius: 0.3em;
 }
 
 /* 日历头部主体 */
@@ -72,7 +227,7 @@
 /* 日历头部内容 */
 .calendar-header-content {
     border-radius: 4px;
-    width: 3.5em;
+    width: 6em;
     padding: 0.2em 0;
     color: var(--text-normal);
     text-align: center;
@@ -100,12 +255,16 @@
     background-color: var(--interactive-hover);
 }
 
-/* 今天标签 */
-.today-label {
-    width: 1.3em;
+/* 头部标签通用样式 */
+.calendar-header-label-year,
+.calendar-header-label-week,
+.calendar-header-label-day,
+.calendar-header-label-schedule,
+.calendar-header-label-today {
+    width: 2.5em;
     height: 1.3em;
     text-align: center;
-    border-radius: 50%;
+    border-radius: 0.3em;
     font-weight: bold;
     font-size: 0.9em;
     cursor: pointer;
@@ -115,27 +274,29 @@
     align-items: center;
 }
 
-/* 未选中的今天标签 */
+/* 未选中的标签 */
 .today-unselected {
     color: var(--text-normal);
     background-color: transparent;
 }
 
-/* 未选中的今天标签悬停效果 */
+/* 未选中的标签悬停效果 */
 .today-unselected:hover {
     background-color: var(--interactive-hover);
 }
 
-/* 选中的今天标签 */
+/* 选中的标签 */
 .today-selected {
     color: white;
     background-color: var(--interactive-accent);
 }
 
-/* 选中的今天标签悬停效果 */
+/* 选中的标签悬停效果 */
 .today-selected:hover {
     background-color: var(--interactive-accent-hover);
 }
+
+
 
 /* 年视图样式 */
 .year-view-container {
@@ -157,12 +318,13 @@
     width: 100%;
     box-sizing: border-box;
     margin-bottom: 0.3em;
+    flex-wrap: wrap;
 }
 
 /* 季度容器 */
 .quarter-container {
-    min-width: 5em;
-    max-width: 5em;
+    min-width: 4em;
+    max-width: 4em;
     padding: 0.3em;
     border: none;
     border-radius: 0.3em;
@@ -176,6 +338,7 @@
     align-items: center;
     justify-content: flex-start;
     box-sizing: border-box;
+    flex-shrink: 0;
 }
 
 /* 月份行容器 */
@@ -186,6 +349,7 @@
     align-items: center;
     flex: 1;
     box-sizing: border-box;
+    flex-wrap: wrap;
 }
 
 /* 季度标题 */
@@ -211,7 +375,7 @@
 /* 月份容器 */
 .month-container {
     flex: 1;
-    min-width: calc(33.333% - 0.3em);
+    min-width: calc(25% - 0.3em);
     max-width: calc(33.333% - 0.3em);
     padding: 0.3em;
     border: none;
@@ -256,6 +420,50 @@
     gap: 0.15em;
     justify-content: center;
     align-items: center;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    /* 季度容器在移动端更小 */
+    .quarter-container {
+        min-width: 3em;
+        max-width: 3em;
+        padding: 0.2em;
+    }
+    
+    /* 月份行容器在移动端调整 */
+    .year-view-months-row {
+        gap: 0.2em;
+    }
+    
+    /* 月份容器在移动端调整大小 */
+    .month-container {
+        min-width: calc(20% - 0.2em);
+        max-width: calc(25% - 0.2em);
+        padding: 0.2em;
+    }
+    
+    /* 月份标题在移动端更小 */
+    .month-header {
+        font-size: 0.8em;
+        margin-bottom: 0.1em;
+    }
+    
+    /* 季度标题在移动端更小 */
+    .quarter-header {
+        font-size: 0.8em;
+    }
+    
+    /* 月份指示器在移动端更小 */
+    .month-indicators {
+        gap: 0.1em;
+    }
+    
+    /* 年视图容器在移动端添加滚动 */
+    .year-view-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
 }
 
 /* 日历表格样式 */
@@ -495,6 +703,88 @@
     border: 1px solid var(--interactive-accent);
 }
 
+/* 周视图容器 */
+.week-view-container {
+    padding: 0.5em;
+}
+
+/* 添加事件容器 */
+.add-event-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    gap: 0.8em;
+    align-items: center;
+    padding: 0.5em;
+    background-color: var(--background-secondary);
+    border-top: 1px solid var(--background-secondary);
+    z-index: 100;
+}
+
+/* 添加事件输入框 */
+.add-event-input {
+    flex: 1;
+    padding: 0.8em 1.2em;
+    border: 1px solid var(--background-secondary);
+    border-radius: 9999px;
+    background-color: #f0f0f0;
+    color: #999;
+    font-size: 0.9em;
+}
+
+/* 添加事件按钮 */
+.add-event-button {
+    width: 2.0em;
+    height: 2.0em;
+    border: none;
+    border-radius: 50%;
+    background-color: white;
+    color: var(--interactive-accent);
+    font-size: 1.6em;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 添加事件按钮悬停效果 */
+.add-event-button:hover {
+    background-color: #f5f5f5;
+    transform: scale(1.05);
+    transition: all 0.2s ease;
+}
+
+/* 日视图容器 */
+.day-view-container {
+    padding: 0.5em;
+}
+
+/* 日视图日期显示 */
+.day-view-date {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 1em;
+    text-align: center;
+}
+
+/* 日程视图容器 */
+.schedule-view-container {
+    padding: 0.5em;
+}
+
+/* 日程视图标题 */
+.schedule-view-title {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 1em;
+    text-align: center;
+}
+
 /* 任务列表样式 - 移除过渡效果以提高更新流畅度 */
 .task-list-container {
     margin-top: 0.5em;
@@ -518,6 +808,14 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1em;
+    cursor: pointer;
+}
+
+/* 任务列表 */
+.task-list {
+    max-height: 480px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* 任务列表标题 */
@@ -527,35 +825,32 @@
     color: var(--text-normal);
 }
 
-/* 过滤器按钮容器 */
-.filter-buttons {
+/* 选中日期显示 */
+.selected-date-display {
     display: flex;
-    gap: 0.5em;
+    align-items: center;
 }
 
-/* 过滤器按钮 */
-.filter-btn {
-    background-color: transparent;
-    border: 1px solid var(--interactive-border);
-    border-radius: 0.3em;
-    color: var(--text-normal);
-    cursor: pointer;
-    padding: 0.3em 0.8em;
+/* 日期部分 */
+.selected-date-display .day-part {
+    font-weight: bold;
+    font-size: 1em;
+    margin-right: 0.3em;
+}
+
+/* 星期部分 */
+.selected-date-display .weekday-part {
+    font-weight: bold;
     font-size: 0.8em;
-    transition: all 0.2s ease;
+    margin-right: 0.3em;
 }
 
-/* 过滤器按钮悬停效果 */
-.filter-btn:hover {
-    background-color: var(--interactive-hover);
+/* 阴历部分 */
+.selected-date-display .lunar-part {
+    font-size: 0.6em;
 }
 
-/* 激活的过滤器按钮 */
-.filter-btn.active {
-    background-color: var(--interactive-accent);
-    color: var(--text-on-accent);
-    border-color: var(--interactive-accent);
-}
+
 
 /* 任务列表 */
 .task-list {
@@ -570,6 +865,14 @@
     display: flex;
     flex-direction: column;
     gap: 0.2em;
+    padding: 0.2em;
+    border-radius: 0.2em;
+    transition: background-color 0.2s ease;
+}
+
+/* 任务内容悬停效果 */
+.task-content:hover {
+    background-color: var(--background-modifier-hover) !important;
 }
 
 /* 任务截止日期 */
@@ -588,6 +891,84 @@
 /* 任务项悬停效果 */
 .task-item:hover {
     background-color: var(--background-hover);
+}
+
+/* 任务项选择效果 */
+.task-item.selected {
+    background-color: var(--background-modifier-hover);
+    border-radius: 0.3em;
+}
+
+/* 全天任务样式 */
+.all-day-task {
+    background-color: #E3F2FD;
+    border-radius: 0.5em;
+    padding: 0.75em;
+    margin-bottom: 0.625em;
+    display: flex;
+    gap: 0.625em;
+    align-items: flex-start;
+}
+
+/* 定时任务样式 */
+.timed-task {
+    display: flex;
+    gap: 0.75em;
+    margin-bottom: 1em;
+    align-items: flex-start;
+}
+
+/* 任务图标 */
+.task-icon {
+    font-size: 1em;
+    flex-shrink: 0;
+    margin-top: 0.125em;
+}
+
+/* 任务时间 */
+.task-time {
+    font-size: 0.875em;
+    font-weight: 500;
+    color: var(--text-normal);
+    min-width: 3.125em;
+    flex-shrink: 0;
+}
+
+/* 任务分隔线 */
+.task-divider {
+    width: 0.0625em;
+    background-color: var(--divider-color);
+    margin: 0 0.5em;
+    flex-shrink: 0;
+    height: 2.5em;
+}
+
+/* 任务内容容器 */
+.all-day-task .task-content,
+.timed-task .task-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25em;
+}
+
+/* 任务标题 */
+.task-title {
+    font-size: 1em;
+    font-weight: 500;
+    color: var(--text-normal);
+}
+
+/* 全天标签 */
+.all-day-label {
+    font-size: 0.75em;
+    color: var(--text-muted);
+}
+
+/* 时间范围 */
+.time-range {
+    font-size: 0.75em;
+    color: var(--text-muted);
 }
 
 /* 任务复选框 */
@@ -624,57 +1005,7 @@
     color: var(--text-muted);
 }
 
-/* 任务删除按钮 */
-.task-delete {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 0.1em 0.3em;
-    border-radius: 0.2em;
-    font-size: 0.8em;
-}
 
-/* 任务删除按钮悬停效果 */
-.task-delete:hover {
-    color: var(--text-error);
-    background-color: var(--background-hover);
-}
-
-/* 添加任务容器 */
-.add-task-container {
-    display: flex;
-    margin-top: 1em;
-    gap: 0.5em;
-}
-
-/* 添加任务输入框 */
-.add-task-input {
-    flex: 1;
-    padding: 0.3em 0.5em;
-    border: 1px solid var(--interactive-border);
-    border-radius: 0.3em;
-    background-color: transparent;
-    color: var(--text-normal);
-    font-size: 0.85em;
-}
-
-/* 添加任务按钮 */
-.add-task-button {
-    padding: 0.3em 0.6em;
-    border: 1px solid var(--interactive-border);
-    border-radius: 0.3em;
-    background-color: transparent;
-    color: var(--text-normal);
-    cursor: pointer;
-    font-size: 0.85em;
-    transition: all 0.2s ease;
-}
-
-/* 添加任务按钮悬停效果 */
-.add-task-button:hover {
-    background-color: var(--interactive-hover);
-}
 
 /* 设置区域 */
 .setting-section {
@@ -748,12 +1079,12 @@
     position: relative;
 }
 
+
+
 /* 移动设备适配 */
 @media screen and (max-width: 768px) {
     /* 增大触摸目标大小 */
     .nav-btn,
-    .today-label,
-    .filter-btn,
     .week-number-cell,
     .day-cell {
         min-height: 44px;
@@ -788,18 +1119,6 @@
     /* 调整任务列表布局 */
     .task-list-container {
         margin-top: 0.5em;
-    }
-    
-    /* 调整过滤器按钮布局 */
-    .filter-buttons {
-        flex-wrap: wrap;
-        gap: 0.2em;
-    }
-    
-    /* 调整过滤器按钮大小 */
-    .filter-btn {
-        padding: 0.3em 0.6em;
-        font-size: 0.8em;
     }
     
     /* 简化指示器 */
@@ -839,11 +1158,6 @@
         font-size: 0.9em;
     }
     
-    /* 调整年视图布局 */
-    .quarter-months {
-        flex-direction: column;
-    }
-    
     /* 调整月份容器大小 */
     .month-container {
         min-width: 100%;
@@ -873,16 +1187,5 @@
     /* 隐藏不必要的元素 */
     .week-indicators {
         display: none;
-    }
-    
-    /* 简化过滤器按钮 */
-    .filter-buttons {
-        justify-content: center;
-    }
-    
-    /* 简化过滤器按钮样式 */
-    .filter-btn {
-        box-shadow: none;
-        border: 1px solid var(--interactive-accent);
     }
 }

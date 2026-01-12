@@ -235,17 +235,41 @@ export function filterTasks(tasks: Task[], settings: MyPluginSettings, filterDat
     const customFilter = settings.taskFilter.customFilter;
     const expression = parseCustomFilter(customFilter);
     
+    // 生成当天日记的路径
+    const dailySettings = settings.dailyNote;
+    const dailyFileName = formatDate(filterDate, dailySettings.fileNameFormat);
+    const dailyNotePath = `${dailySettings.savePath}/${dailyFileName}.md`;
+    
     return tasks.filter(task => {
-        // 检查截止日期：只显示截止日期在filterDate及之前的任务
+        let isTaskForToday = false;
+        
+        // 检查1: 有截止日期且截止日期是当天的任务
         if (task.dueDate) {
-            // 设置日期为当天的结束时间，以便包含当天的任务
+            // 设置当天的开始时间
+            const startOfDay = new Date(filterDate);
+            startOfDay.setHours(0, 0, 0, 0);
+            
+            // 设置当天的结束时间
             const endOfDay = new Date(filterDate);
             endOfDay.setHours(23, 59, 59, 999);
             
-            // 只显示截止日期在点击日期及之前的任务
-            if (task.dueDate > endOfDay) {
-                return false;
+            // 只显示截止日期在当天范围内的任务
+            if (task.dueDate >= startOfDay && task.dueDate <= endOfDay) {
+                isTaskForToday = true;
             }
+        }
+        
+        // 检查2: 没有截止日期但在当天笔记中的任务
+        if (!isTaskForToday && !task.dueDate) {
+            // 比较任务的文件路径与当天日记的路径
+            if (task.filePath === dailyNotePath) {
+                isTaskForToday = true;
+            }
+        }
+        
+        // 如果任务不符合当天任务的条件，直接过滤掉
+        if (!isTaskForToday) {
+            return false;
         }
         
         // 如果没有筛选规则，默认通过

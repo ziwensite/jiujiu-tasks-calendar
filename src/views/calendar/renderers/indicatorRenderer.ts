@@ -1,6 +1,7 @@
 import { MyPlugin } from '../../../main';
 import { getLunarDate, formatDate } from '../../../utils/dateUtils';
 import { noteExists } from '../../../services/noteService';
+import { extractTasks, Task } from '../../../services/taskService';
 
 export class IndicatorRenderer {
     private plugin: MyPlugin;
@@ -27,23 +28,39 @@ export class IndicatorRenderer {
         
         if (await noteExists(this.plugin.app, dailyNotePath)) {
             hasNote = true;
-            // 有日记，检查是否有任务
-            try {
-                const file = this.plugin.app.vault.getAbstractFileByPath(dailyNotePath);
-                if (file && 'stat' in file) {
-                    const content = await this.plugin.app.vault.read(file as any);
-                    
-                    // 检查日记中是否有任务
-                    const taskRegex = /^\s*([-\*\d]+\.?)\s*\[([ xX])\]/gm;
-                    const tasks = content.match(taskRegex);
-                    
-                    if (tasks && tasks.length > 0) {
-                        hasTask = true;
-                    }
-                }
-            } catch (error) {
-                console.error(`Failed to read daily note: ${dailyNotePath}`, error);
+        }
+        
+        // 检查所有文件中截止日期在当天的任务
+        try {
+            const allTasks = await extractTasks(this.plugin.app, this.plugin.settings);
+            
+            // 筛选截止日期在当天的任务
+            // 创建当天的开始和结束时间（本地时间）
+            const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+            const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+            
+            const tasksOnDay = allTasks.filter(task => {
+                if (!task.dueDate) return false;
+                
+                // 创建任务截止日期的本地时间版本（去除时区影响）
+                const taskDueDate = new Date(
+                    task.dueDate.getFullYear(),
+                    task.dueDate.getMonth(),
+                    task.dueDate.getDate(),
+                    task.dueDate.getHours(),
+                    task.dueDate.getMinutes(),
+                    task.dueDate.getSeconds(),
+                    task.dueDate.getMilliseconds()
+                );
+                
+                return taskDueDate >= dayStart && taskDueDate <= dayEnd;
+            });
+            
+            if (tasksOnDay.length > 0) {
+                hasTask = true;
             }
+        } catch (error) {
+            console.error('Failed to check tasks for day indicator:', error);
         }
         
         // 更新指示器
@@ -59,6 +76,14 @@ export class IndicatorRenderer {
         // 批量收集所有日期的数据
         const indicatorData = new Map<string, { hasNote: boolean; hasTask: boolean }>();
         
+        // 先提取所有任务，避免重复提取
+        let allTasks: Task[] = [];
+        try {
+            allTasks = await extractTasks(this.plugin.app, this.plugin.settings);
+        } catch (error) {
+            console.error('Failed to extract tasks for day indicators:', error);
+        }
+        
         for (const cell of dayCells) {
             const cellEl = cell as any;
             const dayNumberEl = cellEl.querySelector('.day-number');
@@ -72,7 +97,7 @@ export class IndicatorRenderer {
             const month = currentDate.getMonth();
             const date = new Date(year, month, dayNumber);
             
-            // 检查是否有日记和任务
+            // 检查是否有日记
             const dailySettings = this.plugin.settings.dailyNote;
             const dailyFileName = formatDate(date, dailySettings.fileNameFormat);
             const dailyNotePath = `${dailySettings.savePath}/${dailyFileName}.md`;
@@ -82,22 +107,33 @@ export class IndicatorRenderer {
             
             if (await noteExists(this.plugin.app, dailyNotePath)) {
                 hasNote = true;
-                // 有日记，检查是否有任务
-                try {
-                    const file = this.plugin.app.vault.getAbstractFileByPath(dailyNotePath);
-                    if (file && 'stat' in file) {
-                        const content = await this.plugin.app.vault.read(file as any);
-                        
-                        // 检查日记中是否有任务
-                        const taskRegex = /^\s*([-\*\d]+\.?)\s*\[([ xX])\]/gm;
-                        const tasks = content.match(taskRegex);
-                        
-                        if (tasks && tasks.length > 0) {
-                            hasTask = true;
-                        }
-                    }
-                } catch (error) {
-                    console.error(`Failed to read daily note: ${dailyNotePath}`, error);
+            }
+            
+            // 检查所有文件中截止日期在当天的任务
+            if (allTasks.length > 0) {
+                // 创建当天的开始和结束时间（本地时间）
+                const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+                const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+                
+                const tasksOnDay = allTasks.filter(task => {
+                    if (!task.dueDate) return false;
+                    
+                    // 创建任务截止日期的本地时间版本（去除时区影响）
+                    const taskDueDate = new Date(
+                        task.dueDate.getFullYear(),
+                        task.dueDate.getMonth(),
+                        task.dueDate.getDate(),
+                        task.dueDate.getHours(),
+                        task.dueDate.getMinutes(),
+                        task.dueDate.getSeconds(),
+                        task.dueDate.getMilliseconds()
+                    );
+                    
+                    return taskDueDate >= dayStart && taskDueDate <= dayEnd;
+                });
+                
+                if (tasksOnDay.length > 0) {
+                    hasTask = true;
                 }
             }
             
@@ -185,8 +221,14 @@ export class IndicatorRenderer {
         }
         
         // 检查本周内是否有截止任务
-        // 这里可以根据实际的任务提取逻辑进行实现
-        // 暂时设置为false，后续可以根据具体需求修改
+        const allTasks = await extractTasks(this.plugin.app, this.plugin.settings);
+        
+        for (const task of allTasks) {
+            if (task.dueDate && task.dueDate >= weekStartDate && task.dueDate <= weekEndDate) {
+                hasWeeklyTask = true;
+                break;
+            }
+        }
         
         // 清空现有指示器
         const indicators = cell.querySelector('.week-indicators');
