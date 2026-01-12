@@ -6,6 +6,7 @@ import { Solar } from 'lunar-typescript';
 import { noteExists, createOrOpenNote } from '../services/noteService';
 import { extractTasks, filterTasks, updateTaskInNote, createTaskInNote, Task, parseCustomFilter, evaluateExpression } from '../services/taskService';
 import { CalendarRenderer, TaskListRenderer, IndicatorRenderer, EventHandler } from './calendar';
+import { TaskModal } from './calendar/modals/TaskModal';
 
 const VIEW_TYPE_CALENDAR = "jiujiu-calendar-view";
 
@@ -358,13 +359,59 @@ export class CalendarView extends ItemView {
         const day = selectedDate.getDate();
         
         // 创建输入框，提示文字显示当前被选择的日期
-        addEventContainer.createEl("input", { 
+        const inputEl = addEventContainer.createEl("input", { 
             cls: "add-event-input", 
             placeholder: `在 ${month}月${day}日添加事件` 
         });
         
         // 创建添加按钮
-        addEventContainer.createEl("button", {cls: "add-event-button", text: "+"});
+        const addBtn = addEventContainer.createEl("button", {cls: "add-event-button", text: "+"});
+        
+        // 处理添加按钮点击事件
+        const handleAddEvent = async () => {
+            const inputText = inputEl.value.trim();
+            
+            if (inputText === "") {
+                // 输入框为空，弹出任务模态窗口
+                const modal = new TaskModal({
+                    plugin: this.plugin,
+                    date: selectedDate || new Date(),
+                    onTaskAdded: async () => {
+                        await this.refreshTaskList();
+                    }
+                });
+                modal.open();
+            } else {
+                // 输入框有内容，按照默认设置自动添加任务到当天日记
+                try {
+                    await createTaskInNote(
+                        this.app,
+                        inputText,
+                        selectedDate || new Date(),
+                        this.plugin.settings,
+                        "daily"
+                    );
+                    
+                    // 清空输入框
+                    inputEl.value = "";
+                    
+                    // 刷新任务列表
+                    await this.refreshTaskList();
+                } catch (error) {
+                    console.error("Failed to create task:", error);
+                }
+            }
+        };
+        
+        // 绑定按钮点击事件
+        addBtn.addEventListener("click", handleAddEvent);
+        
+        // 绑定回车键事件
+        inputEl.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                handleAddEvent();
+            }
+        });
     }
 
     /**
@@ -883,6 +930,18 @@ export class CalendarView extends ItemView {
                     },
                     async (task) => {
                         await this.eventHandler.handleTaskDoubleClick(task);
+                    },
+                    async (task) => {
+                        // 打开任务编辑窗口
+                        const modal = new TaskModal({
+                            plugin: this.plugin,
+                            task: task,
+                            date: this.selectedDate || new Date(),
+                            onTaskUpdated: async () => {
+                                await this.refreshTaskList();
+                            }
+                        });
+                        modal.open();
                     }
                 );
             }
@@ -1180,6 +1239,18 @@ export class CalendarView extends ItemView {
             },
             async (task) => {
                 await this.eventHandler.handleTaskDoubleClick(task);
+            },
+            async (task) => {
+                // 打开任务编辑窗口
+                const modal = new TaskModal({
+                    plugin: this.plugin,
+                    task: task,
+                    date: startDate,
+                    onTaskUpdated: async () => {
+                        await this.renderTaskListByDateRange(startDate, endDate);
+                    }
+                });
+                modal.open();
             }
         );
     }
