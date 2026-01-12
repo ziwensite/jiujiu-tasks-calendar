@@ -196,7 +196,7 @@ export function matchFilterRule(task: Task, rule: FilterRule): boolean {
 }
 
 // 评估表达式节点
-function evaluateExpression(task: Task, node: ExpressionNode): boolean {
+export function evaluateExpression(task: Task, node: ExpressionNode): boolean {
     switch (node.type) {
         case 'rule':
             if (node.rule) {

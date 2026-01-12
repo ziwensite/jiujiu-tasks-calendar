@@ -28,9 +28,57 @@ export class IndicatorRenderer {
         
         if (await noteExists(this.plugin.app, dailyNotePath)) {
             hasNote = true;
+            
+            // 检查当天日记中没有截止日期的任务
+            try {
+                const dailyFile = this.plugin.app.vault.getAbstractFileByPath(dailyNotePath);
+                if (dailyFile && 'stat' in dailyFile) {
+                    const content = await this.plugin.app.vault.read(dailyFile as any);
+                    
+                    // 使用 taskRegex 匹配所有任务
+                    const taskRegex = /^\s*-\s*\[(.)\]\s*(.+)$/gm;
+                    let match;
+                    while ((match = taskRegex.exec(content)) !== null) {
+                        // 提取任务状态和文本
+                        const status = match[1] || '';
+                        const taskText = match[2] || '';
+                        
+                        // 检查是否是未完成的任务
+                        if (status.toLowerCase() !== 'x') {
+                            // 检查任务文本中是否包含截止日期
+                            const dueDateRegex = /(?:[@#]|due:\s?|📅\s?)(\d{4}-\d{2}-\d{2})/;
+                            const hasDueDate = dueDateRegex.test(taskText);
+                            
+                            // 如果没有截止日期，或者截止日期是当天，都算作当天的任务
+                            if (!hasDueDate) {
+                                hasTask = true;
+                                break; // 只要有一个符合条件的任务，就可以退出循环
+                            } else {
+                                // 有截止日期，检查是否是当天
+                                const dueDateMatch = taskText.match(dueDateRegex);
+                                if (dueDateMatch && dueDateMatch[1]) {
+                                    const dueDateStr = dueDateMatch[1];
+                                    const dueDate = new Date(dueDateStr);
+                                    
+                                    // 创建当天的开始和结束时间
+                                    const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+                                    const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+                                    
+                                    if (dueDate >= dayStart && dueDate <= dayEnd) {
+                                        hasTask = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to check daily note tasks:', error);
+            }
         }
         
-        // 检查所有文件中截止日期在当天的任务
+        // 检查所有文件中截止日期在当天的任务（其他文件中的任务）
         try {
             const allTasks = await extractTasks(this.plugin.app, this.plugin.settings);
             
@@ -39,25 +87,25 @@ export class IndicatorRenderer {
             const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
             const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
             
-            const tasksOnDay = allTasks.filter(task => {
-                if (!task.dueDate) return false;
-                
-                // 创建任务截止日期的本地时间版本（去除时区影响）
-                const taskDueDate = new Date(
-                    task.dueDate.getFullYear(),
-                    task.dueDate.getMonth(),
-                    task.dueDate.getDate(),
-                    task.dueDate.getHours(),
-                    task.dueDate.getMinutes(),
-                    task.dueDate.getSeconds(),
-                    task.dueDate.getMilliseconds()
-                );
-                
-                return taskDueDate >= dayStart && taskDueDate <= dayEnd;
-            });
-            
-            if (tasksOnDay.length > 0) {
-                hasTask = true;
+            for (const task of allTasks) {
+                // 只检查其他文件中的任务，避免重复检查
+                if (task.filePath !== dailyNotePath && task.dueDate) {
+                    // 创建任务截止日期的本地时间版本（去除时区影响）
+                    const taskDueDate = new Date(
+                        task.dueDate.getFullYear(),
+                        task.dueDate.getMonth(),
+                        task.dueDate.getDate(),
+                        task.dueDate.getHours(),
+                        task.dueDate.getMinutes(),
+                        task.dueDate.getSeconds(),
+                        task.dueDate.getMilliseconds()
+                    );
+                    
+                    if (taskDueDate >= dayStart && taskDueDate <= dayEnd) {
+                        hasTask = true;
+                        break;
+                    }
+                }
             }
         } catch (error) {
             console.error('Failed to check tasks for day indicator:', error);
@@ -107,33 +155,81 @@ export class IndicatorRenderer {
             
             if (await noteExists(this.plugin.app, dailyNotePath)) {
                 hasNote = true;
+                
+                // 检查当天日记中没有截止日期的任务
+                try {
+                    const dailyFile = this.plugin.app.vault.getAbstractFileByPath(dailyNotePath);
+                    if (dailyFile && 'stat' in dailyFile) {
+                        const content = await this.plugin.app.vault.read(dailyFile as any);
+                        
+                        // 使用 taskRegex 匹配所有任务
+                        const taskRegex = /^\s*(-|\*|\d+\.)\s*\[(.)\]\s*(.+)$/gm;
+                        let match;
+                        while ((match = taskRegex.exec(content)) !== null) {
+                            // 提取任务状态和文本
+                            const status = match[2] || '';
+                            const taskText = match[3] || '';
+                            
+                            // 检查是否是未完成的任务
+                            if (status.toLowerCase() !== 'x') {
+                                // 检查任务文本中是否包含截止日期
+                                const dueDateRegex = /(?:[@#]|due:\s?|📅\s?)(\d{4}-\d{2}-\d{2})/;
+                                const hasDueDate = dueDateRegex.test(taskText);
+                                
+                                // 如果没有截止日期，或者截止日期是当天，都算作当天的任务
+                                if (!hasDueDate) {
+                                    hasTask = true;
+                                    break; // 只要有一个符合条件的任务，就可以退出循环
+                                } else {
+                                    // 有截止日期，检查是否是当天
+                                    const dueDateMatch = taskText.match(dueDateRegex);
+                                    if (dueDateMatch && dueDateMatch[1]) {
+                                        const dueDateStr = dueDateMatch[1];
+                                        const dueDate = new Date(dueDateStr);
+                                        
+                                        // 创建当天的开始和结束时间
+                                        const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+                                        const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+                                        
+                                        if (dueDate >= dayStart && dueDate <= dayEnd) {
+                                            hasTask = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to check daily note tasks:', error);
+                }
             }
             
-            // 检查所有文件中截止日期在当天的任务
+            // 检查所有文件中截止日期在当天的任务（其他文件中的任务）
             if (allTasks.length > 0) {
                 // 创建当天的开始和结束时间（本地时间）
                 const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
                 const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
                 
-                const tasksOnDay = allTasks.filter(task => {
-                    if (!task.dueDate) return false;
-                    
-                    // 创建任务截止日期的本地时间版本（去除时区影响）
-                    const taskDueDate = new Date(
-                        task.dueDate.getFullYear(),
-                        task.dueDate.getMonth(),
-                        task.dueDate.getDate(),
-                        task.dueDate.getHours(),
-                        task.dueDate.getMinutes(),
-                        task.dueDate.getSeconds(),
-                        task.dueDate.getMilliseconds()
-                    );
-                    
-                    return taskDueDate >= dayStart && taskDueDate <= dayEnd;
-                });
-                
-                if (tasksOnDay.length > 0) {
-                    hasTask = true;
+                for (const task of allTasks) {
+                    // 只检查其他文件中的任务，避免重复检查
+                    if (task.filePath !== dailyNotePath && task.dueDate) {
+                        // 创建任务截止日期的本地时间版本（去除时区影响）
+                        const taskDueDate = new Date(
+                            task.dueDate.getFullYear(),
+                            task.dueDate.getMonth(),
+                            task.dueDate.getDate(),
+                            task.dueDate.getHours(),
+                            task.dueDate.getMinutes(),
+                            task.dueDate.getSeconds(),
+                            task.dueDate.getMilliseconds()
+                        );
+                        
+                        if (taskDueDate >= dayStart && taskDueDate <= dayEnd) {
+                            hasTask = true;
+                            break;
+                        }
+                    }
                 }
             }
             
