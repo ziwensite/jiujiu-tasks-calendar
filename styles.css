@@ -999,45 +999,54 @@
     padding: 1em;
     background-color: var(--background-primary);
     box-sizing: border-box;
+    margin: 0 auto;
 }
 
 .task-modal-form {
     display: flex;
     flex-direction: column;
-    gap: 1.2em;
+    gap: 0.5em;
 }
 
 /* 选项卡 */
-.task-modal-tabs {
+.task-modal .task-modal-tabs {
+    margin-left: auto;
+    margin-right: auto;
     display: flex;
-    background-color: #e0e0e0;
+    align-items: center;
+    background-color: #f0f0f0;
     border-radius: 20px;
-    padding: 4px;
+    padding: 0px;
     margin-bottom: 1em;
     width: fit-content;
 }
 
-.task-modal-tab {
-    padding: 0.6em 1.8em;
+.task-modal .task-modal-tabs .task-modal-tab {
+    padding: 0.8em 5em;
     background: transparent;
-    border: none;
-    font-size: 0.9em;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    font-size: 1.0em;
     color: #666;
     cursor: pointer;
-    border-radius: 16px;
+    border-radius: 20px;
     transition: all 0.3s ease;
     font-weight: 500;
 }
 
-.task-modal-tab:hover {
+.task-modal .task-modal-tabs .task-modal-tab:hover {
     background-color: rgba(0, 0, 0, 0.05);
     color: #333;
 }
 
-.task-modal-tab-active {
-    background-color: #666;
-    color: white;
-    font-weight: 600;
+.task-modal .task-modal-tabs .task-modal-tab-active {
+    background-color: #666 !important;
+    color: white !important;
+    font-weight: 600 !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
 }
 
 /* 标题行：整行带下边线 */
@@ -1053,7 +1062,7 @@
 .task-modal .task-modal-title-input {
     flex: 1;
     padding: 0.8em 0;
-    font-size: 1.1em;
+    font-size: 1.0em;
     background: transparent;
     color: var(--text-normal);
     border: none;
@@ -1087,7 +1096,7 @@
 }
 
 .task-modal-emoji {
-    font-size: 1.2em;
+    font-size: 1.0em;
     cursor: pointer;
 }
 
@@ -1107,50 +1116,49 @@
 }
 
 .task-modal-icon {
-    font-size: 1.2em;
+    font-size: 1.0em;
     color: var(--text-muted);
 }
 
 .task-modal-full-day-text {
     flex: 1;
     color: var(--text-normal);
-    font-size: 0.9em;
+    font-size: 1.0em;
 }
 
-.task-modal-full-day-toggle {
+/* 自定义滑块 */
+.task-modal .task-modal-full-day-toggle {
     position: relative;
-    width: 40px;
-    height: 20px;
-    background-color: var(--background-modifier-border);
-    border-radius: 10px;
+    width: 44px;
+    height: 24px;
+    background-color: #ccc;
+    border-radius: 12px;
     cursor: pointer;
-    appearance: none;
     transition: background-color 0.2s ease;
 }
 
-.task-modal-full-day-toggle:checked {
+.task-modal .task-modal-full-day-toggle.active {
     background-color: #4285F4;
 }
 
-.task-modal-full-day-toggle::before {
-    content: '';
+.task-modal .task-modal-full-day-slider {
     position: absolute;
     top: 2px;
     left: 2px;
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     background-color: white;
     border-radius: 50%;
     transition: transform 0.2s ease;
 }
 
-.task-modal-full-day-toggle:checked::before {
+.task-modal .task-modal-full-day-toggle.active .task-modal-full-day-slider {
     transform: translateX(20px);
 }
 
 /* 日期时间选择 */
 .task-modal-datetime-section {
-    padding: 0.8em 0;
+    padding: 0.5em 0;
     border-bottom: 1px solid var(--divider-color);
 }
 
@@ -1158,7 +1166,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1em;
+    gap: 0.5em;
 }
 
 .task-modal-date-display {
@@ -1172,7 +1180,6 @@
 .task-modal-date-text {
     font-size: 0.9em;
     color: var(--text-normal);
-    font-weight: 500;
 }
 
 .task-modal-time-input {
@@ -1188,6 +1195,230 @@
 
 .task-modal-time-input:focus {
     border-color: var(--text-accent);
+}
+
+/* 日期输入框样式 */
+.task-modal-date-input {
+    width: 100%;
+    padding: 0.4em;
+    font-size: 0.9em;
+    background-color: var(--background-secondary);
+    color: var(--text-normal);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    outline: none;
+    text-align: center;
+}
+
+.task-modal-date-input:focus {
+    border-color: var(--interactive-accent);
+}
+
+/* 日历选择区域样式 */
+.task-modal-calendar-section {
+    padding: 1em 0;
+    border-bottom: 1px solid var(--divider-color);
+    display: flex;
+    flex-direction: column;
+    /* align-items: center; */
+}
+
+/* 日历导航栏 */
+.task-modal-calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1em;
+}
+
+/* 导航按钮 */
+.task-modal-calendar-nav-btn {
+    background: none;
+    border: none;
+    font-size: 0.9em;
+    color: var(--text-normal);
+    cursor: pointer;
+    padding: 0.3em 0.6em;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.task-modal-calendar-nav-btn:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+/* 年月显示 */
+.task-modal-calendar-year-month {
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
+    font-size: 0.9em;
+    color: var(--text-normal);
+}
+
+.task-modal-calendar-dropdown {
+    font-size: 0.8em;
+    color: var(--text-muted);
+}
+
+/* 公历/农历切换 */
+.task-modal-calendar-type-toggle {
+    display: flex;
+    background-color: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 20px;
+    padding: 0px;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.task-modal-calendar-type-btn {
+    background: none;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    padding: 0.3em 1.2em;
+    font-size: 0.8em;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 20px;
+    transition: all 0.2s ease;
+    flex: 1;
+    text-align: center;
+}
+
+.task-modal-calendar-type-btn:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.task-modal-calendar-type-btn-active {
+    background-color: #f0f0f0 !important;
+    color: var(--text-normal) !important;
+    font-weight: 500 !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* 星期标题 */
+.task-modal-calendar-weekday-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.2em;
+    margin-bottom: 0.2em;
+}
+
+.task-modal-calendar-weekday {
+    text-align: center;
+    font-size: 0.8em;
+    color: var(--text-muted);
+    padding: 0.3em;
+}
+
+/* 日期表格 */
+.task-modal-calendar-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+.task-modal-calendar-table tr {
+    height: 1.8em;
+}
+
+.task-modal-calendar-table td {
+    width: calc(100% / 7);
+    padding: 0;
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* 日期单元格 */
+.task-modal-calendar-date {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+}
+
+/* 日期文本 */
+.task-modal-date-text {
+    font-size: 0.8em;
+    color: var(--text-normal);
+    z-index: 1;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.2em 0.4em;
+    border-radius: 4px;
+}
+
+/* 选中的日期文字 */
+.task-modal-date-text-selected {
+    background-color: var(--background-modifier-hover);
+    color: var(--text-normal);
+    font-weight: 500;
+    border-radius: 16px;
+    padding: 0.2em 0.8em;
+}
+
+/* 今天的日期 */
+.task-modal-calendar-date-today {
+    background-color: transparent;
+    border: none;
+}
+
+.task-modal-calendar-date-today .task-modal-calendar-date-text {
+    color: red;
+    font-weight: 500;
+}
+
+/* 开始日期 */
+.task-modal-calendar-date-start {
+    background-color: var(--interactive-accent) !important;
+    border-radius: 14px 0 0 14px !important;
+    border: none !important;
+}
+
+.task-modal-calendar-date-start .task-modal-calendar-date-text {
+    color: white !important;
+    font-weight: 500 !important;
+}
+
+/* 结束日期 */
+.task-modal-calendar-date-end {
+    background-color: var(--interactive-accent) !important;
+    border-radius: 0 14px 14px 0 !important;
+    border: none !important;
+}
+
+.task-modal-calendar-date-end .task-modal-calendar-date-text {
+    color: white !important;
+    font-weight: 500 !important;
+}
+
+/* 日期范围内的日期 */
+.task-modal-calendar-date-range {
+    background-color: var(--interactive-accent) !important;
+    border-radius: 0 !important;
+    border: none !important;
+}
+
+.task-modal-calendar-date-range .task-modal-calendar-date-text {
+    color: white !important;
+}
+
+/* 其他月份的日期 */
+.task-modal-calendar-date-other-month .task-modal-calendar-date-text {
+    color: var(--text-faint);
 }
 
 .task-modal-arrow {

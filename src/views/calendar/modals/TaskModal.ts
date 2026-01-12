@@ -34,9 +34,10 @@ export class TaskModal extends Modal {
         this.onTaskAdded = options.onTaskAdded;
         this.onTaskUpdated = options.onTaskUpdated;
         
-        // 初始化选中的日期，默认使用传入的日期
+        // 初始化选中的日期，默认开始日期是当天，结束日期是第二天
         this.selectedStartDate = new Date(this.date);
         this.selectedEndDate = new Date(this.date);
+        this.selectedEndDate.setDate(this.selectedEndDate.getDate() + 1);
     }
 
     onOpen() {
@@ -48,13 +49,28 @@ export class TaskModal extends Modal {
         
         // 选项卡
         const tabs = form.createEl('div', { cls: 'task-modal-tabs' });
-        tabs.createEl('button', {
+        
+        // 创建事件选项卡（默认激活）
+        const eventTab = tabs.createEl('button', {
             text: '事件',
             cls: 'task-modal-tab task-modal-tab-active'
         });
-        tabs.createEl('button', {
+        
+        // 创建提醒选项卡
+        const reminderTab = tabs.createEl('button', {
             text: '提醒',
             cls: 'task-modal-tab'
+        });
+        
+        // 选项卡点击事件监听器
+        eventTab.addEventListener('click', () => {
+            eventTab.classList.add('task-modal-tab-active');
+            reminderTab.classList.remove('task-modal-tab-active');
+        });
+        
+        reminderTab.addEventListener('click', () => {
+            reminderTab.classList.add('task-modal-tab-active');
+            eventTab.classList.remove('task-modal-tab-active');
         });
         
         // 标题
@@ -79,11 +95,48 @@ export class TaskModal extends Modal {
         const fullDayIcon = fullDayRow.createEl('span', { text: '⏰', cls: 'task-modal-icon' });
         fullDayRow.createEl('span', { text: '全天', cls: 'task-modal-full-day-text' });
         
-        this.fullDayToggle = fullDayRow.createEl('input', {
-            type: 'checkbox',
-            cls: 'task-modal-full-day-toggle'
-        });
-        this.fullDayToggle.id = 'full-day-toggle';
+        // 创建自定义开关组件
+        const toggleContainer = fullDayRow.createEl('div', { cls: 'task-modal-full-day-toggle' });
+        const toggleSlider = toggleContainer.createEl('div', { cls: 'task-modal-full-day-slider' });
+        
+        // 存储开关状态
+        let isFullDay = false;
+        
+        // 点击事件处理函数（稍后绑定）
+        const handleToggleClick = () => {
+            isFullDay = !isFullDay;
+            if (isFullDay) {
+                toggleContainer.addClass('active');
+                // 隐藏时间输入框，保留日期显示
+                if (this.startTimeInput && this.endTimeInput) {
+                    this.startTimeInput.style.display = 'none';
+                    this.endTimeInput.style.display = 'none';
+                }
+            } else {
+                toggleContainer.removeClass('active');
+                // 显示时间输入框
+                if (this.startTimeInput && this.endTimeInput) {
+                    this.startTimeInput.style.display = 'block';
+                    this.endTimeInput.style.display = 'block';
+                }
+            }
+        };
+        
+        // 创建一个对象来模拟checkbox的行为，保持与现有代码的兼容性
+        this.fullDayToggle = {
+            get checked() {
+                return isFullDay;
+            },
+            set checked(value: boolean) {
+                isFullDay = value;
+                if (value) {
+                    toggleContainer.addClass('active');
+                } else {
+                    toggleContainer.removeClass('active');
+                }
+            },
+            id: 'full-day-toggle'
+        } as any;
         
         // 计算下一个整点时间
         const getNextHour = (date: Date): string => {
@@ -106,12 +159,23 @@ export class TaskModal extends Modal {
         // 开始日期时间
         const startDateTimeRow = datetimeSection.createEl('div', { cls: 'task-modal-datetime-row' });
         
-        // 开始日期显示
+        // 格式化日期为 "1月 12日 周一" 格式
+        const formatDateDisplay = (date: Date): string => {
+            const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+            const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            return `${months[date.getMonth()]} ${date.getDate()}日 ${weekdays[date.getDay()]}`;
+        };
+        
+        // 开始日期时间
         const startDateDisplay = startDateTimeRow.createEl('div', { cls: 'task-modal-date-display' });
-        startDateDisplay.createEl('div', { text: '1月 12日 周一', cls: 'task-modal-date-text' });
+        const startDateText = startDateDisplay.createEl('div', {
+            text: formatDateDisplay(this.selectedStartDate),
+            cls: 'task-modal-date-text'
+        });
+        startDateText.addClass('task-modal-date-text-selected'); // 默认选中开始日期文字
         this.startTimeInput = startDateDisplay.createEl('input', {
             type: 'time',
-            value: getNextHour(this.date),
+            value: getNextHour(this.selectedStartDate),
             cls: 'task-modal-time-input'
         });
         
@@ -120,11 +184,278 @@ export class TaskModal extends Modal {
         
         // 结束日期时间
         const endDateDisplay = startDateTimeRow.createEl('div', { cls: 'task-modal-date-display' });
-        endDateDisplay.createEl('div', { text: '1月 12日 周一', cls: 'task-modal-date-text' });
+        const endDateText = endDateDisplay.createEl('div', {
+            text: formatDateDisplay(this.selectedEndDate),
+            cls: 'task-modal-date-text'
+        });
         this.endTimeInput = endDateDisplay.createEl('input', {
             type: 'time',
             value: endHour.toTimeString().slice(0, 5),
             cls: 'task-modal-time-input'
+        });
+        
+        // 日期文字点击事件
+        let isSelectingStartDate = true; // 默认选择开始日期
+        
+        startDateText.addEventListener('click', () => {
+            isSelectingStartDate = true;
+            startDateText.addClass('task-modal-date-text-selected');
+            endDateText.removeClass('task-modal-date-text-selected');
+        });
+        
+        endDateText.addEventListener('click', () => {
+            isSelectingStartDate = false;
+            endDateText.addClass('task-modal-date-text-selected');
+            startDateText.removeClass('task-modal-date-text-selected');
+        });
+        
+        // 绑定开关的点击事件处理函数
+        toggleContainer.addEventListener('click', handleToggleClick);
+        
+        // 日期选择区域
+        const calendarSection = form.createEl('div', { cls: 'task-modal-calendar-section' });
+        
+        // 当前显示的年月
+        let currentYear = this.date.getFullYear();
+        let currentMonth = this.date.getMonth();
+        let isSolarCalendar = true; // true: 公历, false: 农历
+        
+        // 日历导航栏
+        const calendarHeader = calendarSection.createEl('div', { cls: 'task-modal-calendar-header' });
+        
+        // 上一月按钮
+        const prevMonthBtn = calendarHeader.createEl('button', {
+            text: '‹',
+            cls: 'task-modal-calendar-nav-btn'
+        });
+        
+        // 年月显示和选择
+        const yearMonthDisplay = calendarHeader.createEl('div', { cls: 'task-modal-calendar-year-month' });
+        const yearMonthText = yearMonthDisplay.createEl('span', {
+            text: `${currentYear}年${currentMonth + 1}月`,
+            cls: 'task-modal-calendar-year-month-text'
+        });
+        const dropdownIcon = yearMonthDisplay.createEl('span', {
+            text: '▼',
+            cls: 'task-modal-calendar-dropdown'
+        });
+        
+        // 下一月按钮
+        const nextMonthBtn = calendarHeader.createEl('button', {
+            text: '›',
+            cls: 'task-modal-calendar-nav-btn'
+        });
+        
+        // 公历/农历切换
+        const calendarTypeToggle = calendarHeader.createEl('div', { cls: 'task-modal-calendar-type-toggle' });
+        const solarBtn = calendarTypeToggle.createEl('button', {
+            text: '公历',
+            cls: 'task-modal-calendar-type-btn task-modal-calendar-type-btn-active'
+        });
+        const lunarBtn = calendarTypeToggle.createEl('button', {
+            text: '农历',
+            cls: 'task-modal-calendar-type-btn'
+        });
+        
+        // 星期标题
+        const weekdayHeader = calendarSection.createEl('div', { cls: 'task-modal-calendar-weekday-header' });
+        const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
+        weekdays.forEach(day => {
+            weekdayHeader.createEl('div', {
+                text: day,
+                cls: 'task-modal-calendar-weekday'
+            });
+        });
+        
+        // 日期网格容器
+        const calendarGridContainer = calendarSection.createEl('div', { cls: 'task-modal-calendar-grid-container' });
+        
+        // 生成日历的函数
+        const generateCalendar = () => {
+            // 清空现有日历
+            calendarGridContainer.empty();
+            
+            // 创建新的日期表格
+            const calendarTable = calendarGridContainer.createEl('table', { cls: 'task-modal-calendar-table' });
+            const tbody = calendarTable.createEl('tbody');
+            
+            // 获取当月第一天
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            // 获取当月第一天是星期几（0-6，0表示周日）
+            const firstDayOfWeek = firstDay.getDay();
+            // 调整为周一为1，周日为7
+            const adjustedFirstDayOfWeek = firstDayOfWeek === 0 ? 7 : firstDayOfWeek;
+            // 获取当月天数
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            // 获取上个月的天数
+            const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
+            
+            // 生成日期
+            let dateCounter = 1;
+            
+            // 生成6行7列的日期表格
+            for (let i = 0; i < 6; i++) {
+                const row = tbody.createEl('tr');
+                for (let j = 0; j < 7; j++) {
+                    const cell = row.createEl('td');
+                    const dateCell = cell.createEl('div', { cls: 'task-modal-calendar-date' });
+                    let dateText = '';
+                    let isOtherMonth = false;
+                    let isToday = false;
+                    let isStartDate = false;
+                    let isEndDate = false;
+                    let isInRange = false;
+                    
+                    // 计算当前单元格的日期
+                    const dayIndex = i * 7 + j;
+                    
+                    if (dayIndex < adjustedFirstDayOfWeek - 1) {
+                        // 上个月的日期
+                        const prevMonthDate = daysInPrevMonth - (adjustedFirstDayOfWeek - 2 - dayIndex);
+                        dateText = prevMonthDate.toString();
+                        isOtherMonth = true;
+                    } else if (dayIndex < adjustedFirstDayOfWeek - 1 + daysInMonth) {
+                        // 当月的日期
+                        dateText = dateCounter.toString();
+                        
+                        // 检查是否是今天
+                        const today = new Date();
+                        if (dateCounter === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear()) {
+                            isToday = true;
+                        }
+                        
+                        // 检查是否是开始日期
+                        if (dateCounter === this.selectedStartDate.getDate() && currentMonth === this.selectedStartDate.getMonth() && currentYear === this.selectedStartDate.getFullYear()) {
+                            isStartDate = true;
+                        }
+                        
+                        // 检查是否是结束日期
+                        if (dateCounter === this.selectedEndDate.getDate() && currentMonth === this.selectedEndDate.getMonth() && currentYear === this.selectedEndDate.getFullYear()) {
+                            isEndDate = true;
+                        }
+                        
+                        // 检查是否在日期范围内
+                        const currentCellDate = new Date(currentYear, currentMonth, dateCounter);
+                        if (currentCellDate > this.selectedStartDate && currentCellDate < this.selectedEndDate) {
+                            isInRange = true;
+                        }
+                        
+                        dateCounter++;
+                    } else {
+                        // 下个月的日期
+                        const nextMonthDate = dayIndex - (adjustedFirstDayOfWeek - 1 + daysInMonth) + 1;
+                        dateText = nextMonthDate.toString();
+                        isOtherMonth = true;
+                    }
+                    
+                    // 设置日期文本
+                    const dateTextEl = dateCell.createEl('span', { 
+                        text: dateText, 
+                        cls: 'task-modal-calendar-date-text' 
+                    });
+                    
+                    // 添加特殊样式
+                    if (isStartDate) {
+                        dateCell.addClass('task-modal-calendar-date-start');
+                    } else if (isEndDate) {
+                        dateCell.addClass('task-modal-calendar-date-end');
+                    } else if (isInRange) {
+                        dateCell.addClass('task-modal-calendar-date-range');
+                    } else if (isToday) {
+                        dateCell.addClass('task-modal-calendar-date-today');
+                    } else if (isOtherMonth) {
+                        dateCell.addClass('task-modal-calendar-date-other-month');
+                    }
+                    
+                    // 添加日期点击事件
+                    dateCell.addEventListener('click', () => {
+                        if (!isOtherMonth) {
+                            // 更新选中的日期
+                            const selectedDate = new Date(currentYear, currentMonth, parseInt(dateText));
+                            
+                            // 根据当前选择模式处理日期选择
+                            if (isSelectingStartDate) {
+                                // 选择开始日期的逻辑
+                                if (selectedDate < this.selectedEndDate) {
+                                    // 如果点击的日期早于结束日期，向左侧扩选
+                                    this.selectedStartDate = selectedDate;
+                                } else {
+                                    // 如果点击的日期等于或大于结束日期，开始日期变为选择日，结束日变为第二天
+                                    this.selectedStartDate = selectedDate;
+                                    this.selectedEndDate = new Date(selectedDate);
+                                    this.selectedEndDate.setDate(this.selectedEndDate.getDate() + 1);
+                                }
+                            } else {
+                                // 选择结束日期的逻辑
+                                if (selectedDate > this.selectedStartDate) {
+                                    // 如果点击的日期在开始日期后面，向选择的方向扩选
+                                    this.selectedEndDate = selectedDate;
+                                } else {
+                                    // 如果点击的日期小于或等于开始日期，结束日变为选择的日，开始日变为前一天
+                                    this.selectedEndDate = selectedDate;
+                                    this.selectedStartDate = new Date(selectedDate);
+                                    this.selectedStartDate.setDate(this.selectedStartDate.getDate() - 1);
+                                }
+                            }
+                            
+                            // 更新日期显示
+                            const startDateTextEl = startDateDisplay.querySelector('.task-modal-date-text') as HTMLElement;
+                            const endDateTextEl = endDateDisplay.querySelector('.task-modal-date-text') as HTMLElement;
+                            
+                            if (startDateTextEl) startDateTextEl.textContent = formatDateDisplay(this.selectedStartDate);
+                            if (endDateTextEl) endDateTextEl.textContent = formatDateDisplay(this.selectedEndDate);
+                            
+                            // 重新生成日历以更新选中状态
+                            generateCalendar();
+                        }
+                    });
+                }
+            }
+        };
+        
+        // 生成初始日历
+        generateCalendar();
+        
+        // 上一月按钮点击事件
+        prevMonthBtn.addEventListener('click', () => {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            yearMonthText.textContent = `${currentYear}年${currentMonth + 1}月`;
+            generateCalendar();
+        });
+        
+        // 下一月按钮点击事件
+        nextMonthBtn.addEventListener('click', () => {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            yearMonthText.textContent = `${currentYear}年${currentMonth + 1}月`;
+            generateCalendar();
+        });
+        
+        // 公历/农历切换
+        solarBtn.addEventListener('click', () => {
+            if (!isSolarCalendar) {
+                isSolarCalendar = true;
+                solarBtn.addClass('task-modal-calendar-type-btn-active');
+                lunarBtn.removeClass('task-modal-calendar-type-btn-active');
+                generateCalendar();
+            }
+        });
+        
+        lunarBtn.addEventListener('click', () => {
+            if (isSolarCalendar) {
+                isSolarCalendar = false;
+                lunarBtn.addClass('task-modal-calendar-type-btn-active');
+                solarBtn.removeClass('task-modal-calendar-type-btn-active');
+                // 这里可以添加农历日历的生成逻辑
+                generateCalendar();
+            }
         });
         
         // 位置
@@ -214,8 +545,14 @@ export class TaskModal extends Modal {
                 this.fullDayToggle.checked = false;
                 this.startTimeInput.value = timeMatch[1];
                 this.endTimeInput.value = timeMatch[2];
+                // 显示时间输入框
+                this.startTimeInput.style.display = 'block';
+                this.endTimeInput.style.display = 'block';
             } else {
                 this.fullDayToggle.checked = true;
+                // 隐藏时间输入框，保留日期显示
+                this.startTimeInput.style.display = 'none';
+                this.endTimeInput.style.display = 'none';
             }
         }
         
@@ -250,7 +587,7 @@ export class TaskModal extends Modal {
         let taskText = title;
         
         // 添加时间信息
-        const dateStr = this.date.toISOString().split('T')[0];
+        const dateStr = this.selectedStartDate.toISOString().split('T')[0];
         if (!this.fullDayToggle.checked) {
             taskText += ` ${dateStr} ${this.startTimeInput.value}-${this.endTimeInput.value}`;
         } else {
@@ -266,7 +603,7 @@ export class TaskModal extends Modal {
         await createTaskInNote(
             this.plugin.app,
             taskText,
-            this.date,
+            this.selectedStartDate,
             this.plugin.settings,
             'daily'
         );
@@ -285,9 +622,8 @@ export class TaskModal extends Modal {
         // 构建更新后的任务文本
         let updatedTaskText = title;
         
-        // 提取原任务中的日期信息
-        const dateMatch = this.task.text.match(/(\d{4}-\d{2}-\d{2})/);
-        const dateStr = dateMatch ? dateMatch[1] : this.date.toISOString().split('T')[0];
+        // 使用用户选择的日期
+        const dateStr = this.selectedStartDate.toISOString().split('T')[0];
         
         // 添加时间信息
         if (!this.fullDayToggle.checked) {
