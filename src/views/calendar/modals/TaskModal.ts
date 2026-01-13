@@ -788,8 +788,8 @@ export class TaskModal extends Modal {
         const modalRect = this.contentEl.getBoundingClientRect();
         
         // 计算颜色点的右下角位置
-        const dotBottom = dotRect.top - modalRect.top + dotRect.height + 45;
-        const dotRight = dotRect.left - modalRect.left + dotRect.width - 10;
+        const dotBottom = dotRect.top - modalRect.top + dotRect.height + 30;
+        const dotRight = dotRect.left - modalRect.left + dotRect.width - 25;
         
         // 设置选择器的位置：右侧对齐颜色点右下角，向下偏移25px
         picker.style.top = `${dotBottom}px`;
@@ -818,49 +818,59 @@ export class TaskModal extends Modal {
         
         // 添加强调色板按钮
         const paletteBtn = colorGrid.createEl('button', { 
-            cls: 'task-modal-color-palette-btn' 
+            cls: 'task-modal-palette-btn' 
         });
-        // 使用渐变色圆形作为调色板图标
-        paletteBtn.style.background = 'linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)';
+        // 使用 CSS 文件中定义的样式，不再需要内联样式
+        paletteBtn.style.width = '30px';
+        paletteBtn.style.height = '30px';
+        paletteBtn.style.borderRadius = '50%'; // 确保是圆形
+        paletteBtn.style.cursor = 'pointer';
         
-        paletteBtn.addEventListener('click', () => {
+        // 创建一个隐藏的颜色输入框，用于触发系统颜色选择器
+        const colorInput = document.createElement('input');
+        colorInput.type = 'color';
+        // 隐藏输入框，但保持它在DOM中
+        colorInput.style.position = 'absolute';
+        colorInput.style.opacity = '0';
+        colorInput.style.width = '0';
+        colorInput.style.height = '0';
+        colorInput.style.pointerEvents = 'none';
+        
+        // 计算颜色输入框的位置，使其位于颜色点下方并与侧边对齐
+        const colorDotRect = colorDot.getBoundingClientRect();
+        const modalContentRect = this.contentEl.getBoundingClientRect();
+        
+        const relativeLeft = colorDotRect.left - modalContentRect.left - 210;
+        const relativeTop = colorDotRect.top - modalContentRect.top + colorDotRect.height + 30;
+        
+        // 设置颜色输入框的位置
+        colorInput.style.left = `${relativeLeft}px`;
+        colorInput.style.top = `${relativeTop}px`;
+        
+        // 将颜色输入框添加到模态框中
+        this.contentEl.appendChild(colorInput);
+        
+        paletteBtn.addEventListener('click', (e) => {
+            // 阻止事件冒泡，避免触发外部点击关闭功能
+            e.stopPropagation();
+            
             // 移除颜色选择器
             picker.remove();
             
-            // 打开系统调色板
-            const colorInput = document.createElement('input');
-            colorInput.type = 'color';
-            
-            // 设置颜色输入框的位置，使其显示在颜色点附近
-            colorInput.style.position = 'absolute';
-            colorInput.style.left = `${dotRect.left}px`;
-            colorInput.style.top = `${dotRect.bottom + 10}px`;
-            colorInput.style.zIndex = '1001'; // 确保在颜色选择器之上
-            
-            // 触发点击事件
-            document.body.appendChild(colorInput);
+            // 触发系统颜色选择器
             colorInput.click();
-            
-            // 监听颜色变化事件
-            colorInput.addEventListener('input', (e) => {
-                const selectedColor = (e.target as HTMLInputElement).value;
-                // 代替task-modal-blue-dot元素的背景色
-                colorDot.style.backgroundColor = selectedColor;
-            });
-            
-            // 监听颜色选择完成事件
-            colorInput.addEventListener('change', () => {
-                // 移除临时输入框
-                document.body.removeChild(colorInput);
-            });
-            
-            // 监听失去焦点事件
-            colorInput.addEventListener('blur', () => {
-                // 移除临时输入框
-                if (document.body.contains(colorInput)) {
-                    document.body.removeChild(colorInput);
-                }
-            });
+        });
+        
+        // 监听颜色变化事件
+        colorInput.addEventListener('input', (e) => {
+            const selectedColor = (e.target as HTMLInputElement).value;
+            // 更新颜色点的背景色
+            colorDot.style.backgroundColor = selectedColor;
+        });
+        
+        // 监听颜色选择完成事件
+        colorInput.addEventListener('change', () => {
+            // 颜色选择完成后不需要特殊处理
         });
         
         // 添加点击外部关闭功能

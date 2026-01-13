@@ -942,23 +942,29 @@
 }
 
 .task-modal-emoji {
-    font-size: 1.0em;
+    transition: all 0.2s ease;
     cursor: pointer;
-    transition: transform 0.2s ease;
-    padding: 4px;
-    border-radius: 4px;
+    font-size: 1.2em;
+    box-shadow: none !important;
 }
 
 .task-modal-emoji:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-    transform: scale(1.1);
+    transform: scale(1.2);
+    box-shadow: 0 2px 8px rgba(66, 133, 244, 0.4);
 }
 
 .task-modal-blue-dot {
-    width: 1em;
-    height: 1em;
+    width: 1.2em;
+    height: 1.2em;
     background-color: #4285F4;
     border-radius: 50%;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.task-modal-blue-dot:hover {
+    transform: scale(1.2);
+    box-shadow: 0 2px 8px rgba(66, 133, 244, 0.4);
 }
 
 /* 表情选择器样式 */
@@ -1207,7 +1213,7 @@
 
 /* 确保日期显示容器足够高以容纳三行文本 */
 .task-modal-date-display {
-    min-height: 7em;
+    min-height: 3em;
     display: flex;
     flex-direction: column;
     align-items: center;
