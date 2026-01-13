@@ -172,7 +172,6 @@ export class TaskModal extends Modal {
             text: formatDateDisplay(this.selectedStartDate),
             cls: 'task-modal-date-text'
         });
-        startDateText.addClass('task-modal-date-text-selected'); // 默认选中开始日期文字
         this.startTimeInput = startDateDisplay.createEl('input', {
             type: 'time',
             value: getNextHour(this.selectedStartDate),
@@ -196,24 +195,49 @@ export class TaskModal extends Modal {
         
         // 日期文字点击事件
         let isSelectingStartDate = true; // 默认选择开始日期
+        let isStartDateActive = false; // 默认开始日期未激活
+        let isEndDateActive = false; // 默认结束日期未激活
         
         startDateText.addEventListener('click', () => {
-            isSelectingStartDate = true;
-            startDateText.addClass('task-modal-date-text-selected');
-            endDateText.removeClass('task-modal-date-text-selected');
+            if (isStartDateActive) {
+                // 取消激活开始日期，隐藏日期选择区域
+                isStartDateActive = false;
+                startDateText.removeClass('task-modal-date-text-selected');
+                calendarSection.style.display = 'none';
+            } else {
+                // 激活开始日期，取消激活结束日期，显示日期选择区域
+                isStartDateActive = true;
+                isEndDateActive = false;
+                isSelectingStartDate = true;
+                startDateText.addClass('task-modal-date-text-selected');
+                endDateText.removeClass('task-modal-date-text-selected');
+                calendarSection.style.display = 'flex';
+            }
         });
         
         endDateText.addEventListener('click', () => {
-            isSelectingStartDate = false;
-            endDateText.addClass('task-modal-date-text-selected');
-            startDateText.removeClass('task-modal-date-text-selected');
+            if (isEndDateActive) {
+                // 取消激活结束日期，隐藏日期选择区域
+                isEndDateActive = false;
+                endDateText.removeClass('task-modal-date-text-selected');
+                calendarSection.style.display = 'none';
+            } else {
+                // 激活结束日期，取消激活开始日期，显示日期选择区域
+                isEndDateActive = true;
+                isStartDateActive = false;
+                isSelectingStartDate = false;
+                endDateText.addClass('task-modal-date-text-selected');
+                startDateText.removeClass('task-modal-date-text-selected');
+                calendarSection.style.display = 'flex';
+            }
         });
         
         // 绑定开关的点击事件处理函数
         toggleContainer.addEventListener('click', handleToggleClick);
         
-        // 日期选择区域
+        // 日期选择区域（默认隐藏）
         const calendarSection = form.createEl('div', { cls: 'task-modal-calendar-section' });
+        calendarSection.style.display = 'none';
         
         // 当前显示的年月
         let currentYear = this.date.getFullYear();
@@ -370,43 +394,45 @@ export class TaskModal extends Modal {
                     // 添加日期点击事件
                     dateCell.addEventListener('click', () => {
                         if (!isOtherMonth) {
-                            // 更新选中的日期
-                            const selectedDate = new Date(currentYear, currentMonth, parseInt(dateText));
-                            
-                            // 根据当前选择模式处理日期选择
-                            if (isSelectingStartDate) {
-                                // 选择开始日期的逻辑
-                                if (selectedDate < this.selectedEndDate) {
-                                    // 如果点击的日期早于结束日期，向左侧扩选
+                            // 只有当日期文字激活时，才更新选择状态
+                            if ((isSelectingStartDate && isStartDateActive) || (!isSelectingStartDate && isEndDateActive)) {
+                                // 更新选中的日期
+                                const selectedDate = new Date(currentYear, currentMonth, parseInt(dateText));
+                                
+                                // 根据当前选择模式处理日期选择
+                                if (isSelectingStartDate) {
+                                    // 选择开始日期的逻辑
                                     this.selectedStartDate = selectedDate;
+                                    if (selectedDate >= this.selectedEndDate) {
+                                        // 如果开始日期大于等于结束日期，更新结束日期为开始日期的第二天
+                                        this.selectedEndDate = new Date(selectedDate);
+                                        this.selectedEndDate.setDate(this.selectedEndDate.getDate() + 1);
+                                    }
                                 } else {
-                                    // 如果点击的日期等于或大于结束日期，开始日期变为选择日，结束日变为第二天
-                                    this.selectedStartDate = selectedDate;
-                                    this.selectedEndDate = new Date(selectedDate);
-                                    this.selectedEndDate.setDate(this.selectedEndDate.getDate() + 1);
-                                }
-                            } else {
-                                // 选择结束日期的逻辑
-                                if (selectedDate > this.selectedStartDate) {
-                                    // 如果点击的日期在开始日期后面，向选择的方向扩选
+                                    // 选择结束日期的逻辑
                                     this.selectedEndDate = selectedDate;
-                                } else {
-                                    // 如果点击的日期小于或等于开始日期，结束日变为选择的日，开始日变为前一天
-                                    this.selectedEndDate = selectedDate;
-                                    this.selectedStartDate = new Date(selectedDate);
-                                    this.selectedStartDate.setDate(this.selectedStartDate.getDate() - 1);
+                                    if (selectedDate <= this.selectedStartDate) {
+                                        // 如果结束日期小于等于开始日期，更新开始日期为结束日期的前一天
+                                        this.selectedStartDate = new Date(selectedDate);
+                                        this.selectedStartDate.setDate(this.selectedStartDate.getDate() - 1);
+                                    }
                                 }
+                                
+                                // 更新日期显示
+                                const startDateTextEl = startDateDisplay.querySelector('.task-modal-date-text') as HTMLElement;
+                                const endDateTextEl = endDateDisplay.querySelector('.task-modal-date-text') as HTMLElement;
+                                
+                                if (startDateTextEl) {
+                                    startDateTextEl.textContent = formatDateDisplay(this.selectedStartDate);
+                                }
+                                
+                                if (endDateTextEl) {
+                                    endDateTextEl.textContent = formatDateDisplay(this.selectedEndDate);
+                                }
+                                
+                                // 重新生成日历以更新选中状态
+                                generateCalendar();
                             }
-                            
-                            // 更新日期显示
-                            const startDateTextEl = startDateDisplay.querySelector('.task-modal-date-text') as HTMLElement;
-                            const endDateTextEl = endDateDisplay.querySelector('.task-modal-date-text') as HTMLElement;
-                            
-                            if (startDateTextEl) startDateTextEl.textContent = formatDateDisplay(this.selectedStartDate);
-                            if (endDateTextEl) endDateTextEl.textContent = formatDateDisplay(this.selectedEndDate);
-                            
-                            // 重新生成日历以更新选中状态
-                            generateCalendar();
                         }
                     });
                 }
@@ -592,11 +618,6 @@ export class TaskModal extends Modal {
             taskText += ` ${dateStr} ${this.startTimeInput.value}-${this.endTimeInput.value}`;
         } else {
             taskText += ` ${dateStr}`;
-        }
-        
-        // 添加位置信息
-        if (this.locationInput.value.trim()) {
-            taskText += ` @${this.locationInput.value.trim()}`;
         }
         
         // 创建任务
