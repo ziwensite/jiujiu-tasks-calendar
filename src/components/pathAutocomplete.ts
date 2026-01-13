@@ -30,6 +30,8 @@ export class PathAutocomplete {
             cls: "path-autocomplete-dropdown"
         });
         this.dropdownEl.style.display = "none";
+        this.dropdownEl.style.textAlign = "left";
+        this.dropdownEl.style.padding = "8px 0";
         
         // 监听输入事件
         this.inputEl.addEventListener("input", this.handleInput.bind(this));
@@ -139,29 +141,40 @@ export class PathAutocomplete {
         }
         
         // 创建下拉列表项
-        matchedPaths.forEach(path => {
-            const itemEl = this.dropdownEl.createEl("div", {
-                cls: "path-item",
-                text: path || "(根目录)"
-            });
-            itemEl.dataset.path = path;
-            
-            // 判断是否为文件夹
-            const file = this.app.vault.getAbstractFileByPath(path);
-            const isFolder = file instanceof TFolder;
-            
-            // 添加文件/文件夹图标
-            const iconSpan = itemEl.createEl("span", {
-                cls: `path-item-icon ${isFolder ? "folder" : "file"}`
-            });
-            iconSpan.textContent = isFolder ? "📁" : "📄";
-            iconSpan.style.marginRight = "8px";
-            iconSpan.style.width = "16px";
-            iconSpan.style.textAlign = "center";
+            matchedPaths.forEach(path => {
+                const itemEl = this.dropdownEl.createEl("div", {
+                    cls: "path-item"
+                });
+                itemEl.dataset.path = path;
+                itemEl.style.display = "flex";
+                itemEl.style.alignItems = "center";
+                itemEl.style.padding = "4px 12px";
+                itemEl.style.cursor = "pointer";
+                itemEl.style.textAlign = "left";
+                
+                // 判断是否为文件夹
+                const file = this.app.vault.getAbstractFileByPath(path);
+                const isFolder = file instanceof TFolder;
+                
+                // 添加文件/文件夹图标
+                const iconSpan = itemEl.createEl("span", {
+                    cls: `path-item-icon ${isFolder ? "folder" : "file"}`
+                });
+                iconSpan.textContent = isFolder ? "📁" : "📄";
+                iconSpan.style.marginRight = "8px";
+                iconSpan.style.width = "16px";
+                iconSpan.style.textAlign = "center";
+                
+                // 添加路径文本
+                const textSpan = itemEl.createEl("span", {
+                    text: path || "(根目录)"
+                });
+                textSpan.style.flex = "1";
+                textSpan.style.textAlign = "left";
             
             // 高亮匹配的部分
             const matchIndex = path.toLowerCase().indexOf(inputValue.toLowerCase());
-            if (matchIndex !== -1) {
+            if (matchIndex !== -1 && path) {
                 // 清空现有内容，重新构建
                 itemEl.empty();
                 
@@ -175,11 +188,33 @@ export class PathAutocomplete {
                 newIconSpan.style.textAlign = "center";
                 
                 // 添加高亮文本
-                itemEl.createEl("span", { text: path.slice(0, matchIndex) });
-                itemEl.createEl("strong", { 
+                const textContainer = itemEl.createEl("span");
+                textContainer.style.flex = "1";
+                textContainer.style.textAlign = "left";
+                
+                textContainer.createEl("span", { text: path.slice(0, matchIndex) });
+                textContainer.createEl("strong", { 
                     text: path.slice(matchIndex, matchIndex + inputValue.length)
                 });
-                itemEl.createEl("span", { text: path.slice(matchIndex + inputValue.length) });
+                textContainer.createEl("span", { text: path.slice(matchIndex + inputValue.length) });
+            } else if (matchIndex === -1 && !path) {
+                // 处理根目录的情况
+                itemEl.empty();
+                
+                // 重新添加图标
+                const newIconSpan = itemEl.createEl("span", {
+                    cls: `path-item-icon folder`
+                });
+                newIconSpan.textContent = "📁";
+                newIconSpan.style.marginRight = "8px";
+                newIconSpan.style.width = "16px";
+                newIconSpan.style.textAlign = "center";
+                
+                // 添加根目录文本
+                const textContainer = itemEl.createEl("span");
+                textContainer.style.flex = "1";
+                textContainer.style.textAlign = "left";
+                textContainer.textContent = "(根目录)";
             }
             
             // 监听鼠标点击

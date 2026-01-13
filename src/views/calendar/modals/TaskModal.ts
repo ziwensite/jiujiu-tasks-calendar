@@ -1,10 +1,11 @@
-import { Modal, App, TFile, MarkdownView } from 'obsidian';
+import { Modal, App, TFile, MarkdownView, Notice } from 'obsidian';
 import { MyPlugin } from '../../../main';
 import { Task, updateTaskInNote, createTaskInNote } from '../../../services/taskService';
 import { formatDate } from '../../../utils/dateUtils';
 import { escapeRegExp } from '../../../utils/regexUtils';
 import { Solar, Lunar } from 'lunar-typescript';
 import { lunarMonthNames, lunarDayNames } from '../../../utils/dateUtils';
+import { PathAutocomplete } from '../../../components/pathAutocomplete';
 
 interface TaskModalOptions {
     plugin: MyPlugin;
@@ -25,6 +26,8 @@ export class TaskModal extends Modal {
     private startTimeInput: HTMLInputElement;
     private endTimeInput: HTMLInputElement;
     private locationInput: HTMLInputElement;
+    private storagePathInput: HTMLInputElement;
+    private pathAutocomplete: PathAutocomplete;
     private selectedStartDate: Date;
     private selectedEndDate: Date;
     private isSolarCalendar: boolean = true; // true: 公历, false: 农历
@@ -782,13 +785,58 @@ export class TaskModal extends Modal {
             cls: 'task-modal-field-input'
         });
         
-        // 我的日历
+        // 存储路径
         const calendarRow = form.createEl('div', { cls: 'task-modal-field-row' });
         calendarRow.createEl('span', { text: '📅', cls: 'task-modal-icon' });
         const calendarContent = calendarRow.createEl('div', { cls: 'task-modal-field-content' });
-        calendarContent.createEl('span', { text: '我的日历', cls: 'task-modal-field-text' });
-        calendarContent.createEl('span', { cls: 'task-modal-blue-dot' });
         
+        // 计算当天日记的存储路径
+        const getDailyNotePath = () => {
+            const dailyNoteSettings = this.plugin.settings.dailyNote;
+            const savePath = dailyNoteSettings.savePath;
+            const fileNameFormat = dailyNoteSettings.fileNameFormat;
+            
+            // 格式化日期
+            const formatDate = (date: Date, format: string): string => {
+                const year = date.getFullYear().toString();
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const day = date.getDate().toString().padStart(2, '0');
+                
+                return format
+                    .replace('YYYY', year)
+                    .replace('MM', month)
+                    .replace('DD', day);
+            };
+            
+            const fileName = formatDate(this.date, fileNameFormat);
+            return `${savePath}/${fileName}.md`;
+        };
+        
+        // 计算当天日记的存储路径
+        const defaultStoragePath = getDailyNotePath();
+        
+        // 创建一个容器来容纳PathAutocomplete组件
+        const storagePathContainer = calendarContent.createEl('div', {
+            cls: 'task-modal-storage-path-container'
+        });
+        
+        // 创建PathAutocomplete组件，实现智能路径输入
+        this.pathAutocomplete = new PathAutocomplete(
+            this.app,
+            storagePathContainer,
+            '',
+            (value) => {
+                // 当路径变化时的回调函数
+            }
+        );
+        
+        // 获取PathAutocomplete内部的输入框，用于后续获取用户输入的路径
+        this.storagePathInput = storagePathContainer.querySelector('input') as HTMLInputElement;
+        if (this.storagePathInput) {
+            // 设置默认路径作为提示文字
+            this.storagePathInput.placeholder = defaultStoragePath;
+        }
+ 
         // 提醒
         const reminderRow = form.createEl('div', { cls: 'task-modal-field-row' });
         reminderRow.createEl('span', { text: '🔔', cls: 'task-modal-icon' });
@@ -839,6 +887,12 @@ export class TaskModal extends Modal {
 
     onClose() {
         const { contentEl } = this;
+        
+        // 销毁PathAutocomplete组件，避免内存泄漏
+        if (this.pathAutocomplete) {
+            this.pathAutocomplete.destroy();
+        }
+        
         contentEl.empty();
     }
     
@@ -1031,7 +1085,65 @@ export class TaskModal extends Modal {
     }
     
     private async handleSave() {
-        // 实现保存逻辑
+        try {
+            const taskText = this.titleInput.value.trim();
+            if (!taskText) {
+                // 标题为空，显示提示
+                new Notice("任务标题不能为空", 3000);
+                return;
+            }
+            
+            // 获取用户输入的存储路径，如果为空则使用默认路径
+            const userInputPath = this.storagePathInput.value.trim();
+            const storagePath = userInputPath || this.storagePathInput.placeholder;
+            
+            console.log("Attempting to save task to path:", storagePath);
+            
+            // 验证路径格式
+            if (!storagePath || storagePath.trim() === '') {
+                new Notice("保存路径不能为空", 3000);
+                return;
+            }
+            
+            // 确保路径以.md结尾
+            let validatedPath = storagePath;
+            if (!validatedPath.endsWith('.md')) {
+                validatedPath += '.md';
+                console.log("Added .md extension to path:", validatedPath);
+            }
+            
+            // 调用createTaskInNote函数保存任务，使用"note"模式以使用自定义路径
+            await createTaskInNote(
+                this.app,
+                taskText,
+                this.selectedStartDate,
+                this.plugin.settings,
+                "note",
+                validatedPath
+            );
+            
+            console.log("Task saved successfully to path:", validatedPath);
+            
+            // 调用回调函数
+            if (this.task) {
+                if (this.onTaskUpdated) {
+                    await this.onTaskUpdated();
+                }
+            } else {
+                if (this.onTaskAdded) {
+                    await this.onTaskAdded();
+                }
+            }
+            
+            // 显示保存成功提示
+            new Notice("任务保存成功", 2000);
+            
+            // 关闭模态框
+            this.close();
+        } catch (error) {
+            console.error("Failed to save task:", error);
+            new Notice(`保存任务失败: ${error instanceof Error ? error.message : '未知错误'}`, 4000);
+        }
     }
     
     private populateTaskData() {

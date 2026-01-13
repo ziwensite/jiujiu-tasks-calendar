@@ -330,6 +330,13 @@ export async function createTaskInNote(
         } else if (insertTarget === "note") {
             // 使用默认笔记路径或自定义路径
             notePath = customNotePath || settings.taskSettings.defaultNotePath;
+            
+            // 检查路径是否为空
+            if (!notePath || notePath.trim() === '') {
+                console.error(`No note path specified for insertTarget: ${insertTarget}`);
+                throw new Error(`No note path specified for insertTarget: ${insertTarget}`);
+            }
+            
             insertSettings = settings.taskSettings.noteInsertSettings;
         } else {
             // 在当前打开的笔记中插入
@@ -350,10 +357,53 @@ export async function createTaskInNote(
         }
         
         // 检查笔记是否存在
-        const file = app.vault.getAbstractFileByPath(notePath);
+        let file = app.vault.getAbstractFileByPath(notePath);
         if (!file || !(file instanceof TFile)) {
-            console.error(`Note not found: ${notePath}`);
-            return;
+            // 笔记不存在，创建新笔记
+            try {
+                // 确保目录结构存在
+                const pathParts = notePath.split(/[/\\]/); // 支持Windows和Unix路径分隔符
+                const fileName = pathParts.pop();
+                if (!fileName) {
+                    console.error(`Invalid note path: ${notePath}`);
+                    throw new Error(`Invalid note path: ${notePath}`);
+                }
+                
+                // 创建目录结构
+                let currentPath = '';
+                for (const part of pathParts) {
+                    if (!part) continue; // 跳过空部分
+                    currentPath += part + '/';
+                    const dir = app.vault.getAbstractFileByPath(currentPath);
+                    if (!dir) {
+                        try {
+                            await app.vault.createFolder(currentPath);
+                            console.log(`Created folder: ${currentPath}`);
+                        } catch (error) {
+                            console.error(`Failed to create folder: ${currentPath}`, error);
+                            throw error;
+                        }
+                    }
+                }
+                
+                // 创建新文件
+                try {
+                    await app.vault.create(notePath, `# ${fileName.replace('.md', '')}\n\n`);
+                    console.log(`Created note: ${notePath}`);
+                    file = app.vault.getAbstractFileByPath(notePath);
+                } catch (error) {
+                    console.error(`Failed to create note: ${notePath}`, error);
+                    throw error;
+                }
+                
+                if (!file || !(file instanceof TFile)) {
+                    console.error(`Failed to get created note: ${notePath}`);
+                    throw new Error(`Failed to get created note: ${notePath}`);
+                }
+            } catch (error) {
+                console.error(`Failed to create note: ${notePath}`, error);
+                throw error;
+            }
         }
         
         // 构建tasks插件标准的任务格式
