@@ -207,6 +207,15 @@ export class TaskModal extends Modal {
             if (endDateTextEl) {
                 endDateTextEl.innerHTML = formatDateDisplay(this.selectedEndDate);
             }
+            
+            // 如果日历选择区域是打开的，更新其显示的日期
+            if (calendarSection.style.display !== 'none') {
+                if (isSelectingStartDate) {
+                    updateCalendarToDate(this.selectedStartDate);
+                } else {
+                    updateCalendarToDate(this.selectedEndDate);
+                }
+            }
         };
         
         // 开始日期时间
@@ -325,6 +334,143 @@ export class TaskModal extends Modal {
         const monthContent = monthNavBody.createEl('div', { cls: 'calendar-header-content' });
         const yearMonthText = monthContent.createEl('span', {
             text: `${currentYear}年${currentMonth + 1}月`,
+            cls: 'task-modal-calendar-year-month-text'
+        });
+        
+        // 为年月文字添加点击事件，用于手动设置日期
+        yearMonthText.addEventListener('click', () => {
+            // 确定当前应该显示的日期（开始日期或结束日期）
+            const targetDate = isSelectingStartDate ? this.selectedStartDate : this.selectedEndDate;
+            
+            // 创建日期输入对话框
+            const dateInputModal = new Modal(this.app);
+            dateInputModal.contentEl.classList.add('task-modal-date-input-modal');
+            
+            // 创建输入容器 - 一行居中排列
+            const inputContainer = dateInputModal.contentEl.createEl('div', {
+                text: '设置日期：',
+                cls: 'task-modal-date-input-container'
+            });
+            inputContainer.style.display = 'flex';
+            inputContainer.style.justifyContent = 'center';
+            inputContainer.style.alignItems = 'center';
+            inputContainer.style.gap = '8px';
+            inputContainer.style.padding = '16px';
+            
+            // 年份输入
+            const yearInput = inputContainer.createEl('input', {
+                type: 'number',
+                value: targetDate.getFullYear().toString(),
+                cls: 'task-modal-date-input'
+            });
+            // 设置min和max属性
+            yearInput.min = '1900';
+            yearInput.max = '2100';
+            yearInput.style.width = '80px';
+            
+            // 年文字
+            inputContainer.createEl('span', {
+                text: '年',
+                cls: 'task-modal-date-input-text'
+            });
+            
+            // 月份输入
+            const monthInput = inputContainer.createEl('input', {
+                type: 'number',
+                value: (targetDate.getMonth() + 1).toString(),
+                cls: 'task-modal-date-input'
+            });
+            // 设置min和max属性
+            monthInput.min = '1';
+            monthInput.max = '12';
+            monthInput.style.width = '60px';
+            
+            // 月文字
+            inputContainer.createEl('span', {
+                text: '月',
+                cls: 'task-modal-date-input-text'
+            });
+            
+            // 日期输入
+            // 获取当月天数
+            const daysInMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0).getDate();
+            const dayInput = inputContainer.createEl('input', {
+                type: 'number',
+                value: targetDate.getDate().toString(),
+                cls: 'task-modal-date-input'
+            });
+            // 设置min和max属性
+            dayInput.min = '1';
+            dayInput.max = daysInMonth.toString();
+            dayInput.style.width = '60px';
+            
+            // 日文字
+            inputContainer.createEl('span', {
+                text: '日',
+                cls: 'task-modal-date-input-text'
+            });
+            
+            // 监听月份变化，更新日期最大值
+            monthInput.addEventListener('change', () => {
+                const selectedMonth = parseInt(monthInput.value) - 1;
+                const selectedYear = parseInt(yearInput.value);
+                const maxDays = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+                dayInput.max = maxDays.toString();
+                if (parseInt(dayInput.value) > maxDays) {
+                    dayInput.value = maxDays.toString();
+                }
+            });
+            
+            // 监听年份变化，更新日期最大值
+            yearInput.addEventListener('change', () => {
+                const selectedMonth = parseInt(monthInput.value) - 1;
+                const selectedYear = parseInt(yearInput.value);
+                const maxDays = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+                dayInput.max = maxDays.toString();
+                if (parseInt(dayInput.value) > maxDays) {
+                    dayInput.value = maxDays.toString();
+                }
+            });
+            
+            // 重写onClose方法，当对话框关闭时自动应用设置
+            const originalOnClose = dateInputModal.onClose;
+            dateInputModal.onClose = () => {
+                // 保存原始的onClose方法调用
+                if (originalOnClose) {
+                    originalOnClose.call(dateInputModal);
+                }
+                
+                // 应用日期设置
+                const newYear = parseInt(yearInput.value);
+                const newMonth = parseInt(monthInput.value) - 1;
+                const newDay = parseInt(dayInput.value);
+                
+                // 创建新日期对象
+                const newDate = new Date(newYear, newMonth, newDay);
+                
+                // 更新当前年月
+                currentYear = newYear;
+                currentMonth = newMonth;
+                
+                // 更新年月显示
+                updateNavYearMonth();
+                
+                // 生成日历
+                generateCalendar();
+                
+                // 更新选中的日期
+                if (isSelectingStartDate) {
+                    this.selectedStartDate = newDate;
+                } else {
+                    this.selectedEndDate = newDate;
+                }
+                
+                // 更新日期显示
+                updateDateDisplay();
+            };
+            
+            // 显示日期输入对话框
+            dateInputModal.open();
         });
         
         // 下一月按钮

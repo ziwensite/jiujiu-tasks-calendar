@@ -900,9 +900,8 @@
     display: flex;
     align-items: center;
     gap: 0.5em;
-    padding: 0.3em 0;
+    padding: 0.5em 0;
     border-bottom: 1px solid var(--divider-color);
-    margin-bottom: 0.3em;
 }
 
 .task-modal .task-modal-title-input {
@@ -1128,7 +1127,7 @@
     display: flex;
     align-items: center;
     gap: 0.5em;
-    padding: 0.3em 0;
+    padding: 0.5em 0;
 }
 
 .task-modal-icon {
@@ -1174,51 +1173,46 @@
 
 /* 日期时间选择 */
 .task-modal-datetime-section {
-    padding: 0;
+    padding: 0.5em 0;
     border-bottom: 1px solid var(--divider-color);
-    margin-bottom: 0.3em;
 }
 
 .task-modal-datetime-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.5em;
-    padding: 0.3em 0;
+    justify-content: center;
+    gap: 1em;
 }
 
+/* 日期显示容器 */
 .task-modal-date-display {
     flex: 1;
+    min-width: 120px;
+    min-height: 5em;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5em;
-    padding: 0.3em 0;
-}
-
-.task-modal-date-text {
-    font-size: 1.0em;
-    color: var(--text-normal);
+    justify-content: center;
+    gap: 0.3em;
     padding: 0.3em 0;
     text-align: center;
+}
+
+/* 日期文本样式 */
+.task-modal-date-text {
+    font-size: 1em;
+    color: var(--text-normal);
+    text-align: center;
     line-height: 1.6;
+    margin: 0;
+    white-space: pre-line;
 }
 
 /* 调整农历日期显示样式 */
 .task-modal-date-text br {
     content: "";
     display: block;
-    margin: 0.3em 0;
-}
-
-/* 确保日期显示容器足够高以容纳三行文本 */
-.task-modal-date-display {
-    min-height: 3em;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.2em;
+    margin: 0.5em 0;
 }
 
 .task-modal-time-input {
@@ -1253,9 +1247,62 @@
     border-color: var(--interactive-accent);
 }
 
+/* 日期数字键盘样式 */
+.task-modal-date-keyboard {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: var(--background-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    margin-top: 8px;
+    padding: 12px;
+}
+
+.task-modal-date-keyboard-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.task-modal-date-key {
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    background-color: var(--background-secondary);
+    color: var(--text-normal);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.task-modal-date-key:hover {
+    background-color: var(--interactive-hover);
+    border-color: var(--text-accent);
+}
+
+.task-modal-date-delete-key {
+    grid-column: 1 / 2;
+}
+
+.task-modal-date-confirm-key {
+    grid-column: 2 / 4;
+    background-color: var(--interactive-accent);
+    color: white;
+}
+
+.task-modal-date-confirm-key:hover {
+    background-color: var(--interactive-accent-hover);
+}
+
 /* 日历选择区域样式 */
 .task-modal-calendar-section {
-    padding: 0.3em 0;
+    padding: 0.5em 0;
     border-bottom: 1px solid var(--divider-color);
     display: flex;
     flex-direction: column;
@@ -1522,13 +1569,12 @@
 }
 
 /* 字段行 */
-.task-modal-field-row {
+.task-modal .task-modal-field-row {
     display: flex;
     align-items: center;
     gap: 0.5em;
-    padding: 0.3em 0;
+    padding: 0.5em 0;
     border-bottom: 1px solid var(--divider-color);
-    margin-bottom: 0.3em;
 }
 
 .task-modal .task-modal-field-input {
