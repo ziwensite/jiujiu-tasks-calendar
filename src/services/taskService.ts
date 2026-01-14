@@ -2,6 +2,8 @@ import { App, MarkdownView, TFile } from 'obsidian';
 import { taskRegex, dueDateRegex, escapeRegExp } from '../utils/regexUtils';
 import { MyPluginSettings } from '../settings';
 import { formatDate } from '../utils/dateUtils';
+import type { IChoiceExecutor } from '../IChoiceExecutor';
+import { ChoiceType } from '../types/choices/choiceType';
 
 export interface Task {
     text: string;
@@ -314,179 +316,144 @@ export async function createTaskInNote(
     date: Date, 
     settings: MyPluginSettings,
     insertTarget: "daily" | "note" | "current",
-    customNotePath?: string
+    customNotePath?: string,
+    configId?: string
 ): Promise<void> {
     try {
-        let notePath: string;
-        let insertSettings: { insertSection: string; insertPosition: "first" | "last" };
+        // 使用 capture to 功能
+        const { CaptureChoiceEngine } = await import('../engine/CaptureChoiceEngine');
+        const MyPlugin = (window as any).jiujiuObsidianCalendarPlugin;
         
-        // 根据插入目标确定任务插入位置和设置
-        if (insertTarget === "daily") {
-            // 生成当天日记的路径
-            const dailySettings = settings.dailyNote;
-            const dailyFileName = formatDate(date, dailySettings.fileNameFormat);
-            notePath = `${dailySettings.savePath}/${dailyFileName}.md`;
-            insertSettings = settings.taskSettings.dailyInsertSettings;
-        } else if (insertTarget === "note") {
-            // 使用默认笔记路径或自定义路径
-            notePath = customNotePath || settings.taskSettings.defaultNotePath;
+        if (MyPlugin && MyPlugin.instance) {
+            // 创建 choice executor
+            const choiceExecutor: IChoiceExecutor = {
+                variables: new Map(),
+            };
             
-            // 检查路径是否为空
-            if (!notePath || notePath.trim() === '') {
-                console.error(`No note path specified for insertTarget: ${insertTarget}`);
-                throw new Error(`No note path specified for insertTarget: ${insertTarget}`);
-            }
+            // 获取 capture to 设置
+            const captureSettings = settings.taskSettings.captureToSettings;
             
-            insertSettings = settings.taskSettings.noteInsertSettings;
-        } else {
-            // 在当前打开的笔记中插入
-            const activeView = app.workspace.getActiveViewOfType(MarkdownView);
-            if (!activeView) {
-                console.error("No active markdown view found");
-                return;
-            }
-            
-            const file = activeView.file;
-            if (!file) {
-                console.error("No file found in active view");
-                return;
-            }
-            
-            notePath = file.path;
-            insertSettings = settings.taskSettings.noteInsertSettings;
-        }
-        
-        // 检查笔记是否存在
-        let file = app.vault.getAbstractFileByPath(notePath);
-        if (!file || !(file instanceof TFile)) {
-            // 笔记不存在，创建新笔记
-            try {
-                // 确保目录结构存在
-                const pathParts = notePath.split(/[/\\]/); // 支持Windows和Unix路径分隔符
-                const fileName = pathParts.pop();
-                if (!fileName) {
-                    console.error(`Invalid note path: ${notePath}`);
-                    throw new Error(`Invalid note path: ${notePath}`);
-                }
-                
-                // 创建目录结构
-                let currentPath = '';
-                for (const part of pathParts) {
-                    if (!part) continue; // 跳过空部分
-                    currentPath += part + '/';
-                    const dir = app.vault.getAbstractFileByPath(currentPath);
-                    if (!dir) {
-                        try {
-                            await app.vault.createFolder(currentPath);
-                            console.log(`Created folder: ${currentPath}`);
-                        } catch (error) {
-                            console.error(`Failed to create folder: ${currentPath}`, error);
-                            throw error;
-                        }
-                    }
-                }
-                
-                // 创建新文件
-                try {
-                    await app.vault.create(notePath, `# ${fileName.replace('.md', '')}\n\n`);
-                    console.log(`Created note: ${notePath}`);
-                    file = app.vault.getAbstractFileByPath(notePath);
-                } catch (error) {
-                    console.error(`Failed to create note: ${notePath}`, error);
-                    throw error;
-                }
-                
-                if (!file || !(file instanceof TFile)) {
-                    console.error(`Failed to get created note: ${notePath}`);
-                    throw new Error(`Failed to get created note: ${notePath}`);
-                }
-            } catch (error) {
-                console.error(`Failed to create note: ${notePath}`, error);
-                throw error;
-            }
-        }
-        
-        // 构建tasks插件标准的任务格式
-        const taskParts: string[] = [];
-        
-        // 添加状态
-        if (settings.taskSettings.defaultStatus) {
-            taskParts.push(`${settings.taskSettings.defaultStatus}`);
-        }
-        
-        // 添加任务文本
-        taskParts.push(taskText);
-        
-        // 添加创建日期
-        if (settings.taskSettings.includeCreationDate) {
-            const creationDate = formatDate(new Date(), "YYYY-MM-DD");
-            taskParts.push(`🔨 ${creationDate}`);
-        }
-        
-        // 添加截止日期
-        if (settings.taskSettings.includeDueDate) {
-            const dueDate = formatDate(date, "YYYY-MM-DD");
-            taskParts.push(`📅 ${dueDate}`);
-        }
-        
-        // 添加优先级
-        if (settings.taskSettings.defaultPriority) {
-            taskParts.push(`[#${settings.taskSettings.defaultPriority}]`);
-        }
-        
-        // 生成完整的任务行
-        const fullTaskText = `- [ ] ${taskParts.join(" ")}`;
-        
-        if (insertTarget === "current") {
-            // 在当前光标位置插入
-            const activeView = app.workspace.getActiveViewOfType(MarkdownView);
-            if (activeView) {
-                const editor = activeView.editor;
-                const cursor = editor.getCursor();
-                
-                // 在光标位置插入任务
-                editor.replaceRange(`${fullTaskText}\n`, cursor);
-            }
-        } else {
-            // 读取笔记内容
-            const content = await app.vault.read(file);
-            
-            // 找到插入位置
-            const insertSection = insertSettings.insertSection;
-            const insertPosition = insertSettings.insertPosition;
-            
-            let newContent: string;
-            
-            // 查找指定章节
-            const sectionRegex = new RegExp(`(${insertSection})([\s\S]*?)(?=^#|$)`, 'm');
-            const sectionMatch = content.match(sectionRegex);
-            
-            if (sectionMatch && sectionMatch.index !== undefined && sectionMatch[1] !== undefined) {
-                // 找到章节，在章节内插入任务
-                const sectionStart = sectionMatch.index;
-                const sectionEnd = sectionStart + sectionMatch[0].length;
-                const sectionHeader = sectionMatch[1];
-                const sectionContent = sectionMatch[2] || '';
-                
-                if (insertPosition === "first") {
-                    // 插入到章节标题之后的第一行
-                    newContent = content.substring(0, sectionStart + sectionHeader.length) + 
-                                `\n${fullTaskText}` + 
-                                sectionContent + 
-                                content.substring(sectionEnd);
-                } else {
-                    // 插入到章节末尾
-                    newContent = content.substring(0, sectionEnd) + 
-                                `\n${fullTaskText}` + 
-                                content.substring(sectionEnd);
-                }
+            // 选择配置
+            let selectedConfigId: string;
+            if (configId) {
+                selectedConfigId = configId;
+            } else if (insertTarget === "daily") {
+                // 对于每日笔记，使用默认配置
+                selectedConfigId = captureSettings.defaultConfigId;
+            } else if (insertTarget === "note") {
+                // 对于普通笔记，使用默认配置
+                selectedConfigId = captureSettings.defaultConfigId;
             } else {
-                // 没有找到章节，添加到文件末尾
-                newContent = content + `\n\n${insertSection}\n${fullTaskText}`;
+                // 对于当前笔记，使用默认配置
+                selectedConfigId = captureSettings.defaultConfigId;
             }
             
-            // 保存修改后的内容
-            await app.vault.modify(file, newContent);
+            const selectedConfig = captureSettings.configs.find(config => config.id === selectedConfigId && config.enabled);
+            
+            // 如果没有找到启用的配置，使用第一个启用的配置
+            let configToUse = selectedConfig || captureSettings.configs.find(config => config.enabled) || captureSettings.configs[0];
+            
+            // 如果没有配置，使用默认配置
+            if (!configToUse) {
+                configToUse = {
+                    id: "default",
+                    name: "默认配置",
+                    description: "默认的 Capture To 配置",
+                    enabled: true,
+                    defaultCapturePath: "{{日记}}",
+                    captureToActiveFile: false,
+                    hotkey: null,
+                    inputMethod: "single-line",
+                    createFileIfItDoesntExist: {
+                        enabled: true,
+                        createWithTemplate: true,
+                        template: "{{日记模板}}"
+                    },
+                    format: {
+                        enabled: true,
+                        format: "{{TASK_TEXT}}\n"
+                    },
+                    prepend: false,
+                    appendLink: false,
+                    task: true,
+                    insertAfter: {
+                        enabled: true,
+                        after: "## 日常记录",
+                        insertAtEnd: true,
+                        considerSubsections: false,
+                        createIfNotFound: true,
+                        createIfNotFoundLocation: "bottom"
+                    },
+                    newLineCapture: {
+                        enabled: false,
+                        direction: "below"
+                    },
+                    openFile: false,
+                    fileOpening: {
+                        location: "tab",
+                        direction: "vertical",
+                        mode: "default",
+                        focus: true
+                    }
+                };
+            }
+            
+            // 构建 capture choice
+            let captureToPath = "";
+            if (customNotePath) {
+                captureToPath = customNotePath;
+            } else if (insertTarget === "daily") {
+                captureToPath = "{{日记}}";
+            } else {
+                captureToPath = configToUse.defaultCapturePath;
+            }
+            
+            const captureChoice = {
+                name: "Create Task",
+                id: "create-task",
+                type: ChoiceType.Capture,
+                command: false,
+                captureTo: captureToPath,
+                captureToActiveFile: insertTarget === "current" || configToUse.captureToActiveFile,
+                createFileIfItDoesntExist: {
+                    enabled: configToUse.createFileIfItDoesntExist.enabled,
+                    createWithTemplate: configToUse.createFileIfItDoesntExist.createWithTemplate,
+                    template: configToUse.createFileIfItDoesntExist.template,
+                },
+                format: {
+                    enabled: configToUse.format.enabled,
+                    format: configToUse.format.format.replace("{{TASK_TEXT}}", taskText).replace("{{DATE}}", formatDate(date, "YYYY-MM-DD")),
+                },
+                prepend: configToUse.prepend,
+                appendLink: configToUse.appendLink,
+                task: configToUse.task,
+                insertAfter: {
+                    enabled: configToUse.insertAfter.enabled,
+                    after: configToUse.insertAfter.after,
+                    insertAtEnd: configToUse.insertAfter.insertAtEnd,
+                    considerSubsections: configToUse.insertAfter.considerSubsections,
+                    createIfNotFound: configToUse.insertAfter.createIfNotFound,
+                    createIfNotFoundLocation: configToUse.insertAfter.createIfNotFoundLocation,
+                },
+                newLineCapture: {
+                    enabled: configToUse.newLineCapture.enabled,
+                    direction: configToUse.newLineCapture.direction,
+                },
+                openFile: configToUse.openFile,
+                fileOpening: {
+                    location: configToUse.fileOpening.location,
+                    direction: configToUse.fileOpening.direction,
+                    mode: configToUse.fileOpening.mode,
+                    focus: configToUse.fileOpening.focus,
+                },
+                inputMethod: configToUse.inputMethod
+            };
+            
+            // 创建并运行 CaptureChoiceEngine
+            const engine = new CaptureChoiceEngine(app, MyPlugin.instance, captureChoice, choiceExecutor);
+            await engine.run();
+        } else {
+            throw new Error("MyPlugin instance not found");
         }
     } catch (error) {
         console.error(`Failed to create task in note:`, error);

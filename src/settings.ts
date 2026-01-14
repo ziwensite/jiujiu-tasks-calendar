@@ -1,7 +1,8 @@
 import {App, PluginSettingTab, Setting, Notice} from "obsidian";
 import MyPlugin from "./main";
 import { formatDate } from "./utils/dateUtils";
-import { PathAutocomplete } from "./components/pathAutocomplete";
+import { PathAutocomplete, AddCaptureToConfigBox } from "./components";
+import { CaptureToConfigModal } from "./views/calendar/modals/CaptureToConfigModal";
 
 export interface NoteTemplateSettings {
     savePath: string;
@@ -14,19 +15,89 @@ export interface TaskInsertSettings {
     insertPosition: "first" | "last";
 }
 
+export interface CreateFileIfItDoesntExist {
+    enabled: boolean;
+    createWithTemplate: boolean;
+    template: string;
+}
+
+export interface FormatSettings {
+    enabled: boolean;
+    format: string;
+}
+
+export interface InsertAfterSettings {
+    enabled: boolean;
+    after: string;
+    insertAtEnd: boolean;
+    considerSubsections: boolean;
+    createIfNotFound: boolean;
+    createIfNotFoundLocation: "top" | "bottom";
+}
+
+export interface NewLineCaptureSettings {
+    enabled: boolean;
+    direction: "above" | "below";
+}
+
+export interface FileOpeningSettings {
+    location: "reuse" | "tab" | "split" | "window" | "left-sidebar" | "right-sidebar";
+    direction: "vertical" | "horizontal";
+    mode: "preview" | "source" | "live" | "live-preview" | "default";
+    focus: boolean;
+}
+
+export interface CaptureToConfig {
+    id: string;
+    name: string;
+    description: string;
+    
+    // 基本设置
+    enabled: boolean;
+    defaultCapturePath: string;
+    captureToActiveFile: boolean;
+    
+    // 快捷键设置
+    hotkey: {
+        modifiers: string[];
+        key: string;
+    } | null;
+    
+    // 输入方式设置
+    inputMethod: "single-line" | "multi-line";
+    
+    // 文件创建设置
+    createFileIfItDoesntExist: CreateFileIfItDoesntExist;
+    
+    // 格式化设置
+    format: FormatSettings;
+    
+    // 插入设置
+    prepend: boolean;
+    appendLink: boolean;
+    
+    // 任务设置
+    task: boolean;
+    
+    // 插入位置设置
+    insertAfter: InsertAfterSettings;
+    newLineCapture: NewLineCaptureSettings;
+    
+    // 文件打开设置
+    openFile: boolean;
+    fileOpening: FileOpeningSettings;
+}
+
+export interface CaptureToSettings {
+    enabled: boolean;
+    defaultConfigId: string;
+    taskListInputConfigId: string;
+    configs: CaptureToConfig[];
+}
+
 export interface TaskSettings {
-    // 任务默认属性
-    includeCreationDate: boolean;
-    includeDueDate: boolean;
-    defaultPriority: string;
-    defaultStatus: string;
-    
-    // 任务插入位置设置 - 日记
-    dailyInsertSettings: TaskInsertSettings;
-    
-    // 任务插入位置设置 - 默认笔记
-    noteInsertSettings: TaskInsertSettings;
-    defaultNotePath: string;
+    // 捕获插入设置
+    captureToSettings: CaptureToSettings;
 }
 
 export interface TaskFilterSettings {
@@ -73,19 +144,136 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
         customFilter: ""
     },
     taskSettings: {
-        includeCreationDate: true,
-        includeDueDate: true,
-        defaultPriority: "Medium",
-        defaultStatus: "",
-        dailyInsertSettings: {
-            insertSection: "## 任务",
-            insertPosition: "last"
-        },
-        noteInsertSettings: {
-            insertSection: "## 任务",
-            insertPosition: "last"
-        },
-        defaultNotePath: ""
+        captureToSettings: {
+            enabled: true,
+            defaultConfigId: "default",
+            taskListInputConfigId: "default",
+            configs: [
+                {
+                    id: "default",
+                    name: "默认任务",
+                    description: "默认的捕获插入配置",
+                    enabled: true,
+                    defaultCapturePath: "{{日记}}",
+                    captureToActiveFile: false,
+                    hotkey: null,
+                    inputMethod: "single-line",
+                    createFileIfItDoesntExist: {
+                        enabled: true,
+                        createWithTemplate: true,
+                        template: "{{日记模板}}"
+                    },
+                    format: {
+                        enabled: true,
+                        format: "{{TASK_TEXT}}\n"
+                    },
+                    prepend: false,
+                    appendLink: false,
+                    task: true,
+                    insertAfter: {
+                        enabled: true,
+                        after: "## 日常记录",
+                        insertAtEnd: true,
+                        considerSubsections: false,
+                        createIfNotFound: true,
+                        createIfNotFoundLocation: "bottom" as "top" | "bottom"
+                    },
+                    newLineCapture: {
+                        enabled: false,
+                        direction: "below"
+                    },
+                    openFile: false,
+                    fileOpening: {
+                        location: "tab",
+                        direction: "vertical",
+                        mode: "default",
+                        focus: true
+                    }
+                },
+                {
+                    id: "daily",
+                    name: "默认笔记",
+                    description: "专门用于每日笔记的配置",
+                    enabled: true,
+                    defaultCapturePath: "{{日记}}",
+                    captureToActiveFile: false,
+                    hotkey: null,
+                    inputMethod: "single-line",
+                    createFileIfItDoesntExist: {
+                        enabled: true,
+                        createWithTemplate: true,
+                        template: "{{日记模板}}"
+                    },
+                    format: {
+                        enabled: false,
+                        format: "- {{TASK_TEXT}}\n"
+                    },
+                    prepend: false,
+                    appendLink: false,
+                    task: true,
+                    insertAfter: {
+                        enabled: true,
+                        after: "## 日常记录",
+                        insertAtEnd: true,
+                        considerSubsections: false,
+                        createIfNotFound: true,
+                        createIfNotFoundLocation: "bottom" as "top" | "bottom"
+                    },
+                    newLineCapture: {
+                        enabled: false,
+                        direction: "below"
+                    },
+                    openFile: false,
+                    fileOpening: {
+                        location: "tab",
+                        direction: "vertical",
+                        mode: "default",
+                        focus: true
+                    }
+                },
+                {
+                    id: "meeting",
+                    name: "会议笔记",
+                    description: "专门用于会议笔记的配置",
+                    enabled: true,
+                    defaultCapturePath: "{{日记}}",
+                    captureToActiveFile: false,
+                    hotkey: null,
+                    inputMethod: "single-line",
+                    createFileIfItDoesntExist: {
+                        enabled: true,
+                        createWithTemplate: true,
+                        template: "{{日记模板}}"
+                    },
+                    format: {
+                        enabled: true,
+                        format: "## {{TASK_TEXT}}\n\n- 时间: {{DATE}}\n- 地点: \n- 参与人员: \n- 内容: \n- 行动项: \n\n"
+                    },
+                    prepend: false,
+                    appendLink: false,
+                    task: false,
+                    insertAfter: {
+                        enabled: true,
+                        after: "## 日常记录",
+                        insertAtEnd: true,
+                        considerSubsections: false,
+                        createIfNotFound: true,
+                        createIfNotFoundLocation: "bottom" as "top" | "bottom"
+                    },
+                    newLineCapture: {
+                        enabled: false,
+                        direction: "below"
+                    },
+                    openFile: true,
+                    fileOpening: {
+                        location: "tab",
+                        direction: "vertical",
+                        mode: "default",
+                        focus: true
+                    }
+                }
+            ]
+        }
     }
 }
 
@@ -102,17 +290,19 @@ export class SampleSettingTab extends PluginSettingTab {
         const {containerEl} = this;
 
         containerEl.empty();
-        containerEl.createEl("h2", {text: "99日历设置"});
+        const header = containerEl.createEl("div", {cls: "setting-section"});
+        header.style.textAlign = "center";
+        header.style.marginBottom = "20px";
+        header.createEl("h2", {text: "99日历设置"});
 
-        // 添加保存按钮
-        const saveButton = containerEl.createEl("button", {
-            text: "保存设置",
-            cls: "mod-cta save-button"
-        });
-        saveButton.style.marginBottom = "20px";
-        saveButton.addEventListener("click", async () => {
-            await this.saveSettings();
-        });
+        // 渲染任务显示筛选设置
+        this.renderTaskFilterSettings();
+        
+        // 渲染任务创建设置
+        this.renderTaskSettings();
+        
+        // 渲染 Capture To 设置
+        this.renderCaptureToSettings();
 
         this.renderNoteSettings("日记设置", this.plugin.settings.dailyNote, (newSettings) => {
             this.plugin.settings.dailyNote = newSettings;
@@ -138,20 +328,22 @@ export class SampleSettingTab extends PluginSettingTab {
             this.plugin.settings.yearlyNote = newSettings;
             this.settingsChanged = true;
         });
-
-        // 渲染任务显示筛选设置
-        this.renderTaskFilterSettings();
-        
-        // 渲染任务创建设置
-        this.renderTaskSettings();
         
         // 监听设置页面关闭事件
         this.registerEvents();
     }
 
+    // 添加一个变量来存储 MutationObserver 实例
+    private observer: MutationObserver | null = null;
+
     private registerEvents() {
-        // 监听设置页面容器的移除事件，当设置页面关闭时触发
-        const observer = new MutationObserver((mutations) => {
+        // 如果已经有 Observer，先断开连接
+        if (this.observer) {
+            this.observer.disconnect();
+        }
+        
+        // 创建新的 Observer
+        this.observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
                 if (mutation.type === 'childList' && this.containerEl.parentElement === null) {
                     // 设置页面已关闭，检查是否需要保存设置
@@ -160,12 +352,16 @@ export class SampleSettingTab extends PluginSettingTab {
                             this.settingsChanged = false;
                         });
                     }
-                    observer.disconnect();
+                    // 断开连接
+                    if (this.observer) {
+                        this.observer.disconnect();
+                        this.observer = null;
+                    }
                 }
             });
         });
 
-        observer.observe(this.containerEl.parentElement || document.body, {
+        this.observer.observe(this.containerEl.parentElement || document.body, {
             childList: true,
             subtree: true
         });
@@ -180,7 +376,7 @@ export class SampleSettingTab extends PluginSettingTab {
 
     private renderTaskFilterSettings(): void {
         const section = this.containerEl.createEl("div", {cls: "setting-section"});
-        section.createEl("h3", {text: "任务列表设置"});
+        section.createEl("h4", {text: "任务列表设置"});
 
         // 自定义筛选设置
         new Setting(section)
@@ -203,140 +399,580 @@ export class SampleSettingTab extends PluginSettingTab {
     }
 
     private renderTaskSettings(): void {
+        // 任务创建设置已移至 Capture To 设置中
+    }
+
+    private renderCaptureToSettings(): void {
+        console.log("renderCaptureToSettings called");
         const section = this.containerEl.createEl("div", {cls: "setting-section"});
-        section.createEl("h3", {text: "任务创建设置"});
+        section.createEl("h4", {text: "捕获插入设置"});
 
-        // 任务默认属性设置
-        const taskPropertiesHeader = section.createEl("div", {cls: "setting-header"});
-        taskPropertiesHeader.createEl("h4", {text: "任务默认属性"});
+        const captureSettings = this.plugin.settings.taskSettings.captureToSettings;
+        console.log("captureSettings:", captureSettings);
 
-        // 包含创建日期
+        // 启用/禁用设置
         new Setting(section)
-            .setName("包含创建日期")
-            .setDesc("在任务中自动添加创建日期")
+            .setName("启用捕获插入功能")
+            .setDesc("使用捕获插入功能进行任务和笔记的创建与插入")
             .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.taskSettings.includeCreationDate)
+                .setValue(captureSettings.enabled)
                 .onChange((value) => {
-                    this.plugin.settings.taskSettings.includeCreationDate = value;
+                    this.plugin.settings.taskSettings.captureToSettings.enabled = value;
                     this.settingsChanged = true;
                 }));
 
-        // 包含截止日期
+        // 默认配置选择
         new Setting(section)
-            .setName("包含截止日期")
-            .setDesc("在任务中自动添加截止日期")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.taskSettings.includeDueDate)
-                .onChange((value) => {
-                    this.plugin.settings.taskSettings.includeDueDate = value;
-                    this.settingsChanged = true;
-                }));
+            .setName("默认配置")
+            .setDesc("选择默认使用的捕获插入配置")
+            .addDropdown(dropdown => {
+                captureSettings.configs.forEach(config => {
+                    dropdown.addOption(config.id, config.name);
+                });
+                dropdown.setValue(captureSettings.defaultConfigId)
+                    .onChange((value) => {
+                        this.plugin.settings.taskSettings.captureToSettings.defaultConfigId = value;
+                        this.settingsChanged = true;
+                    });
+            });
 
-        // 默认优先级
+        // 任务列表输入配置选择
         new Setting(section)
-            .setName("默认优先级")
-            .setDesc("新建任务的默认优先级（High/Medium/Low或空）")
-            .addText(text => text
-                .setPlaceholder("High/Medium/Low")
-                .setValue(this.plugin.settings.taskSettings.defaultPriority)
-                .onChange((value) => {
-                    this.plugin.settings.taskSettings.defaultPriority = value;
-                    this.settingsChanged = true;
-                }));
+            .setName("任务列表输入配置")
+            .setDesc("选择任务列表输入时使用的捕获插入配置")
+            .addDropdown(dropdown => {
+                captureSettings.configs.forEach(config => {
+                    dropdown.addOption(config.id, config.name);
+                });
+                dropdown.setValue(captureSettings.taskListInputConfigId)
+                    .onChange((value) => {
+                        this.plugin.settings.taskSettings.captureToSettings.taskListInputConfigId = value;
+                        this.settingsChanged = true;
+                    });
+            });
 
-        // 默认状态
-        new Setting(section)
-            .setName("默认状态")
-            .setDesc("新建任务的默认状态（可留空）")
-            .addText(text => text
-                .setPlaceholder("例如：todo/in-progress")
-                .setValue(this.plugin.settings.taskSettings.defaultStatus)
-                .onChange((value) => {
-                    this.plugin.settings.taskSettings.defaultStatus = value;
-                    this.settingsChanged = true;
-                }));
+        // 配置列表
+        const configsHeader = section.createEl("div", {cls: "setting-header"});
+        configsHeader.createEl("h4", {text: "配置列表"});
 
-        // 日记插入设置
-        const dailyInsertHeader = section.createEl("div", {cls: "setting-header"});
-        dailyInsertHeader.createEl("h4", {text: "日记插入设置"});
+        // 拖拽排序相关变量
+        let draggedElement: HTMLElement | null = null;
+        let dragStartIndex: number = -1;
 
-        // 日记插入章节
-        new Setting(section)
-            .setName("日记插入章节")
-            .setDesc("任务要插入到日记中的章节标题（如：## 任务）")
-            .addText(text => text
-                .setPlaceholder("## 任务")
-                .setValue(this.plugin.settings.taskSettings.dailyInsertSettings.insertSection)
-                .onChange((value) => {
-                    this.plugin.settings.taskSettings.dailyInsertSettings.insertSection = value;
-                    this.settingsChanged = true;
-                }));
+        // 显示现有配置
+        captureSettings.configs.forEach((config, index) => {
+            const configRow = section.createEl("div", {
+                cls: "capture-config-row"
+            });
+            configRow.setAttribute("draggable", "true");
+            configRow.style.display = "flex";
+            configRow.style.justifyContent = "space-between";
+            configRow.style.alignItems = "center";
+            configRow.style.padding = "8px 12px";
+            configRow.style.border = "1px solid var(--background-modifier-border)";
+            configRow.style.borderRadius = "4px";
+            configRow.style.marginBottom = "4px";
+            configRow.style.cursor = "grab";
+            
+            // 存储配置索引
+            configRow.dataset.index = index.toString();
 
-        // 日记插入位置
-        new Setting(section)
-            .setName("日记插入位置")
-            .setDesc("在日记章节中的插入位置")
-            .addDropdown(dropdown => dropdown
-                .addOption("first", "章节首行")
-                .addOption("last", "章节末尾")
-                .setValue(this.plugin.settings.taskSettings.dailyInsertSettings.insertPosition)
-                .onChange((value) => {
-                    this.plugin.settings.taskSettings.dailyInsertSettings.insertPosition = value as "first" | "last";
-                    this.settingsChanged = true;
-                }));
+            // 拖拽开始事件
+            configRow.addEventListener("dragstart", (e) => {
+                draggedElement = configRow;
+                dragStartIndex = parseInt(configRow.dataset.index || "-1");
+                configRow.style.opacity = "0.5";
+                configRow.style.cursor = "grabbing";
+            });
 
-        // 默认笔记插入设置
-        const noteInsertHeader = section.createEl("div", {cls: "setting-header"});
-        noteInsertHeader.createEl("h4", {text: "默认笔记插入设置"});
+            // 拖拽结束事件
+            configRow.addEventListener("dragend", (e) => {
+                draggedElement = null;
+                configRow.style.opacity = "1";
+                configRow.style.cursor = "grab";
+                // 移除所有拖拽提示样式
+                document.querySelectorAll(".capture-config-row").forEach(el => {
+                    const htmlEl = el as HTMLElement;
+                    htmlEl.style.borderColor = "var(--background-modifier-border)";
+                    htmlEl.style.transform = "";
+                });
+            });
 
-        // 默认笔记路径
-        new Setting(section)
-            .setName("默认笔记路径")
-            .setDesc("任务要插入的默认笔记路径")
-            .addTextArea(textArea => {
-                // 创建自定义路径自动完成组件
-                const container = textArea.inputEl.parentElement;
-                if (container) {
-                    // 移除默认的textarea
-                    textArea.inputEl.remove();
-                    
-                    // 创建路径自动完成组件
-                    new PathAutocomplete(
-                        this.app,
-                        container,
-                        this.plugin.settings.taskSettings.defaultNotePath,
-                        (value) => {
-                            this.plugin.settings.taskSettings.defaultNotePath = value;
-                            this.settingsChanged = true;
+            // 拖拽经过事件
+            configRow.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                if (draggedElement === configRow) return;
+                
+                // 计算拖拽位置
+                const rect = configRow.getBoundingClientRect();
+                const y = e.clientY - rect.top;
+                
+                // 显示拖拽提示
+                if (y < rect.height / 2) {
+                    // 拖拽到上方
+                    configRow.style.transform = "translateY(8px)";
+                } else {
+                    // 拖拽到下方
+                    configRow.style.transform = "translateY(-8px)";
+                }
+                configRow.style.borderColor = "var(--interactive-accent)";
+            });
+
+            // 拖拽离开事件
+            configRow.addEventListener("dragleave", (e) => {
+                configRow.style.borderColor = "var(--background-modifier-border)";
+                configRow.style.transform = "";
+            });
+
+            // 拖拽放置事件
+            configRow.addEventListener("drop", (e) => {
+                e.preventDefault();
+                if (draggedElement && dragStartIndex !== -1) {
+                    const dragEndIndex = parseInt(configRow.dataset.index || "-1");
+                    if (dragStartIndex !== dragEndIndex) {
+                        // 重新排序配置
+                        if (this.plugin.settings.taskSettings.captureToSettings.configs) {
+                            const configs = this.plugin.settings.taskSettings.captureToSettings.configs;
+                            const [draggedConfig] = configs.splice(dragStartIndex, 1);
+                            if (draggedConfig) {
+                                configs.splice(dragEndIndex, 0, draggedConfig);
+                                this.settingsChanged = true;
+                                // 重新渲染设置页面
+                                this.display();
+                            }
                         }
-                    );
+                    }
+                }
+                configRow.style.borderColor = "var(--background-modifier-border)";
+                configRow.style.transform = "";
+            });
+
+            // 配置名称
+            const configName = configRow.createEl("div", {
+                cls: "config-name"
+            });
+            configName.style.flex = "1";
+            configName.style.fontSize = "14px";
+            configName.style.color = config.enabled ? "var(--text-normal)" : "var(--text-muted)";
+            configName.textContent = config.name;
+
+            // 操作按钮容器
+            const buttonContainer = configRow.createEl("div", {
+                cls: "config-buttons"
+            });
+            buttonContainer.style.display = "flex";
+            buttonContainer.style.alignItems = "center";
+            buttonContainer.style.gap = "8px";
+
+            // 启用/禁用按钮（emoji 图形）
+            const toggleButton = buttonContainer.createEl("button", {
+                cls: "config-button"
+            });
+            toggleButton.style.width = "20px";
+            toggleButton.style.height = "20px";
+            toggleButton.style.display = "flex";
+            toggleButton.style.alignItems = "center";
+            toggleButton.style.justifyContent = "center";
+            toggleButton.style.border = "none";
+            toggleButton.style.background = "transparent";
+            toggleButton.style.color = config.enabled ? "var(--text-normal)" : "var(--text-muted)";
+            toggleButton.style.cursor = "pointer";
+            toggleButton.textContent = config.enabled ? "⚡" : "🔴";
+            toggleButton.title = config.enabled ? "禁用配置" : "启用配置";
+            toggleButton.addEventListener("click", () => {
+                if (this.plugin.settings.taskSettings.captureToSettings.configs && 
+                    this.plugin.settings.taskSettings.captureToSettings.configs[index]) {
+                    this.plugin.settings.taskSettings.captureToSettings.configs[index].enabled = !config.enabled;
+                    this.settingsChanged = true;
+                    // 重新渲染设置页面
+                    this.display();
                 }
             });
 
-        // 笔记插入章节
-        new Setting(section)
-            .setName("笔记插入章节")
-            .setDesc("任务要插入到默认笔记中的章节标题（如：## 任务）")
-            .addText(text => text
-                .setPlaceholder("## 任务")
-                .setValue(this.plugin.settings.taskSettings.noteInsertSettings.insertSection)
-                .onChange((value) => {
-                    this.plugin.settings.taskSettings.noteInsertSettings.insertSection = value;
-                    this.settingsChanged = true;
-                }));
+            // 配置按钮（emoji 图形）
+            const settingsButton = buttonContainer.createEl("button", {
+                cls: "config-button"
+            });
+            settingsButton.style.width = "20px";
+            settingsButton.style.height = "20px";
+            settingsButton.style.display = "flex";
+            settingsButton.style.alignItems = "center";
+            settingsButton.style.justifyContent = "center";
+            settingsButton.style.border = "none";
+            settingsButton.style.background = "transparent";
+            settingsButton.style.color = "var(--text-muted)";
+            settingsButton.style.cursor = "pointer";
+            settingsButton.textContent = "⚙️";
+            settingsButton.title = "配置";
+            settingsButton.addEventListener("click", () => {
+                // 打开详细配置对话框
+                new CaptureToConfigModal({
+                    plugin: this.plugin,
+                    config: config,
+                    onSave: (updatedConfig) => {
+                        // 更新配置
+                        if (this.plugin.settings.taskSettings.captureToSettings.configs) {
+                            const configIndex = this.plugin.settings.taskSettings.captureToSettings.configs.findIndex(c => c.id === updatedConfig.id);
+                            if (configIndex !== -1) {
+                                this.plugin.settings.taskSettings.captureToSettings.configs[configIndex] = updatedConfig;
+                                this.settingsChanged = true;
+                                // 重新渲染设置页面
+                                this.display();
+                            }
+                        }
+                    }
+                }).open();
+            });
 
-        // 笔记插入位置
-        new Setting(section)
-            .setName("笔记插入位置")
-            .setDesc("在默认笔记章节中的插入位置")
-            .addDropdown(dropdown => dropdown
-                .addOption("first", "章节首行")
-                .addOption("last", "章节末尾")
-                .setValue(this.plugin.settings.taskSettings.noteInsertSettings.insertPosition)
-                .onChange((value) => {
-                    this.plugin.settings.taskSettings.noteInsertSettings.insertPosition = value as "first" | "last";
+            // 复制按钮（emoji 图形）
+            const duplicateButton = buttonContainer.createEl("button", {
+                cls: "config-button"
+            });
+            duplicateButton.style.width = "20px";
+            duplicateButton.style.height = "20px";
+            duplicateButton.style.display = "flex";
+            duplicateButton.style.alignItems = "center";
+            duplicateButton.style.justifyContent = "center";
+            duplicateButton.style.border = "none";
+            duplicateButton.style.background = "transparent";
+            duplicateButton.style.color = "var(--text-muted)";
+            duplicateButton.style.cursor = "pointer";
+            duplicateButton.textContent = "📋";
+            duplicateButton.title = "复制";
+            duplicateButton.addEventListener("click", () => {
+                if (this.plugin.settings.taskSettings.captureToSettings.configs) {
+                    // 创建配置副本
+                    const duplicatedConfig = JSON.parse(JSON.stringify(config)) as CaptureToConfig;
+                    duplicatedConfig.id = `config-${Date.now()}`;
+                    duplicatedConfig.name = `${config.name} (副本)`;
+                    
+                    // 添加到配置列表
+                    this.plugin.settings.taskSettings.captureToSettings.configs.push(duplicatedConfig);
                     this.settingsChanged = true;
-                }));
+                    // 重新渲染设置页面
+                    this.display();
+                }
+            });
+
+            // 删除按钮（emoji 图形）
+            const deleteButton = buttonContainer.createEl("button", {
+                cls: "config-button"
+            });
+            deleteButton.style.width = "20px";
+            deleteButton.style.height = "20px";
+            deleteButton.style.display = "flex";
+            deleteButton.style.alignItems = "center";
+            deleteButton.style.justifyContent = "center";
+            deleteButton.style.border = "none";
+            deleteButton.style.background = "transparent";
+            deleteButton.style.color = "var(--text-muted)";
+            deleteButton.style.cursor = "pointer";
+            deleteButton.textContent = "🗑️";
+            deleteButton.title = "删除";
+            deleteButton.addEventListener("click", async () => {
+                // 确认删除
+                const confirmed = await new Promise<boolean>((resolve) => {
+                    const modal = new (require('obsidian').Modal)(this.app);
+                    modal.titleEl.setText("确认删除");
+                    modal.contentEl.createEl("p", {
+                        text: `确定要删除配置 "${config.name}" 吗？`
+                    });
+                    
+                    const buttonContainer = modal.contentEl.createEl("div");
+                    buttonContainer.style.display = "flex";
+                    buttonContainer.style.justifyContent = "flex-end";
+                    buttonContainer.style.gap = "10px";
+                    buttonContainer.style.marginTop = "20px";
+
+                    const cancelButton = buttonContainer.createEl("button", {
+                        text: "取消",
+                        cls: "mod-button"
+                    });
+                    cancelButton.addEventListener("click", () => {
+                        resolve(false);
+                        modal.close();
+                    });
+
+                    const confirmButton = buttonContainer.createEl("button", {
+                        text: "删除",
+                        cls: "mod-danger"
+                    });
+                    confirmButton.addEventListener("click", () => {
+                        resolve(true);
+                        modal.close();
+                    });
+
+                    modal.open();
+                });
+
+                if (confirmed) {
+                    // 从配置列表中删除
+                    if (this.plugin.settings.taskSettings.captureToSettings.configs) {
+                        this.plugin.settings.taskSettings.captureToSettings.configs.splice(index, 1);
+                        
+                        // 如果删除的是默认配置，设置第一个配置为默认
+                        if (config.id === this.plugin.settings.taskSettings.captureToSettings.defaultConfigId && 
+                            this.plugin.settings.taskSettings.captureToSettings.configs.length > 0) {
+                            const firstConfig = this.plugin.settings.taskSettings.captureToSettings.configs[0];
+                            if (firstConfig) {
+                                this.plugin.settings.taskSettings.captureToSettings.defaultConfigId = firstConfig.id;
+                            }
+                        }
+                        
+                        this.settingsChanged = true;
+                        // 重新渲染设置页面
+                        this.display();
+                    }
+                }
+            });
+        });
+
+        // 添加新配置的输入框和按钮，模仿 QuickAdd 的样式
+        const addConfigContainer = section.createEl("div", {
+            cls: "add-config-container"
+        });
+        addConfigContainer.style.display = "flex";
+        addConfigContainer.style.alignItems = "center";
+        addConfigContainer.style.gap = "8px";
+        addConfigContainer.style.marginTop = "12px";
+        addConfigContainer.style.padding = "8px";
+        addConfigContainer.style.border = "1px dashed var(--background-modifier-border)";
+        addConfigContainer.style.borderRadius = "4px";
+
+        // 名称输入框
+        const nameInput = addConfigContainer.createEl("input", {
+            type: "text",
+            placeholder: "名称",
+            cls: "add-config-input"
+        });
+        nameInput.style.flex = "1";
+        nameInput.style.padding = "6px 8px";
+        nameInput.style.border = "1px solid var(--background-modifier-border)";
+        nameInput.style.borderRadius = "4px";
+        nameInput.style.fontSize = "14px";
+
+        // 添加按钮
+        const addButton = addConfigContainer.createEl("button", {
+            text: "新建配置",
+            cls: "mod-cta add-config-button"
+        });
+        addButton.style.padding = "6px 16px";
+        addButton.style.fontSize = "14px";
+        addButton.addEventListener("click", () => {
+            const name = nameInput.value.trim();
+            if (!name) {
+                new Notice("配置名称不能为空");
+                return;
+            }
+
+            // 创建新配置
+            const newConfig: CaptureToConfig = {
+                id: `config-${Date.now()}`,
+                name,
+                description: "",
+                enabled: true,
+                defaultCapturePath: "",
+                captureToActiveFile: false,
+                hotkey: null,
+                inputMethod: "single-line",
+                createFileIfItDoesntExist: {
+                    enabled: true,
+                    createWithTemplate: false,
+                    template: ""
+                },
+                format: {
+                    enabled: true,
+                    format: "{{TASK_TEXT}}\n"
+                },
+                prepend: false,
+                appendLink: false,
+                task: true,
+                insertAfter: {
+                    enabled: false,
+                    after: "",
+                    insertAtEnd: false,
+                    considerSubsections: false,
+                    createIfNotFound: false,
+                    createIfNotFoundLocation: "bottom"
+                },
+                newLineCapture: {
+                    enabled: false,
+                    direction: "below"
+                },
+                openFile: false,
+                fileOpening: {
+                    location: "tab",
+                    direction: "vertical",
+                    mode: "default",
+                    focus: true
+                }
+            };
+
+            // 添加到配置列表
+            if (this.plugin.settings.taskSettings.captureToSettings.configs) {
+                this.plugin.settings.taskSettings.captureToSettings.configs.push(newConfig);
+                this.settingsChanged = true;
+                
+                // 清空输入框
+                nameInput.value = "";
+                
+                // 重新渲染设置页面
+                this.display();
+            }
+        });
+
+        // 回车键添加
+        nameInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+                addButton.click();
+            }
+        });
+
+        // 默认配置按钮
+        const defaultConfigButton = addConfigContainer.createEl("button", {
+            text: "默认配置",
+            cls: "mod-button"
+        });
+        defaultConfigButton.style.padding = "6px 16px";
+        defaultConfigButton.style.fontSize = "14px";
+        defaultConfigButton.addEventListener("click", () => {
+            // 恢复默认配置
+                this.plugin.settings.taskSettings.captureToSettings.taskListInputConfigId = "default";
+                const defaultConfigs: CaptureToConfig[] = [
+                {
+                    id: "default",
+                    name: "默认任务",
+                    description: "默认的捕获插入配置",
+                    enabled: true,
+                    defaultCapturePath: "{{日记}}",
+                    captureToActiveFile: false,
+                    hotkey: null,
+                    inputMethod: "single-line",
+                    createFileIfItDoesntExist: {
+                        enabled: true,
+                        createWithTemplate: true,
+                        template: "{{日记模板}}"
+                    },
+                    format: {
+                        enabled: true,
+                        format: "{{TASK_TEXT}}\n"
+                    },
+                    prepend: false,
+                    appendLink: false,
+                    task: true,
+                    insertAfter: {
+                        enabled: true,
+                        after: "## 日常记录",
+                        insertAtEnd: true,
+                        considerSubsections: false,
+                        createIfNotFound: true,
+                        createIfNotFoundLocation: "bottom"
+                    },
+                    newLineCapture: {
+                        enabled: false,
+                        direction: "below"
+                    },
+                    openFile: false,
+                    fileOpening: {
+                        location: "tab",
+                        direction: "vertical",
+                        mode: "default",
+                        focus: true
+                    }
+                },
+                {
+                    id: "daily",
+                    name: "默认笔记",
+                    description: "专门用于每日笔记的配置",
+                    enabled: true,
+                    defaultCapturePath: "{{日记}}",
+                    captureToActiveFile: false,
+                    hotkey: null,
+                    inputMethod: "single-line",
+                    createFileIfItDoesntExist: {
+                        enabled: true,
+                        createWithTemplate: true,
+                        template: "{{日记模板}}"
+                    },
+                    format: {
+                        enabled: true,
+                        format: "{{TASK_TEXT}}\n"
+                    },
+                    prepend: false,
+                    appendLink: false,
+                    task: false,
+                    insertAfter: {
+                        enabled: true,
+                        after: "## 日常记录",
+                        insertAtEnd: true,
+                        considerSubsections: false,
+                        createIfNotFound: true,
+                        createIfNotFoundLocation: "bottom"
+                    },
+                    newLineCapture: {
+                        enabled: false,
+                        direction: "below"
+                    },
+                    openFile: false,
+                    fileOpening: {
+                        location: "tab",
+                        direction: "vertical",
+                        mode: "default",
+                        focus: true
+                    }
+                },
+                {
+                    id: "meeting",
+                    name: "会议笔记",
+                    description: "专门用于会议笔记的配置",
+                    enabled: true,
+                    defaultCapturePath: "{{日记}",
+                    captureToActiveFile: false,
+                    hotkey: null,
+                    inputMethod: "single-line",
+                    createFileIfItDoesntExist: {
+                        enabled: true,
+                        createWithTemplate: true,
+                        template: "{{日记模板}}"
+                    },
+                    format: {
+                        enabled: true,
+                        format: "## {{TASK_TEXT}}\n\n- 时间: {{DATE}}\n- 地点: \n- 参与人员: \n- 内容: \n- 行动项: \n\n"
+                    },
+                    prepend: false,
+                    appendLink: false,
+                    task: false,
+                    insertAfter: {
+                        enabled: true,
+                        after: "## 日常记录",
+                        insertAtEnd: true,
+                        considerSubsections: false,
+                        createIfNotFound: true,
+                        createIfNotFoundLocation: "bottom"
+                    },
+                    newLineCapture: {
+                        enabled: false,
+                        direction: "below"
+                    },
+                    openFile: true,
+                    fileOpening: {
+                        location: "tab",
+                        direction: "vertical",
+                        mode: "default",
+                        focus: true
+                    }
+                }
+            ];
+
+            // 清空现有配置并添加默认配置
+            if (this.plugin.settings.taskSettings.captureToSettings.configs) {
+                this.plugin.settings.taskSettings.captureToSettings.configs = defaultConfigs;
+                this.plugin.settings.taskSettings.captureToSettings.defaultConfigId = "default";
+                this.settingsChanged = true;
+                // 重新渲染设置页面
+                this.display();
+            }
+        });
     }
 
     private renderNoteSettings(
@@ -345,7 +981,7 @@ export class SampleSettingTab extends PluginSettingTab {
         onChange: (newSettings: NoteTemplateSettings) => void
     ) {
         const section = this.containerEl.createEl("div", {cls: "setting-section"});
-        section.createEl("h3", {text: title});
+        section.createEl("h4", {text: title});
         
         // 计算预览日期（根据不同笔记类型使用不同的日期）
         let previewDate: Date;

@@ -66,6 +66,11 @@ export class CalendarView extends ItemView {
             await this.refreshTaskList();
         }
         
+        // 调整任务列表高度，确保滚动条在需要时显示
+        setTimeout(() => {
+            this.adjustTaskListHeight();
+        }, 100);
+        
         // 添加文件系统事件监听，实现实时更新
         this.registerEvent(this.app.vault.on('create', async (file) => {
             await this.handleFileChange(file);
@@ -139,6 +144,11 @@ export class CalendarView extends ItemView {
                 await this.refreshTaskList();
             }
         }
+        
+        // 调整任务列表高度，确保滚动条在需要时显示
+        setTimeout(() => {
+            this.adjustTaskListHeight();
+        }, 100);
     }
 
     /**
@@ -290,20 +300,83 @@ export class CalendarView extends ItemView {
         const selectedDateDisplay = taskListHeader.createEl("div", {cls: "selected-date-display"});
         this.updateSelectedDateDisplay(selectedDateDisplay);
         
+        // 右侧：添加事件输入框
+        const addEventContainer = taskListHeader.createEl("div", {cls: "task-list-header-add-event"});
+        
+        // 计算当前被选择日期的月份和日期
+        const selectedDate = this.selectedDate || this.currentDate;
+        const month = selectedDate.getMonth() + 1;
+        const day = selectedDate.getDate();
+        
+        // 创建输入框，提示文字显示当前被选择的日期
+        const inputEl = addEventContainer.createEl("input", { 
+            cls: "task-list-header-add-input", 
+            placeholder: `添加事件` 
+        });
+        
+        // 创建添加按钮
+        const addBtn = addEventContainer.createEl("button", {cls: "task-list-header-add-btn", text: "+"});
+        
+        // 处理添加按钮点击事件
+        const handleAddEvent = async () => {
+            const inputText = inputEl.value.trim();
+            
+            if (inputText === "") {
+                // 输入框为空，弹出任务模态窗口
+                const modal = new TaskModal({
+                    plugin: this.plugin,
+                    date: selectedDate || new Date(),
+                    onTaskAdded: async () => {
+                        await this.refreshTaskList();
+                    }
+                });
+                modal.open();
+            } else {
+                // 输入框有内容，按照默认设置自动添加任务到当天日记
+                try {
+                    await createTaskInNote(
+                        this.app,
+                        inputText,
+                        selectedDate || new Date(),
+                        this.plugin.settings,
+                        "daily"
+                    );
+                    
+                    // 清空输入框
+                    inputEl.value = "";
+                    
+                    // 刷新任务列表
+                    await this.refreshTaskList();
+                } catch (error) {
+                    console.error("Failed to create task:", error);
+                }
+            }
+        };
+        
+        // 绑定按钮点击事件
+        addBtn.addEventListener("click", handleAddEvent);
+        
+        // 绑定回车键事件
+        inputEl.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                handleAddEvent();
+            }
+        });
+        
         // 添加任务列表头部双击事件监听器，用于收缩/展开视图
         taskListHeader.addEventListener("dblclick", () => {
             this.toggleCalendarView();
         });
         
-        // 添加触摸事件监听器，支持移动端向上滑动收缩视图和向下拉展开视图
+        // 添加触摸事件监听器，支持移动端向上滑动收缩视图和向下拉展开视图，只在日期显示部分触发
         let touchStartY = 0;
-        taskListHeader.addEventListener("touchstart", (e) => {
+        selectedDateDisplay.addEventListener("touchstart", (e) => {
             if (e.touches && e.touches[0]) {
                 touchStartY = e.touches[0].clientY;
             }
         });
         
-        taskListHeader.addEventListener("touchmove", (e) => {
+        selectedDateDisplay.addEventListener("touchmove", (e) => {
             if (e.touches && e.touches[0]) {
                 const touchEndY = e.touches[0].clientY;
                 const diff = touchStartY - touchEndY;
@@ -342,9 +415,6 @@ export class CalendarView extends ItemView {
         });
         
         const taskList = taskListContainer.createEl("div", {cls: "task-list"});
-        
-        // 添加事件输入框到容器的底部，在任务列表容器的下方
-        this.buildAddEventInput(container, this.selectedDate || this.currentDate);
     }
     
     /**
@@ -1802,6 +1872,69 @@ export class CalendarView extends ItemView {
     }
 
     /**
+     * 计算并调整任务列表高度，使其占据剩余空间
+     */
+    private adjustTaskListHeight() {
+        // 获取整个视图容器
+        const viewContainer = this.containerEl.children[1] as HTMLElement;
+        if (!viewContainer) return;
+        
+        // 获取视图容器的总高度
+        const viewHeight = viewContainer.offsetHeight;
+        
+        // 计算任务列表上方所有元素的高度
+        let totalHeightAboveTaskList = 0;
+        
+        // 日历头部
+        const calendarHeader = viewContainer.querySelector('.calendar-header') as HTMLElement;
+        if (calendarHeader) {
+            totalHeightAboveTaskList += calendarHeader.offsetHeight;
+        }
+        
+        // 日历表格（月视图）
+        const calendarTable = viewContainer.querySelector('.calendar-table') as HTMLElement;
+        if (calendarTable) {
+            totalHeightAboveTaskList += calendarTable.offsetHeight;
+        }
+        
+        // 年视图容器
+        const yearViewContainer = viewContainer.querySelector('.year-view-container') as HTMLElement;
+        if (yearViewContainer) {
+            totalHeightAboveTaskList += yearViewContainer.offsetHeight;
+        }
+        
+        // 任务列表容器（包括其边距和内边距）
+        const taskListContainer = viewContainer.querySelector('.task-list-container') as HTMLElement;
+        if (taskListContainer) {
+            // 获取任务列表容器的计算样式
+            const taskListContainerStyle = window.getComputedStyle(taskListContainer);
+            // 添加任务列表容器的外边距
+            totalHeightAboveTaskList += parseFloat(taskListContainerStyle.marginTop) || 0;
+            totalHeightAboveTaskList += parseFloat(taskListContainerStyle.marginBottom) || 0;
+            // 添加任务列表容器的内边距
+            totalHeightAboveTaskList += parseFloat(taskListContainerStyle.paddingTop) || 0;
+            totalHeightAboveTaskList += parseFloat(taskListContainerStyle.paddingBottom) || 0;
+            
+            // 任务列表头部
+            const taskListHeader = taskListContainer.querySelector('.task-list-header') as HTMLElement;
+            if (taskListHeader) {
+                totalHeightAboveTaskList += taskListHeader.offsetHeight;
+            }
+        }
+        
+        // 计算剩余空间高度，减去状态栏高度，防止任务被遮挡
+        const remainingHeight = Math.max(0, viewHeight - totalHeightAboveTaskList - 60); // 减去60px作为状态栏空间，增加空间以避免遮挡
+        
+        // 设置任务列表的高度
+        if (taskListContainer) {
+            const taskList = taskListContainer.querySelector('.task-list') as HTMLElement;
+            if (taskList) {
+                taskList.style.height = `${remainingHeight}px`;
+            }
+        }
+    }
+
+    /**
      * 切换日历视图的展开和收缩状态
      */
     private toggleCalendarView() {
@@ -1889,5 +2022,10 @@ export class CalendarView extends ItemView {
                 }
             }
         }
+        
+        // 强制重新计算布局并调整任务列表高度
+        setTimeout(() => {
+            this.adjustTaskListHeight();
+        }, 100);
     }
 }

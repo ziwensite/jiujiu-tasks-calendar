@@ -17,6 +17,10 @@ export class PathAutocomplete {
         this.container = container;
         this.onPathChange = onPathChange;
         
+        // 设置容器为相对定位，以便下拉列表相对于容器定位
+        container.style.position = "relative";
+        container.style.width = "100%";
+        
         // 创建输入框
         this.inputEl = container.createEl("input", {
             type: "text",
@@ -24,6 +28,9 @@ export class PathAutocomplete {
             placeholder: "输入路径"
         });
         this.inputEl.className = "setting-item-input";
+        this.inputEl.style.width = "100%";
+        this.inputEl.style.minWidth = "200px";
+        this.inputEl.style.maxWidth = "350px";
         
         // 创建下拉列表容器
         this.dropdownEl = container.createEl("div", {
@@ -32,6 +39,21 @@ export class PathAutocomplete {
         this.dropdownEl.style.display = "none";
         this.dropdownEl.style.textAlign = "left";
         this.dropdownEl.style.padding = "8px 0";
+        this.dropdownEl.style.position = "absolute";
+        this.dropdownEl.style.right = "0";
+        this.dropdownEl.style.top = "100%";
+        this.dropdownEl.style.marginTop = "4px";
+        this.dropdownEl.style.backgroundColor = "var(--background-primary)";
+        this.dropdownEl.style.border = "1px solid var(--background-modifier-border)";
+        this.dropdownEl.style.borderRadius = "4px";
+        this.dropdownEl.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.15)";
+        this.dropdownEl.style.zIndex = "1000";
+        this.dropdownEl.style.maxHeight = "200px";
+        this.dropdownEl.style.overflowY = "auto";
+        // 确保下拉列表宽度与输入框一致
+        this.dropdownEl.style.width = "100%";
+        this.dropdownEl.style.minWidth = "200px";
+        this.dropdownEl.style.maxWidth = "350px";
         
         // 监听输入事件
         this.inputEl.addEventListener("input", this.handleInput.bind(this));
@@ -236,6 +258,9 @@ export class PathAutocomplete {
             (this.dropdownEl.firstChild as HTMLElement).classList.add("active");
         }
         
+        // 计算下拉列表位置
+        this.calculateDropdownPosition();
+        
         this.dropdownEl.style.display = "block";
     }
     
@@ -256,6 +281,34 @@ export class PathAutocomplete {
         this.inputEl.value = value;
     }
     
+    // 计算下拉列表位置
+    private calculateDropdownPosition() {
+        if (!this.inputEl || !this.dropdownEl) return;
+        
+        const inputRect = this.inputEl.getBoundingClientRect();
+        const dropdownHeight = 200; // 下拉列表的最大高度
+        const viewportHeight = window.innerHeight;
+        const spaceBelow = viewportHeight - inputRect.bottom;
+        
+        // 检查下方空间是否足够
+        if (spaceBelow < dropdownHeight + 20) {
+            // 下方空间不足，显示在上方
+            this.dropdownEl.style.top = "auto";
+            this.dropdownEl.style.bottom = "100%";
+            this.dropdownEl.style.marginTop = "0";
+            this.dropdownEl.style.marginBottom = "4px";
+        } else {
+            // 下方空间足够，显示在下方
+            this.dropdownEl.style.top = "100%";
+            this.dropdownEl.style.bottom = "auto";
+            this.dropdownEl.style.marginTop = "4px";
+            this.dropdownEl.style.marginBottom = "0";
+        }
+        
+        // 确保下拉列表宽度与输入框一致
+        this.dropdownEl.style.width = `${inputRect.width}px`;
+    }
+
     // 销毁组件
     destroy() {
         document.removeEventListener("click", this.handleOutsideClick.bind(this));

@@ -351,7 +351,6 @@ export class TaskModal extends Modal {
             
             // 创建输入容器 - 一行居中排列
             const inputContainer = dateInputModal.contentEl.createEl('div', {
-                text: '设置日期：',
                 cls: 'task-modal-date-input-container'
             });
             inputContainer.style.display = 'flex';

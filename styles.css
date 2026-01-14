@@ -4,6 +4,34 @@
     font-size: 16px;
 }
 
+/* 确保设置页面的 h2 标题比 h3 标题大 */
+.capture-to-config-modal h2 {
+    font-size: 1.5em !important;
+    font-weight: bold !important;
+    margin-bottom: 1em !important;
+}
+
+.capture-to-config-modal h3 {
+    font-size: 1.2em !important;
+    font-weight: 600 !important;
+    margin-top: 1.5em !important;
+    margin-bottom: 0.8em !important;
+}
+
+/* 确保设置页面的 h2 标题比 h3 标题大 */
+.setting-section h2 {
+    font-size: 1.5em !important;
+    font-weight: bold !important;
+    margin-bottom: 1em !important;
+}
+
+.setting-section h3 {
+    font-size: 1.2em !important;
+    font-weight: 600 !important;
+    margin-top: 1.5em !important;
+    margin-bottom: 0.8em !important;
+}
+
 /* 日历样式 */
 .calendar-view {
     padding: 0.3em;
@@ -16,8 +44,61 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    overflow: hidden;
+    overflow: hidden !important;
     flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 日历主体容器（包含日历表格） */
+.calendar-main {
+    overflow: hidden;
+    flex-shrink: 1;
+    min-height: 100px;
+}
+
+/* 任务列表容器 */
+.task-list-container {
+    flex: 1;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* 任务列表内容区域 */
+.task-list {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: none;
+}
+
+/* 确保所有父容器都不会滚动 */
+.view-content {
+    overflow: hidden !important;
+}
+
+/* 确保日历容器的父元素也不会滚动 */
+.workspace-leaf-content {
+    overflow: hidden !important;
+}
+
+/* 确保任务列表滚动条样式正确 */
+.task-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.task-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.task-list::-webkit-scrollbar-thumb {
+    background: var(--interactive-accent);
+    border-radius: 3px;
+}
+
+.task-list::-webkit-scrollbar-thumb:hover {
+    background: var(--interactive-accent-hover);
 }
 
 /* 日历头部样式 */
@@ -31,6 +112,7 @@
     border-bottom: 1px solid var(--divider-color);
     width: 100%;
     box-sizing: border-box;
+    background-color: var(--background-secondary);
 }
 
 /* 日历头部行容器 */
@@ -644,17 +726,14 @@
 
 /* 添加事件容器 */
 .add-event-container {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
     display: flex;
     gap: 0.8em;
     align-items: center;
     padding: 0.5em;
     background-color: var(--background-secondary);
-    border-top: 1px solid var(--background-secondary);
-    z-index: 100;
+    border-top: 1px solid var(--background-modifier-border);
+    border-bottom: 1px solid var(--background-modifier-border);
+    margin-bottom: 0.5em;
 }
 
 /* 添加事件输入框 */
@@ -743,11 +822,57 @@
     align-items: center;
     margin-bottom: 1em;
     cursor: pointer;
+    padding: 0.5em;
+    border-bottom: 1px solid var(--divider-color);
+}
+
+/* 任务列表头部添加事件容器 */
+.task-list-header-add-event {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    flex: 1;
+    margin-left: 1em;
+}
+
+/* 任务列表头部添加事件输入框 */
+.task-list-header-add-input {
+    flex: 1;
+    padding: 0.5em 0.8em;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 20px;
+    background-color: var(--background-secondary);
+    color: var(--text-normal);
+    font-size: 0.9em;
+    outline: none;
+}
+
+/* 任务列表头部添加事件按钮 */
+.task-list-header-add-btn {
+    width: 2em;
+    height: 2em;
+    border: none;
+    border-radius: 50%;
+    background-color: var(--interactive-accent);
+    color: white;
+    font-size: 1.2em;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* 任务列表头部添加事件按钮悬停效果 */
+.task-list-header-add-btn:hover {
+    background-color: var(--interactive-accent-hover);
+    transform: scale(1.05);
+    transition: all 0.2s ease;
 }
 
 /* 任务列表 */
 .task-list {
-    max-height: 480px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
@@ -1734,24 +1859,6 @@
     scroll-snap-align: center;
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-    .task-modal-scroll-picker-container {
-        padding: 0.5em;
-        gap: 0.5em;
-    }
-    
-    .task-modal-scroll-picker {
-        max-height: 150px;
-    }
-    
-    .task-modal-scroll-picker-item {
-        padding: 0.6em 0.8em;
-        font-size: 1em;
-        min-width: 50px;
-    }
-}
-
 .task-modal-cancel-btn {
     background-color: var(--background-secondary);
     color: var(--text-normal);
@@ -1772,9 +1879,8 @@
     background-color: #3367D6;
 }
 
-
 /* 移动端适配 */
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     /* 季度容器在移动端更小 */
     .quarter-container {
         min-width: 3em;
@@ -1815,10 +1921,7 @@
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
     }
-}
-
-/* 移动设备适配 */
-@media screen and (max-width: 768px) {
+    
     /* 增大触摸目标大小 */
     .nav-btn,
     .week-number-cell,
@@ -1861,7 +1964,96 @@
     .indicator-dot {
         width: 0.3em;
         height: 0.3em;
-    }    
+    }
+    
+    /* 任务模态框移动端适配 */
+    .task-modal {
+        width: 100% !important;
+        margin: 0 !important;
+        min-height: 100% !important;
+        border-radius: 0;
+    }
+    
+    .task-modal-form {
+        padding: 0.8em;
+        gap: 1em;
+    }
+    
+    .task-modal-datetime-row {
+        /* 保持水平排列，确保开始日期、时间、箭头、结束日期、时间在一行 */
+        flex-direction: row;
+        gap: 0.5em;
+        flex-wrap: wrap;
+    }
+    
+    .task-modal-date-display {
+        /* 保持垂直排列，日期在上，时间在下 */
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        min-width: 120px;
+    }
+    
+    /* 修复移动端时间输入框宽度太大的问题 */
+    .task-modal-time-input {
+        width: 80px !important;
+        min-width: 80px !important;
+        max-width: 80px !important;
+        font-size: 0.9em !important;
+        padding: 0.3em !important;
+    }
+    
+    .task-modal-arrow {
+        /* 确保箭头在中间，垂直居中 */
+        align-self: center;
+    }
+    
+    .task-modal-footer {
+        padding: 0.8em;
+        gap: 0.8em;
+    }
+    
+    /* 智能路径输入框移动端适配 */
+    .task-modal-storage-path-container {
+        width: 100% !important;
+        margin-right: 0 !important;
+        padding-right: 8px !important;
+    }
+    
+    .task-modal-storage-path-container input {
+        width: 100% !important;
+        font-size: 0.9em !important;
+        padding: 6px 0 !important;
+    }
+    
+    /* 路径自动完成下拉框移动端适配 */
+    .path-autocomplete-dropdown {
+        max-width: 95% !important;
+        max-height: 300px !important;
+        overflow-y: auto !important;
+    }
+    
+    .path-item {
+        padding: 8px 12px !important;
+        font-size: 0.9em !important;
+    }
+    
+    /* 滚动日期选择器移动端适配 */
+    .task-modal-scroll-picker-container {
+        padding: 0.5em;
+        gap: 0.5em;
+    }
+    
+    .task-modal-scroll-picker {
+        max-height: 150px;
+    }
+    
+    .task-modal-scroll-picker-item {
+        padding: 0.6em 0.8em;
+        font-size: 1em;
+        min-width: 50px;
+    }
 }
 
 /* 进一步调整小屏幕设备 */
@@ -1924,46 +2116,101 @@
     .week-indicators {
         display: none;
     }
+    
+    /* 小屏幕时间输入框进一步调整 */
+    .task-modal-time-input {
+        width: 70px !important;
+        min-width: 70px !important;
+        max-width: 70px !important;
+        font-size: 0.8em !important;
+    }
 }
 
+/* PromptModal 样式 */
+.prompt-modal {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 10px;
+    width: 100%;
+}
 
-/* 移动端适配 */
-@media screen and (max-width: 768px) {
-    .task-modal {
-        width: 100% !important;
-        margin: 0 !important;
-        min-height: 100% !important;
-        border-radius: 0;
-    }
-    
-    .task-modal-form {
-        padding: 0.8em;
-        gap: 1em;
-    }
-    
-    .task-modal-datetime-row {
-        /* 保持水平排列，确保开始日期、时间、箭头、结束日期、时间在一行 */
-        flex-direction: row;
-        gap: 0.5em;
-        flex-wrap: wrap;
-    }
-    
-    .task-modal-date-display {
-        /* 保持垂直排列，日期在上，时间在下 */
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        flex: 1;
-        min-width: 120px;
-    }
-    
-    .task-modal-arrow {
-        /* 确保箭头在中间，垂直居中 */
-        align-self: center;
-    }
-    
-    .task-modal-footer {
-        padding: 0.8em;
-        gap: 0.8em;
-    }
+.prompt-modal-header {
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+.prompt-modal-header h3 {
+    margin: 0;
+    font-size: 1.2em;
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+.prompt-modal-content {
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+.prompt-modal-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    font-size: 14px;
+    color: var(--text-normal);
+    background-color: var(--background-primary);
+}
+
+.prompt-modal-textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    font-size: 14px;
+    color: var(--text-normal);
+    background-color: var(--background-primary);
+    rows: 5;
+}
+
+.prompt-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+}
+
+.prompt-modal-multiline-toggle {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    color: var(--text-normal);
+    font-size: 14px;
+}
+
+.prompt-modal-btn {
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.prompt-modal-btn-cancel {
+    border: 1px solid var(--background-modifier-border);
+    background-color: var(--background-secondary);
+    color: var(--text-normal);
+}
+
+.prompt-modal-btn-cancel:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.prompt-modal-btn-submit {
+    border: none;
+    background-color: #0066ff;
+    color: white;
+}
+
+.prompt-modal-btn-submit:hover {
+    background-color: #0052cc;
 }
