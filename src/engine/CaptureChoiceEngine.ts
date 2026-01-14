@@ -29,6 +29,8 @@ export class CaptureChoiceEngine {
 		if ((choice as any).inputMethod) {
 			this.formatter.setInputMethod((choice as any).inputMethod);
 		}
+		// Set choice so formatters can use it for target date
+		this.formatter.setChoice(choice);
 	}
 
 	private showSuccessNotice(

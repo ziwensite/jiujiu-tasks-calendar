@@ -2,7 +2,6 @@ import { MarkdownView } from 'obsidian';
 import { MyPlugin } from '../../../main';
 import { Task, updateTaskInNote, createTaskInNote } from '../../../services/taskService';
 import { formatDate } from '../../../utils/dateUtils';
-import { createOrOpenNote } from '../../../services/noteService';
 
 export class EventHandler {
     private plugin: MyPlugin;
@@ -191,49 +190,82 @@ export class EventHandler {
      * 处理日期双击事件
      */
     async handleDayDoubleClick(date: Date) {
-        // 双击日期新建/打开日记
-        const settings = this.plugin.settings.dailyNote;
-        const fileName = formatDate(date, settings.fileNameFormat);
-        await createOrOpenNote(this.plugin.app, settings.savePath, fileName, settings.templatePath);
+        // 只使用 captureTo 配置创建笔记
+        await this.executeCaptureToConfig(date, 'daily');
     }
 
     /**
      * 处理周数双击事件
      */
     async handleWeekDoubleClick(date: Date) {
-        // 双击周数新建/打开周报
-        const settings = this.plugin.settings.weeklyNote;
-        const fileName = formatDate(date, settings.fileNameFormat);
-        await createOrOpenNote(this.plugin.app, settings.savePath, fileName, settings.templatePath);
+        // 只使用 captureTo 配置创建笔记
+        await this.executeCaptureToConfig(date, 'weekly');
     }
 
     /**
      * 处理月份双击事件
      */
     async handleMonthDoubleClick(date: Date) {
-        // 双击月份新建/打开月报
-        const settings = this.plugin.settings.monthlyNote;
-        const fileName = formatDate(date, settings.fileNameFormat);
-        await createOrOpenNote(this.plugin.app, settings.savePath, fileName, settings.templatePath);
+        // 只使用 captureTo 配置创建笔记
+        await this.executeCaptureToConfig(date, 'monthly');
     }
 
     /**
      * 处理季度双击事件
      */
     async handleQuarterDoubleClick(date: Date) {
-        // 双击季度新建/打开季报
-        const settings = this.plugin.settings.quarterlyNote;
-        const fileName = formatDate(date, settings.fileNameFormat);
-        await createOrOpenNote(this.plugin.app, settings.savePath, fileName, settings.templatePath);
+        // 只使用 captureTo 配置创建笔记
+        await this.executeCaptureToConfig(date, 'quarterly');
     }
 
     /**
      * 处理年份双击事件
      */
     async handleYearDoubleClick(date: Date) {
-        // 双击年度新建/打开年报
-        const settings = this.plugin.settings.yearlyNote;
-        const fileName = formatDate(date, settings.fileNameFormat);
-        await createOrOpenNote(this.plugin.app, settings.savePath, fileName, settings.templatePath);
+        // 只使用 captureTo 配置创建笔记
+        await this.executeCaptureToConfig(date, 'yearly');
+    }
+
+    /**
+     * 执行 captureTo 配置
+     * @param date 日期
+     * @param type 类型：daily, weekly, monthly, quarterly, yearly
+     * @returns 是否成功执行 captureTo 配置
+     */
+    private async executeCaptureToConfig(date: Date, type: string): Promise<boolean> {
+        try {
+            // 获取 captureTo 配置
+            const captureSettings = this.plugin.settings.taskSettings.captureToSettings;
+            if (!captureSettings.enabled || !captureSettings.configs || captureSettings.configs.length === 0) {
+                return false;
+            }
+
+            // 尝试找到匹配类型的配置
+            let targetConfig = captureSettings.configs.find(config => 
+                config.name.toLowerCase().includes(type)
+            );
+
+            // 如果没有找到匹配的配置，使用默认配置
+            if (!targetConfig) {
+                targetConfig = captureSettings.configs.find(config => 
+                    config.id === captureSettings.defaultConfigId
+                );
+            }
+
+            // 如果仍然没有找到配置，返回 false
+            if (!targetConfig) {
+                return false;
+            }
+
+            // 执行 captureTo 配置，并传递目标日期
+            await this.plugin.executeCaptureToConfig({
+                ...targetConfig,
+                _targetDate: date // 添加目标日期
+            });
+            return true;
+        } catch (error) {
+            console.error(`Failed to execute captureTo config for ${type}:`, error);
+            return false;
+        }
     }
 }

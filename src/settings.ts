@@ -64,7 +64,7 @@ export interface CaptureToConfig {
     } | null;
     
     // 输入方式设置
-    inputMethod: "single-line" | "multi-line";
+    inputMethod: "single-line" | "multi-line" | "none";
     
     // 文件创建设置
     createFileIfItDoesntExist: CreateFileIfItDoesntExist;
@@ -192,25 +192,25 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                 },
                 {
                     id: "daily",
-                    name: "默认笔记",
+                    name: "默认daily",
                     description: "专门用于每日笔记的配置",
                     enabled: true,
                     defaultCapturePath: "{{日记}}",
                     captureToActiveFile: false,
                     hotkey: null,
-                    inputMethod: "single-line",
+                    inputMethod: "none",
                     createFileIfItDoesntExist: {
                         enabled: true,
                         createWithTemplate: true,
                         template: "{{日记模板}}"
                     },
                     format: {
-                        enabled: false,
-                        format: "- {{TASK_TEXT}}\n"
+                        enabled: true,
+                        format: "{{TASK_TEXT}}\n"
                     },
                     prepend: false,
                     appendLink: false,
-                    task: true,
+                    task: false,
                     insertAfter: {
                         enabled: true,
                         after: "## 日常记录",
@@ -223,7 +223,171 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                         enabled: false,
                         direction: "below"
                     },
-                    openFile: false,
+                    openFile: true,
+                    fileOpening: {
+                        location: "tab",
+                        direction: "vertical",
+                        mode: "default",
+                        focus: true
+                    }
+                },
+                {
+                    id: "weekly",
+                    name: "默认weekly",
+                    description: "专门用于周报的配置",
+                    enabled: true,
+                    defaultCapturePath: "{{周报}}",
+                    captureToActiveFile: false,
+                    hotkey: null,
+                    inputMethod: "none",
+                    createFileIfItDoesntExist: {
+                        enabled: true,
+                        createWithTemplate: true,
+                        template: "{{周报模板}}"
+                    },
+                    format: {
+                        enabled: true,
+                        format: "## {{TASK_TEXT}}\n\n- 本周工作: \n- 下周计划: \n- 遇到问题: \n\n"
+                    },
+                    prepend: false,
+                    appendLink: false,
+                    task: false,
+                    insertAfter: {
+                        enabled: true,
+                        after: "## 工作记录",
+                        insertAtEnd: true,
+                        considerSubsections: false,
+                        createIfNotFound: true,
+                        createIfNotFoundLocation: "bottom" as "top" | "bottom"
+                    },
+                    newLineCapture: {
+                        enabled: false,
+                        direction: "below"
+                    },
+                    openFile: true,
+                    fileOpening: {
+                        location: "tab",
+                        direction: "vertical",
+                        mode: "default",
+                        focus: true
+                    }
+                },
+                {
+                    id: "monthly",
+                    name: "默认monthly",
+                    description: "专门用于月报的配置",
+                    enabled: true,
+                    defaultCapturePath: "{{默认monthly}}",
+                    captureToActiveFile: false,
+                    hotkey: null,
+                    inputMethod: "none",
+                    createFileIfItDoesntExist: {
+                        enabled: true,
+                        createWithTemplate: true,
+                        template: "{{月报模板}}"
+                    },
+                    format: {
+                        enabled: true,
+                        format: "## {{TASK_TEXT}}\n\n- 本月工作: \n- 下月计划: \n- 总结反思: \n\n"
+                    },
+                    prepend: false,
+                    appendLink: false,
+                    task: false,
+                    insertAfter: {
+                        enabled: true,
+                        after: "## 月度总结",
+                        insertAtEnd: true,
+                        considerSubsections: false,
+                        createIfNotFound: true,
+                        createIfNotFoundLocation: "bottom" as "top" | "bottom"
+                    },
+                    newLineCapture: {
+                        enabled: false,
+                        direction: "below"
+                    },
+                    openFile: true,
+                    fileOpening: {
+                        location: "tab",
+                        direction: "vertical",
+                        mode: "default",
+                        focus: true
+                    }
+                },
+                {
+                    id: "quarterly",
+                    name: "默认quarterly",
+                    description: "专门用于季报的配置",
+                    enabled: true,
+                    defaultCapturePath: "{{季报}}",
+                    captureToActiveFile: false,
+                    hotkey: null,
+                    inputMethod: "none",
+                    createFileIfItDoesntExist: {
+                        enabled: true,
+                        createWithTemplate: true,
+                        template: "{{季报模板}}"
+                    },
+                    format: {
+                        enabled: true,
+                        format: "## {{TASK_TEXT}}\n\n- 本季工作: \n- 下季计划: \n- 季度反思: \n\n"
+                    },
+                    prepend: false,
+                    appendLink: false,
+                    task: false,
+                    insertAfter: {
+                        enabled: true,
+                        after: "## 季度总结",
+                        insertAtEnd: true,
+                        considerSubsections: false,
+                        createIfNotFound: true,
+                        createIfNotFoundLocation: "bottom" as "top" | "bottom"
+                    },
+                    newLineCapture: {
+                        enabled: false,
+                        direction: "below"
+                    },
+                    openFile: true,
+                    fileOpening: {
+                        location: "tab",
+                        direction: "vertical",
+                        mode: "default",
+                        focus: true
+                    }
+                },
+                {
+                    id: "yearly",
+                    name: "默认yearly",
+                    description: "专门用于年报的配置",
+                    enabled: true,
+                    defaultCapturePath: "{{年报}}",
+                    captureToActiveFile: false,
+                    hotkey: null,
+                    inputMethod: "none",
+                    createFileIfItDoesntExist: {
+                        enabled: true,
+                        createWithTemplate: true,
+                        template: "{{年报模板}}"
+                    },
+                    format: {
+                        enabled: true,
+                        format: "## {{TASK_TEXT}}\n\n- 本年工作: \n- 明年计划: \n- 年度反思: \n- 目标达成: \n\n"
+                    },
+                    prepend: false,
+                    appendLink: false,
+                    task: false,
+                    insertAfter: {
+                        enabled: true,
+                        after: "## 年度总结",
+                        insertAtEnd: true,
+                        considerSubsections: false,
+                        createIfNotFound: true,
+                        createIfNotFoundLocation: "bottom" as "top" | "bottom"
+                    },
+                    newLineCapture: {
+                        enabled: false,
+                        direction: "below"
+                    },
+                    openFile: true,
                     fileOpening: {
                         location: "tab",
                         direction: "vertical",
@@ -654,6 +818,95 @@ export class SampleSettingTab extends PluginSettingTab {
                 }
             });
 
+            // 重命名按钮（emoji 图形）
+            const renameButton = buttonContainer.createEl("button", {
+                cls: "config-button"
+            });
+            renameButton.style.width = "20px";
+            renameButton.style.height = "20px";
+            renameButton.style.display = "flex";
+            renameButton.style.alignItems = "center";
+            renameButton.style.justifyContent = "center";
+            renameButton.style.border = "none";
+            renameButton.style.background = "transparent";
+            renameButton.style.color = "var(--text-muted)";
+            renameButton.style.cursor = "pointer";
+            renameButton.textContent = "✏️";
+            renameButton.title = "重命名";
+            renameButton.addEventListener("click", async () => {
+                // 重命名模态框
+                const newName = await new Promise<string | null>((resolve) => {
+                    const modal = new (require('obsidian').Modal)(this.app);
+                    modal.titleEl.setText("重命名配置");
+                    modal.contentEl.createEl("p", {
+                        text: `请输入新的配置名称：`
+                    });
+                    
+                    const input = modal.contentEl.createEl("input", {
+                        type: "text",
+                        value: config.name
+                    });
+                    input.style.width = "100%";
+                    input.style.padding = "8px";
+                    input.style.marginTop = "10px";
+                    input.style.border = "1px solid var(--background-modifier-border)";
+                    input.style.borderRadius = "4px";
+                    
+                    const buttonContainer = modal.contentEl.createEl("div");
+                    buttonContainer.style.display = "flex";
+                    buttonContainer.style.justifyContent = "flex-end";
+                    buttonContainer.style.gap = "10px";
+                    buttonContainer.style.marginTop = "20px";
+
+                    const cancelButton = buttonContainer.createEl("button", {
+                        text: "取消",
+                        cls: "mod-button"
+                    });
+                    cancelButton.addEventListener("click", () => {
+                        resolve(null);
+                        modal.close();
+                    });
+
+                    const confirmButton = buttonContainer.createEl("button", {
+                        text: "确认",
+                        cls: "mod-cta"
+                    });
+                    confirmButton.addEventListener("click", () => {
+                        const value = input.value.trim();
+                        if (value) {
+                            resolve(value);
+                        }
+                        modal.close();
+                    });
+
+                    // 回车键确认
+                    input.addEventListener("keypress", (e: KeyboardEvent) => {
+                        if (e.key === "Enter") {
+                            const value = input.value.trim();
+                            if (value) {
+                                resolve(value);
+                                modal.close();
+                            }
+                        }
+                    });
+
+                    modal.open();
+                    // 自动聚焦输入框
+                    setTimeout(() => input.focus(), 100);
+                });
+
+                if (newName) {
+                    // 更新配置名称
+                    if (this.plugin.settings.taskSettings.captureToSettings.configs && 
+                        this.plugin.settings.taskSettings.captureToSettings.configs[index]) {
+                        this.plugin.settings.taskSettings.captureToSettings.configs[index].name = newName;
+                        this.settingsChanged = true;
+                        // 重新渲染设置页面
+                        this.display();
+                    }
+                }
+            });
+
             // 删除按钮（emoji 图形）
             const deleteButton = buttonContainer.createEl("button", {
                 cls: "config-button"
@@ -882,13 +1135,13 @@ export class SampleSettingTab extends PluginSettingTab {
                 },
                 {
                     id: "daily",
-                    name: "默认笔记",
+                    name: "默认daily",
                     description: "专门用于每日笔记的配置",
                     enabled: true,
                     defaultCapturePath: "{{日记}}",
                     captureToActiveFile: false,
                     hotkey: null,
-                    inputMethod: "single-line",
+                    inputMethod: "none",
                     createFileIfItDoesntExist: {
                         enabled: true,
                         createWithTemplate: true,
@@ -913,7 +1166,171 @@ export class SampleSettingTab extends PluginSettingTab {
                         enabled: false,
                         direction: "below"
                     },
-                    openFile: false,
+                    openFile: true,
+                    fileOpening: {
+                        location: "tab",
+                        direction: "vertical",
+                        mode: "default",
+                        focus: true
+                    }
+                },
+                {
+                    id: "weekly",
+                    name: "默认weekly",
+                    description: "专门用于周报的配置",
+                    enabled: true,
+                    defaultCapturePath: "{{周报}}",
+                    captureToActiveFile: false,
+                    hotkey: null,
+                    inputMethod: "none",
+                    createFileIfItDoesntExist: {
+                        enabled: true,
+                        createWithTemplate: true,
+                        template: "{{周报模板}}"
+                    },
+                    format: {
+                        enabled: true,
+                        format: "## {{TASK_TEXT}}\n\n- 本周工作: \n- 下周计划: \n- 遇到问题: \n\n"
+                    },
+                    prepend: false,
+                    appendLink: false,
+                    task: false,
+                    insertAfter: {
+                        enabled: true,
+                        after: "## 工作记录",
+                        insertAtEnd: true,
+                        considerSubsections: false,
+                        createIfNotFound: true,
+                        createIfNotFoundLocation: "bottom"
+                    },
+                    newLineCapture: {
+                        enabled: false,
+                        direction: "below"
+                    },
+                    openFile: true,
+                    fileOpening: {
+                        location: "tab",
+                        direction: "vertical",
+                        mode: "default",
+                        focus: true
+                    }
+                },
+                {
+                    id: "monthly",
+                    name: "默认monthly",
+                    description: "专门用于月报的配置",
+                    enabled: true,
+                    defaultCapturePath: "{{默认monthly}}",
+                    captureToActiveFile: false,
+                    hotkey: null,
+                    inputMethod: "none",
+                    createFileIfItDoesntExist: {
+                        enabled: true,
+                        createWithTemplate: true,
+                        template: "{{月报模板}}"
+                    },
+                    format: {
+                        enabled: true,
+                        format: "## {{TASK_TEXT}}\n\n- 本月工作: \n- 下月计划: \n- 总结反思: \n\n"
+                    },
+                    prepend: false,
+                    appendLink: false,
+                    task: false,
+                    insertAfter: {
+                        enabled: true,
+                        after: "## 月度总结",
+                        insertAtEnd: true,
+                        considerSubsections: false,
+                        createIfNotFound: true,
+                        createIfNotFoundLocation: "bottom"
+                    },
+                    newLineCapture: {
+                        enabled: false,
+                        direction: "below"
+                    },
+                    openFile: true,
+                    fileOpening: {
+                        location: "tab",
+                        direction: "vertical",
+                        mode: "default",
+                        focus: true
+                    }
+                },
+                {
+                    id: "quarterly",
+                    name: "默认quarterly",
+                    description: "专门用于季报的配置",
+                    enabled: true,
+                    defaultCapturePath: "{{季报}}",
+                    captureToActiveFile: false,
+                    hotkey: null,
+                    inputMethod: "none",
+                    createFileIfItDoesntExist: {
+                        enabled: true,
+                        createWithTemplate: true,
+                        template: "{{季报模板}}"
+                    },
+                    format: {
+                        enabled: true,
+                        format: "## {{TASK_TEXT}}\n\n- 本季工作: \n- 下季计划: \n- 季度反思: \n\n"
+                    },
+                    prepend: false,
+                    appendLink: false,
+                    task: false,
+                    insertAfter: {
+                        enabled: true,
+                        after: "## 季度总结",
+                        insertAtEnd: true,
+                        considerSubsections: false,
+                        createIfNotFound: true,
+                        createIfNotFoundLocation: "bottom"
+                    },
+                    newLineCapture: {
+                        enabled: false,
+                        direction: "below"
+                    },
+                    openFile: true,
+                    fileOpening: {
+                        location: "tab",
+                        direction: "vertical",
+                        mode: "default",
+                        focus: true
+                    }
+                },
+                {
+                    id: "yearly",
+                    name: "默认yearly",
+                    description: "专门用于年报的配置",
+                    enabled: true,
+                    defaultCapturePath: "{{年报}}",
+                    captureToActiveFile: false,
+                    hotkey: null,
+                    inputMethod: "none",
+                    createFileIfItDoesntExist: {
+                        enabled: true,
+                        createWithTemplate: true,
+                        template: "{{年报模板}}"
+                    },
+                    format: {
+                        enabled: true,
+                        format: "## {{TASK_TEXT}}\n\n- 本年工作: \n- 明年计划: \n- 年度反思: \n- 目标达成: \n\n"
+                    },
+                    prepend: false,
+                    appendLink: false,
+                    task: false,
+                    insertAfter: {
+                        enabled: true,
+                        after: "## 年度总结",
+                        insertAtEnd: true,
+                        considerSubsections: false,
+                        createIfNotFound: true,
+                        createIfNotFoundLocation: "bottom"
+                    },
+                    newLineCapture: {
+                        enabled: false,
+                        direction: "below"
+                    },
+                    openFile: true,
                     fileOpening: {
                         location: "tab",
                         direction: "vertical",
@@ -926,7 +1343,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     name: "会议笔记",
                     description: "专门用于会议笔记的配置",
                     enabled: true,
-                    defaultCapturePath: "{{日记}",
+                    defaultCapturePath: "{{日记}}",
                     captureToActiveFile: false,
                     hotkey: null,
                     inputMethod: "single-line",

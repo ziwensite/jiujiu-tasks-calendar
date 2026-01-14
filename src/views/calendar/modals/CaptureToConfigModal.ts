@@ -524,9 +524,10 @@ export class CaptureToConfigModal extends Modal {
             .addDropdown(dropdown => {
                 dropdown.addOption('single-line', '单行输入')
                     .addOption('multi-line', '多行输入')
+                    .addOption('none', '不输入')
                     .setValue(this.config.inputMethod || 'single-line')
                     .onChange(value => {
-                        this.config.inputMethod = value as "single-line" | "multi-line";
+                        this.config.inputMethod = value as "single-line" | "multi-line" | "none";
                     });
             });
     }

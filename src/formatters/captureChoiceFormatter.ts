@@ -20,7 +20,7 @@ export class CaptureChoiceFormatter {
 	private templaterProcessed = false;
 	private templatePropertyVars: Map<string, unknown> = new Map();
 	private title: string = "";
-	private inputMethod: 'single-line' | 'multi-line' = 'single-line';
+	private inputMethod: 'single-line' | 'multi-line' | 'none' = 'single-line';
 
 	constructor(app: App, plugin: MyPlugin, choiceExecutor: IChoiceExecutor) {
 		this.app = app;
@@ -28,7 +28,7 @@ export class CaptureChoiceFormatter {
 		this.choiceExecutor = choiceExecutor;
 	}
 
-	public setInputMethod(method: 'single-line' | 'multi-line') {
+	public setInputMethod(method: 'single-line' | 'multi-line' | 'none') {
 		this.inputMethod = method;
 	}
 
@@ -127,9 +127,12 @@ export class CaptureChoiceFormatter {
 	}
 
 	public async formatFileName(fileName: string, choiceName: string): Promise<string> {
-		// Replace {{DATE}} or {{date}} with current date
+		// 获取目标日期，如果没有则使用当前日期
+		const targetDate = (this.choice as any)?._targetDate || new Date();
+		
+		// Replace {{DATE}} or {{date}} with target date
 		if (fileName.includes("{{DATE}}") || fileName.includes("{{date}}")) {
-			const date = new Date().toISOString().split("T")[0];
+			const date = targetDate.toISOString().split("T")[0];
 			fileName = fileName.replace(/\{\{DATE\}\}/gi, date || '');
 		}
 		// Replace {{CHOICE_NAME}} with choice name
@@ -140,8 +143,8 @@ export class CaptureChoiceFormatter {
 		// 替换 {{日记}} 为 ${dailyNote.savePath}/${dailyFileName}.md
 		const dailySettings = this.plugin.settings.dailyNote;
 		if (dailySettings) {
-			// 使用设置中配置的 fileNameFormat
-			const dailyFileName = formatDate(new Date(), dailySettings.fileNameFormat);
+			// 使用目标日期
+			const dailyFileName = formatDate(targetDate, dailySettings.fileNameFormat);
 			const dailyNotePath = `${dailySettings.savePath}/${dailyFileName}.md`;
 			fileName = fileName.replace(/\{\{日记\}\}/g, dailyNotePath);
 			
@@ -152,8 +155,8 @@ export class CaptureChoiceFormatter {
 		// 替换 {{周报}} 为 ${weeklyNote.savePath}/${weeklyFileName}.md
 		const weeklySettings = this.plugin.settings.weeklyNote;
 		if (weeklySettings) {
-			// 使用设置中配置的 fileNameFormat
-			const weeklyFileName = formatDate(new Date(), weeklySettings.fileNameFormat);
+			// 使用目标日期
+			const weeklyFileName = formatDate(targetDate, weeklySettings.fileNameFormat);
 			const weeklyNotePath = `${weeklySettings.savePath}/${weeklyFileName}.md`;
 			fileName = fileName.replace(/\{\{周报\}\}/g, weeklyNotePath);
 			
@@ -164,8 +167,8 @@ export class CaptureChoiceFormatter {
 		// 替换 {{月报}} 为 ${monthlyNote.savePath}/${monthlyFileName}.md
 		const monthlySettings = this.plugin.settings.monthlyNote;
 		if (monthlySettings) {
-			// 使用设置中配置的 fileNameFormat
-			const monthlyFileName = formatDate(new Date(), monthlySettings.fileNameFormat);
+			// 使用目标日期
+			const monthlyFileName = formatDate(targetDate, monthlySettings.fileNameFormat);
 			const monthlyNotePath = `${monthlySettings.savePath}/${monthlyFileName}.md`;
 			fileName = fileName.replace(/\{\{月报\}\}/g, monthlyNotePath);
 			
@@ -176,8 +179,8 @@ export class CaptureChoiceFormatter {
 		// 替换 {{季报}} 为 ${quarterlyNote.savePath}/${quarterlyFileName}.md
 		const quarterlySettings = this.plugin.settings.quarterlyNote;
 		if (quarterlySettings) {
-			// 使用设置中配置的 fileNameFormat
-			const quarterlyFileName = formatDate(new Date(), quarterlySettings.fileNameFormat);
+			// 使用目标日期
+			const quarterlyFileName = formatDate(targetDate, quarterlySettings.fileNameFormat);
 			const quarterlyNotePath = `${quarterlySettings.savePath}/${quarterlyFileName}.md`;
 			fileName = fileName.replace(/\{\{季报\}\}/g, quarterlyNotePath);
 			
@@ -188,8 +191,8 @@ export class CaptureChoiceFormatter {
 		// 替换 {{年报}} 为 ${yearlyNote.savePath}/${yearlyFileName}.md
 		const yearlySettings = this.plugin.settings.yearlyNote;
 		if (yearlySettings) {
-			// 使用设置中配置的 fileNameFormat
-			const yearlyFileName = formatDate(new Date(), yearlySettings.fileNameFormat);
+			// 使用目标日期
+			const yearlyFileName = formatDate(targetDate, yearlySettings.fileNameFormat);
 			const yearlyNotePath = `${yearlySettings.savePath}/${yearlyFileName}.md`;
 			fileName = fileName.replace(/\{\{年报\}\}/g, yearlyNotePath);
 			
@@ -218,13 +221,18 @@ export class CaptureChoiceFormatter {
 			return selection;
 		}
 
+		// 如果输入方式为"none"，直接返回空字符串
+		if (this.inputMethod === 'none') {
+			return "";
+		}
+
 		// No selection, show prompt modal based on input method
 		return new Promise<string>((resolve) => {
 			const modal = new PromptModal({
 				app: this.app,
 				title: this.choice?.name || "输入内容",
 				placeholder: "输入内容",
-				inputMethod: this.inputMethod,
+				inputMethod: this.inputMethod as 'single-line' | 'multi-line',
 				onSubmit: (value) => {
 					resolve(value);
 				}
@@ -407,12 +415,24 @@ export class CaptureChoiceFormatter {
 
 		if (headingLevel === -1) return startIndex;
 
+		// 首先找到章节的末尾（遇到相同或更高优先级的标题时停止）
+		let endIndex = startIndex;
 		for (let i = startIndex + 1; i < lines.length; i++) {
 			const currentLevel = this.getHeadingLevel(lines[i] || '');
 			if (currentLevel !== -1 && currentLevel <= headingLevel) {
 				break;
 			}
-			position = i;
+			endIndex = i;
+		}
+
+		// 然后从末尾向前查找，找到第一个非空行
+		position = endIndex;
+		for (let i = endIndex; i > startIndex; i--) {
+			const line = lines[i];
+			if (line && line.trim().length > 0) {
+				position = i;
+				break;
+			}
 		}
 
 		return position;

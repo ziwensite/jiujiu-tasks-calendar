@@ -3,7 +3,7 @@ import { MyPlugin } from '../main';
 import { MyPluginSettings } from '../settings';
 import { getLunarDate, getHolidayInfo, getHolidayStatus, getWeekNumber, getWeekInfo, getQuarter, formatDate, lunarMonthNames, lunarDayNames, calculateCalendarMonthData } from '../utils/dateUtils';
 import { Solar } from 'lunar-typescript';
-import { noteExists, createOrOpenNote } from '../services/noteService';
+import { noteExists } from '../services/noteService';
 import { extractTasks, filterTasks, updateTaskInNote, createTaskInNote, Task, parseCustomFilter, evaluateExpression } from '../services/taskService';
 import { CalendarRenderer, TaskListRenderer, IndicatorRenderer, EventHandler } from './calendar';
 import { TaskModal } from './calendar/modals/TaskModal';

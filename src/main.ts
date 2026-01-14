@@ -152,7 +152,7 @@ export class MyPlugin extends Plugin {
      * 执行捕获插入配置
      * @param config 捕获插入配置
      */
-    private async executeCaptureToConfig(config: any) {
+    public async executeCaptureToConfig(config: any) {
         try {
             // 创建一个简单的 IChoiceExecutor 实例
             const choiceExecutor = {
@@ -181,7 +181,8 @@ export class MyPlugin extends Plugin {
                 newLineCapture: config.newLineCapture,
                 openFile: config.openFile,
                 fileOpening: config.fileOpening,
-                inputMethod: config.inputMethod
+                inputMethod: config.inputMethod,
+                _targetDate: config._targetDate // 传递目标日期
             };
 
             // 创建 CaptureChoiceEngine 实例并执行捕获操作
