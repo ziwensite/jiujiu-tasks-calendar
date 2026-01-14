@@ -737,14 +737,16 @@
 }
 
 /* 添加事件输入框 */
-.add-event-input {
+.add-event-container .add-event-input {
     flex: 1;
     padding: 0.8em 1.2em;
-    border: 1px solid var(--background-secondary);
+    border: 1px solid var(--background-modifier-border) !important;
     border-radius: 9999px;
-    background-color: #f0f0f0;
-    color: #999;
+    background-color: var(--background-secondary) !important;
+    color: var(--text-faint);
     font-size: 0.9em;
+    box-shadow: none !important;
+    outline: none !important;
 }
 
 /* 添加事件按钮 */
@@ -753,7 +755,7 @@
     height: 2.0em;
     border: none;
     border-radius: 50%;
-    background-color: white;
+    background-color: var(--background-primary);
     color: var(--interactive-accent);
     font-size: 1.6em;
     font-weight: bold;
@@ -841,7 +843,7 @@
     padding: 0.5em 0.8em;
     border: 1px solid var(--background-modifier-border);
     border-radius: 20px;
-    background-color: var(--background-secondary);
+    background-color: var(--background-primary);
     color: var(--text-normal);
     font-size: 0.9em;
     outline: none;
@@ -856,7 +858,7 @@
     background-color: var(--interactive-accent);
     color: white;
     font-size: 1.2em;
-    font-weight: bold;
+    font-weight: normal;
     cursor: pointer;
     display: flex;
     align-items: center;

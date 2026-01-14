@@ -1,4 +1,4 @@
-﻿import { ItemView, WorkspaceLeaf, Notice, MarkdownView, Modal, App, TFile } from 'obsidian';
+import { ItemView, WorkspaceLeaf, Notice, MarkdownView, Modal, App, TFile } from 'obsidian';
 import { MyPlugin } from '../main';
 import { MyPluginSettings } from '../settings';
 import { getLunarDate, getHolidayInfo, getHolidayStatus, getWeekNumber, getWeekInfo, getQuarter, formatDate, lunarMonthNames, lunarDayNames, calculateCalendarMonthData } from '../utils/dateUtils';
