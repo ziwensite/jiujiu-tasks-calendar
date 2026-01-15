@@ -635,6 +635,7 @@ export class CalendarView extends ItemView {
                 this.selectedDate = new Date();
                 this.currentDate = new Date();
                 this.viewType = 'month'; // 切换到月视图
+                this.navigationType = 'month'; // 同步更新导航类型
                 this.selectionType = 'date'; // 更新选择类型为日期
                 this.selectedWeekRange = null;
                 this.selectedQuarter = null;
@@ -1167,22 +1168,27 @@ export class CalendarView extends ItemView {
                     // 清空容器
                     container.empty();
                     
-                    // 创建日期部分（加粗）
-                    const daySpan = container.createEl('span', { text: `${day}` });
+                    // 第一行：日和周
+                    const firstLine = container.createEl('div');
+                    firstLine.className = 'selected-date-first-line';
+                    
+                    // 创建日期部分
+                    const daySpan = firstLine.createEl('span', { text: `${day}` });
                     daySpan.className = 'day-part';
                     
                     // 创建空格
-                    container.createEl('span', { text: ' ' });
+                    firstLine.createEl('span', { text: ' ' });
                     
-                    // 创建星期部分（加粗）
-                    const weekdaySpan = container.createEl('span', { text: weekday });
+                    // 创建星期部分
+                    const weekdaySpan = firstLine.createEl('span', { text: weekday });
                     weekdaySpan.className = 'weekday-part';
                     
-                    // 创建空格
-                    container.createEl('span', { text: ' ' });
+                    // 第二行：农历
+                    const secondLine = container.createEl('div');
+                    secondLine.className = 'selected-date-second-line';
                     
                     // 创建阴历部分
-                    const lunarSpan = container.createEl('span', { text: lunarText });
+                    const lunarSpan = secondLine.createEl('span', { text: lunarText });
                     lunarSpan.className = 'lunar-part';
                 } else {
                     container.textContent = '未选择日期';

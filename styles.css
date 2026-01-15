@@ -840,7 +840,7 @@
     align-items: center;
     gap: 0.3em;
     flex: 1;
-    margin-left: 0.5em;
+    margin-left: 0.8em;
     box-sizing: border-box;
     overflow: hidden;
     max-width: calc(100% - 1em); /* 确保容器宽度适应 */
@@ -901,6 +901,19 @@
 
 /* 选中日期显示 */
 .selected-date-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* 第一行样式 */
+.selected-date-first-line {
+    display: flex;
+    align-items: center;
+}
+
+/* 第二行样式 */
+.selected-date-second-line {
     display: flex;
     align-items: center;
 }
