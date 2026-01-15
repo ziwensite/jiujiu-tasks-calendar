@@ -1,12 +1,27 @@
 import {App, Plugin, WorkspaceLeaf} from 'obsidian';
 import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
 import {CalendarView} from "./views/CalendarView";
+import { CalendarViewController } from './core/CalendarViewController';
+import { CalendarDataManager } from './core/CalendarDataManager';
+import { EventEmitter, CalendarEvent } from './core/EventEmitter';
 
 export class MyPlugin extends Plugin {
     settings: MyPluginSettings;
+    calendarViewController: CalendarViewController;
+    calendarDataManager: CalendarDataManager;
+    eventEmitter: EventEmitter;
 
     async onload() {
         await this.loadSettings();
+        
+        // 初始化事件发射器
+        this.eventEmitter = new EventEmitter();
+        
+        // 初始化日历数据管理器
+        this.calendarDataManager = new CalendarDataManager(this);
+        
+        // 初始化日历视图控制器
+        this.calendarViewController = new CalendarViewController(this);
         
         // 暴露插件实例到 window 对象，以便其他模块访问
         (window as any).jiujiuObsidianCalendarPlugin = {
@@ -94,22 +109,17 @@ export class MyPlugin extends Plugin {
      * @param refreshType 刷新类型：'full'表示完全刷新，'tasks'表示仅刷新任务列表，'calendar'表示仅刷新日历部分
      */
     updateAllViews(refreshType: 'full' | 'tasks' | 'calendar' = 'full') {
-        // 获取所有日历视图
-        const leaves = this.app.workspace.getLeavesOfType("jiujiu-calendar-view");
-        
-        // 遍历所有视图并根据刷新类型调用相应方法
-        leaves.forEach(leaf => {
-            const view = leaf.view as any;
-            if (view) {
-                if (refreshType === 'full' && typeof view.renderCalendar === 'function') {
-                    view.renderCalendar();
-                } else if (refreshType === 'tasks' && typeof view.refreshTaskList === 'function') {
-                    view.refreshTaskList();
-                } else if (refreshType === 'calendar' && typeof view.refreshCalendar === 'function') {
-                    view.refreshCalendar();
-                }
-            }
-        });
+        // 使用中央控制器管理刷新请求
+        if (refreshType === 'full') {
+            // 完全刷新使用防抖机制
+            this.calendarViewController.requestFlush();
+        } else if (refreshType === 'tasks') {
+            // 任务列表刷新单独处理
+            this.calendarViewController.requestRefreshTaskList();
+        } else if (refreshType === 'calendar') {
+            // 日历部分刷新使用防抖机制
+            this.calendarViewController.requestFlush();
+        }
     }
 
     /**

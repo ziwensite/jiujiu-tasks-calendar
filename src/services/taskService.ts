@@ -1,5 +1,5 @@
 import { App, MarkdownView, TFile } from 'obsidian';
-import { taskRegex, dueDateRegex, escapeRegExp } from '../utils/regexUtils';
+import { taskRegex, dueDateRegex, fullDayRegex, timeRangeRegex, singleTimeRegex, escapeRegExp } from '../utils/regexUtils';
 import { MyPluginSettings } from '../settings';
 import { formatDate } from '../utils/dateUtils';
 import type { IChoiceExecutor } from '../IChoiceExecutor';
@@ -11,29 +11,67 @@ export interface Task {
     filePath: string;
     dueDate?: Date;
     rawText: string;
+    fullDay?: boolean;
+    timeRange?: {
+        startTime: string;
+        endTime: string;
+    };
+    location?: string;
 }
+
+// 文件修改时间缓存
+interface FileCache {
+    mtime: number;
+    tasks: Task[];
+}
+
+// 全局缓存
+let fileCacheMap: Map<string, FileCache> = new Map();
 
 // 从笔记中提取任务
 export async function extractTasks(app: App, settings: MyPluginSettings): Promise<Task[]> {
-    // 直接使用基本的任务提取逻辑
+    // 直接使用优化后的任务提取逻辑
     return await extractBasicTasks(app);
 }
 
-// 基本的任务提取逻辑
+// 优化后的任务提取逻辑
 export async function extractBasicTasks(app: App): Promise<Task[]> {
     const allFiles = app.vault.getMarkdownFiles();
     const tasks: Task[] = [];
-
-    for (const file of allFiles) {
+    
+    // 并行处理文件，提高读取速度
+    const filePromises = allFiles.map(async (file) => {
         try {
+            // 检查文件是否是TFile类型
+            if (!(file instanceof TFile)) return [];
+            
+            // 获取文件修改时间（使用TFile对象的stat属性）
+            const fileStat = file.stat;
+            if (!fileStat) return [];
+            
+            // 检查缓存
+            const cacheKey = file.path;
+            const cache = fileCacheMap.get(cacheKey);
+            
+            // 如果缓存存在且文件未修改，直接返回缓存的任务
+            if (cache && cache.mtime === fileStat.mtime) {
+                return cache.tasks;
+            }
+            
+            // 读取文件内容
             const content = await app.vault.read(file);
             
+            // 提取任务
+            const fileTasks: Task[] = [];
             let match;
+            
+            // 重置正则表达式的lastIndex，避免影响其他匹配
+            taskRegex.lastIndex = 0;
+            
             while ((match = taskRegex.exec(content)) !== null) {
                 if (match[1] && match[2]) {
                     const completed = match[1].toLowerCase() === 'x';
                     const rawText = match[2].trim();
-                    const taskText = rawText.replace(dueDateRegex, '').trim();
                     
                     // 提取截止日期
                     const dateMatch = rawText.match(dueDateRegex);
@@ -42,21 +80,98 @@ export async function extractBasicTasks(app: App): Promise<Task[]> {
                         dueDate = new Date(dateMatch[1]);
                     }
                     
-                    tasks.push({
-                        text: rawText, // 显示整行内容
+                    // 提取全天标记
+                    const fullDayMatch = rawText.match(fullDayRegex);
+                    const fullDay = !!fullDayMatch;
+                    
+                    // 提取时间范围
+                    let timeRange = undefined;
+                    let timeText = rawText;
+                    
+                    // 先尝试匹配完整的时间范围
+                    const timeRangeMatch = rawText.match(timeRangeRegex);
+                    let singleTimeMatch = null;
+                    
+                    if (timeRangeMatch && timeRangeMatch[1] && timeRangeMatch[2]) {
+                        timeRange = {
+                            startTime: timeRangeMatch[1],
+                            endTime: timeRangeMatch[2]
+                        };
+                    }
+                    
+                    // 如果没有完整的时间范围，尝试匹配单独的时间点
+                    else {
+                        singleTimeMatch = rawText.match(singleTimeRegex);
+                        if (singleTimeMatch && singleTimeMatch[1]) {
+                            timeRange = {
+                                startTime: singleTimeMatch[1],
+                                endTime: ''
+                            };
+                        }
+                    }
+                    
+                    // 提取任务描述（去除日期、时间、全天等标记）
+                    let taskDescription = rawText;
+                    
+                    // 移除日期标记
+                    if (dateMatch) {
+                        taskDescription = taskDescription.replace(dueDateRegex, '').trim();
+                    }
+                    
+                    // 移除全天标记
+                    if (fullDayMatch) {
+                        taskDescription = taskDescription.replace(fullDayRegex, '').trim();
+                    }
+                    
+                    // 移除时间范围
+                    if (timeRangeMatch) {
+                        taskDescription = taskDescription.replace(timeRangeRegex, '').trim();
+                    } else if (singleTimeMatch) {
+                        taskDescription = taskDescription.replace(singleTimeRegex, '').trim();
+                    }
+                    
+                    // 去除多余的空格
+                    taskDescription = taskDescription.replace(/\s+/g, ' ').trim();
+                    
+                    fileTasks.push({
+                        text: taskDescription, // 只显示任务描述，不包含日期和时间
                         completed: completed,
                         filePath: file.path,
                         dueDate: dueDate,
-                        rawText: rawText
+                        rawText: rawText,
+                        fullDay: fullDay,
+                        timeRange: timeRange
                     });
                 }
             }
+            
+            // 更新缓存
+            fileCacheMap.set(cacheKey, {
+                mtime: fileStat.mtime,
+                tasks: fileTasks
+            });
+            
+            return fileTasks;
         } catch (error) {
             console.error(`Failed to read file ${file.path}:`, error);
+            return [];
         }
+    });
+    
+    // 等待所有文件处理完成
+    const results = await Promise.all(filePromises);
+    
+    // 合并结果
+    for (const fileTasks of results) {
+        tasks.push(...fileTasks);
     }
 
     return tasks;
+}
+
+// 清除任务缓存
+export function clearTaskCache(): void {
+    fileCacheMap.clear();
 }
 
 // 定义筛选规则的类型

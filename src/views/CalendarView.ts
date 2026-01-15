@@ -6,6 +6,7 @@ import { Solar } from 'lunar-typescript';
 import { noteExists } from '../services/noteService';
 import { extractTasks, filterTasks, updateTaskInNote, createTaskInNote, Task, parseCustomFilter, evaluateExpression } from '../services/taskService';
 import { CalendarRenderer, TaskListRenderer, IndicatorRenderer, EventHandler } from './calendar';
+import { CalendarEvent } from '../core/EventEmitter';
 import { TaskModal } from './calendar/modals/TaskModal';
 
 const VIEW_TYPE_CALENDAR = "jiujiu-calendar-view";
@@ -87,19 +88,41 @@ export class CalendarView extends ItemView {
         this.registerEvent(this.app.vault.on('rename', async (file, oldPath) => {
             await this.handleFileChange(file);
         }));
+        
+        // 添加事件监听器，使用事件驱动机制
+        this.plugin.eventEmitter.on(CalendarEvent.FILE_CHANGED, async () => {
+            // 文件变化时，刷新任务数据缓存并更新任务列表
+            await this.plugin.calendarDataManager.refreshTasks();
+            await this.refreshTaskList();
+        });
+        
+        this.plugin.eventEmitter.on(CalendarEvent.TASK_DATA_UPDATED, async () => {
+            // 任务数据更新时，刷新任务列表
+            await this.refreshTaskList();
+        });
+        
+        this.plugin.eventEmitter.on(CalendarEvent.CALENDAR_VIEW_UPDATED, async () => {
+            // 日历视图更新时，重新渲染日历
+            await this.renderCalendar();
+        });
+        
+        this.plugin.eventEmitter.on(CalendarEvent.SELECTED_DATE_CHANGED, async () => {
+            // 选择日期变化时，刷新任务列表
+            await this.refreshTaskList();
+        });
     }
 
     async onClose() {
         // 清理资源
     }
 
-    private async renderCalendar() {
+    public async renderCalendar() {
         const container = this.containerEl.children[1] as HTMLElement;
         if (!container) return;
 
         // 使用 selectedDate 优先计算日历数据，确保从年视图切换回月视图时使用正确的日期
         const targetDate = this.selectedDate || this.currentDate;
-        const { currentYear, currentMonth, currentRows } = calculateCalendarMonthData(targetDate);
+        const { currentYear, currentMonth, currentRows } = this.plugin.calendarDataManager.getCalendarMonthData(targetDate);
 
         // 检查是否需要完全重建日历结构
         const needsFullRebuild = 
@@ -177,9 +200,9 @@ export class CalendarView extends ItemView {
         // 获取所有日期行
         const rows = Array.from(tbody.querySelectorAll('tr'));
         
-        // 计算当前月份的日历数据
+        // 使用数据管理器获取日历数据（带缓存）
         const targetDate = this.selectedDate || this.currentDate;
-        const { currentYear, currentMonth, prevMonthDaysToShow, daysInMonth, prevMonthDays, prevMonth, prevMonthYear, nextMonth, nextMonthYear } = calculateCalendarMonthData(targetDate);
+        const { currentYear, currentMonth, prevMonthDaysToShow, daysInMonth, prevMonthDays, prevMonth, prevMonthYear, nextMonth, nextMonthYear } = this.plugin.calendarDataManager.getCalendarMonthData(targetDate);
         
         // 处理上个月的剩余天数
         let prevMonthDay = prevMonthDays - prevMonthDaysToShow + 1;
@@ -191,6 +214,10 @@ export class CalendarView extends ItemView {
         
         // 获取今天的日期
         const today = new Date();
+        const todayStr = today.toDateString();
+        
+        // 使用DocumentFragment批量处理DOM更新，减少重排
+        const fragment = document.createDocumentFragment();
         
         // 遍历所有行，更新内容
         for (const row of rows) {
@@ -201,6 +228,7 @@ export class CalendarView extends ItemView {
             for (let i = 1; i < cells.length; i++) {
                 const cell = cells[i];
                 if (cell) {
+                    // 重置类
                     cell.removeClass('other-month');
                     cell.removeClass('today');
                     
@@ -223,12 +251,15 @@ export class CalendarView extends ItemView {
                         isOtherMonth = true;
                     }
                     
+                    const dateStr = date.toDateString();
+                    
+                    // 批量添加类，减少重排
                     if (isOtherMonth) {
                         cell.addClass('other-month');
                     }
                     
                     // 检查是否是今天
-                    if (date.toDateString() === today.toDateString()) {
+                    if (dateStr === todayStr) {
                         cell.addClass('today');
                     }
                     
@@ -999,12 +1030,12 @@ export class CalendarView extends ItemView {
         await this.updateIndicators();
     }
 
-    private async refreshTaskList() {
+    public async refreshTaskList() {
         if (this.selectedDate) {
             const taskListContainer = this.containerEl.querySelector(".task-list-container") as HTMLElement;
             if (taskListContainer) {
-                // 从笔记中提取任务并应用筛选
-                const allTasks = await extractTasks(this.app, this.plugin.settings);
+                // 从数据管理器获取任务并应用筛选
+                const allTasks = await this.plugin.calendarDataManager.getTasks();
                 const filteredTasks = filterTasks(allTasks, this.plugin.settings, this.selectedDate);
                 
                 // 使用taskListRenderer更新任务列表
@@ -1013,6 +1044,8 @@ export class CalendarView extends ItemView {
                         const task = filteredTasks[index];
                         if (task) {
                             await this.eventHandler.handleTaskToggle(task, completed, async () => {
+                                // 任务状态变更后刷新数据缓存
+                                await this.plugin.calendarDataManager.refreshTasks();
                                 await this.refreshTaskList();
                             });
                         }
@@ -1027,6 +1060,8 @@ export class CalendarView extends ItemView {
                             task: task,
                             date: this.selectedDate || new Date(),
                             onTaskUpdated: async () => {
+                                // 任务更新后刷新数据缓存
+                                await this.plugin.calendarDataManager.refreshTasks();
                                 await this.refreshTaskList();
                             }
                         });
@@ -1040,9 +1075,8 @@ export class CalendarView extends ItemView {
     private async handleFileChange(file: any) {
         // 检查文件是否是笔记文件
         if (file.extension === 'md') {
-            // 只刷新任务列表，日历指示器会在视图更新时自动更新
-            // 避免重复提取任务，提升性能
-            await this.refreshTaskList();
+            // 触发文件变化事件
+            this.plugin.eventEmitter.emit(CalendarEvent.FILE_CHANGED, file);
         }
     }
 
@@ -1757,7 +1791,7 @@ export class CalendarView extends ItemView {
             }
             
             // 检查该季度内是否有截止任务
-            const allTasks = await extractTasks(this.app, this.plugin.settings);
+            const allTasks = await this.plugin.calendarDataManager.getTasks();
             
             for (const task of allTasks) {
                 if (task.dueDate && task.dueDate >= quarterStartDate && task.dueDate <= quarterEndDate) {

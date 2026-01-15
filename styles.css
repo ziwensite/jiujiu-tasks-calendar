@@ -1,6 +1,7 @@
 /* JiuJiu Calendar Plugin Styles */
 
 :root {
+    /* 字体大小设置参考 dust-obsidian-calendar */
     font-size: 16px;
 }
 
@@ -37,7 +38,7 @@
     padding: 0.3em;
     background-color: var(--background-secondary);
     color: var(--text-normal);
-    font-size: clamp(0.45em, 1.8vw, 0.75em);
+    font-size: calc((6px + 0.4 * var(--font-text-size)));
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
@@ -314,12 +315,12 @@
     color: var(--text-normal);
     text-align: center;
     font-weight: bold;
-    font-size: 0.9em;
+    font-size: calc((6px + 0.4 * var(--font-text-size)));
 }
 
 /* 导航按钮 */
 .nav-btn {
-    font-size: 0.9em;
+    font-size: calc((6px + 0.4 * var(--font-text-size)));
     cursor: pointer;
     color: var(--text-normal);
     padding: 0.1em 0.3em;
@@ -414,8 +415,8 @@
 
 /* 季度标题 */
 .quarter-header {
-    font-weight: normal;
-    font-size: 0.9em;
+    font-weight: bold;
+    font-size: calc((6px + 0.4 * var(--font-text-size)));
     text-align: center;
     width: 100%;
     flex-shrink: 0;
@@ -460,7 +461,7 @@
 /* 月份标题 */
 .month-header {
     font-weight: normal;
-    font-size: 0.9em;
+    font-size: calc((6px + 0.4 * var(--font-text-size)));
     margin-bottom: 0.2em;
     cursor: pointer;
 }
@@ -504,7 +505,7 @@
     text-align: center;
     font-weight: bold;
     color: var(--text-normal);
-    font-size: 0.8em;
+    font-size: calc((6px + 0.3 * var(--font-text-size)));
     height: 1.5em;
     line-height: 1.5em;
     user-select: none;
@@ -528,7 +529,7 @@
 
 /* 确保日历行高度完全固定，避免切换时闪烁 */
 .calendar-table tr {
-    height: 3em;
+    height: 3.1em;
 }
 
 /* 确保表头行高度固定且较小 */
@@ -594,8 +595,8 @@
 /* 日期数字 */
 .day-number,
 .week-number.day-number {
-    font-size: 0.9em;
-    font-weight: normal;
+    font-size: calc((6px + 0.4 * var(--font-text-size)));
+    font-weight: 500;
     color: var(--text-normal);
     display: inline-block;
     position: relative;
@@ -627,7 +628,7 @@
     justify-content: center;
     
     /* 文字 */
-    font-size: 0.65em;
+    font-size: calc((6px + 0.2 * var(--font-text-size)));
     font-weight: bold;
     line-height: 1;
     white-space: nowrap;
@@ -643,11 +644,12 @@
 
 /* 农历日期 */
 .lunar-date {
-    font-size: 0.55em;
+    font-size: calc((6px + 0.2 * var(--font-text-size)));
     color: var(--text-muted);
     margin-bottom: 0.2em;
     display: block;
     line-height: 1.3;
+    font-weight: normal;
 }
 
 /* 其他月份日期样式 */
@@ -847,12 +849,12 @@
 /* 任务列表头部添加事件输入框 */
 .task-list-header-add-input {
     flex: 1;
-    padding: 0.5em 0.8em;
+    padding: 0.7em 0.8em;
     border: 1px solid var(--background-modifier-border);
     border-radius: 20px;
     background-color: var(--background-primary);
     color: var(--text-normal);
-    font-size: 0.9em;
+    font-size: 0.8em;
     outline: none;
     min-width: 60px; /* 调整为更小的最小值 */
     box-sizing: border-box;
@@ -892,8 +894,9 @@
 /* 任务列表标题 */
 .task-list-header h3 {
     margin: 0;
-    font-size: 1em;
+    font-size: calc((6px + 0.4 * var(--font-text-size)));
     color: var(--text-normal);
+    font-weight: bold;
 }
 
 /* 选中日期显示 */
@@ -905,27 +908,27 @@
 /* 日期部分 */
 .selected-date-display .day-part {
     font-weight: bold;
-    font-size: 1em;
+    font-size: calc((10px + 0.4 * var(--font-text-size)));
     margin-right: 0.3em;
 }
 
 /* 星期部分 */
 .selected-date-display .weekday-part {
     font-weight: bold;
-    font-size: 0.8em;
+    font-size: calc((8px + 0.3 * var(--font-text-size)));
     margin-right: 0.3em;
 }
 
 /* 阴历部分 */
 .selected-date-display .lunar-part {
-    font-size: 0.6em;
+    font-size: calc((8px + 0.2 * var(--font-text-size)));
 }
 
 
 
 /* 任务列表 */
 .task-list {
-    font-size: 0.9em;
+    font-size: calc((6px + 0.4 * var(--font-text-size)));
     color: var(--text-normal);
     min-height: 6em;
 }

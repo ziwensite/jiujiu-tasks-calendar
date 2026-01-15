@@ -1,7 +1,7 @@
 import { MyPlugin } from '../../../main';
 import { getLunarDate, formatDate } from '../../../utils/dateUtils';
 import { noteExists } from '../../../services/noteService';
-import { extractTasks, Task } from '../../../services/taskService';
+import { Task } from '../../../services/taskService';
 
 export class IndicatorRenderer {
     private plugin: MyPlugin;
@@ -80,7 +80,7 @@ export class IndicatorRenderer {
         
         // 检查所有文件中截止日期在当天的任务（其他文件中的任务）
         try {
-            const allTasks = await extractTasks(this.plugin.app, this.plugin.settings);
+            const allTasks = await this.plugin.calendarDataManager.getTasks();
             
             // 筛选截止日期在当天的任务
             // 创建当天的开始和结束时间（本地时间）
@@ -127,7 +127,7 @@ export class IndicatorRenderer {
         // 先提取所有任务，避免重复提取
         let allTasks: Task[] = [];
         try {
-            allTasks = await extractTasks(this.plugin.app, this.plugin.settings);
+            allTasks = await this.plugin.calendarDataManager.getTasks();
         } catch (error) {
             console.error('Failed to extract tasks for day indicators:', error);
         }
@@ -270,7 +270,7 @@ export class IndicatorRenderer {
         // 先提取所有任务，避免重复提取
         let allTasks: Task[] = [];
         try {
-            allTasks = await extractTasks(this.plugin.app, this.plugin.settings);
+            allTasks = await this.plugin.calendarDataManager.getTasks();
         } catch (error) {
             console.error('Failed to extract tasks for week indicators:', error);
         }
