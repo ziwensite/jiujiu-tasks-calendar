@@ -11,7 +11,7 @@ export class TaskListRenderer {
     /**
      * 渲染任务列表
      */
-    renderTaskList(container: HTMLElement, tasks: Task[], onTaskToggle: (index: number, completed: boolean) => void, onTaskDoubleClick: (task: Task) => void, onTaskClick?: (task: Task) => void) {
+    renderTaskList(container: HTMLElement, tasks: Task[], onTaskToggle: (index: number, completed: boolean) => void, onTaskDoubleClick: (task: Task) => void) {
         // 清空现有任务列表
         const taskList = container.querySelector(".task-list") as HTMLElement;
         if (!taskList) return;
@@ -20,14 +20,14 @@ export class TaskListRenderer {
 
         // 渲染任务列表
         tasks.forEach((task, index) => {
-            this.renderTaskItem(taskList, task, index, onTaskToggle, onTaskDoubleClick, onTaskClick);
+            this.renderTaskItem(taskList, task, index, onTaskToggle, onTaskDoubleClick);
         });
     }
 
     /**
      * 渲染单个任务项
      */
-    private renderTaskItem(container: HTMLElement, task: Task, index: number, onTaskToggle: (index: number, completed: boolean) => void, onTaskDoubleClick: (task: Task) => void, onTaskClick?: (task: Task) => void) {
+    private renderTaskItem(container: HTMLElement, task: Task, index: number, onTaskToggle: (index: number, completed: boolean) => void, onTaskDoubleClick: (task: Task) => void) {
         const taskItem = container.createEl("div", { cls: "task-item" });
         
         const checkbox = taskItem.createEl("input", { type: "checkbox" });
@@ -46,12 +46,7 @@ export class TaskListRenderer {
             taskText.addClass("completed");
         }
         
-        // 添加任务文本点击事件
-        taskText.addEventListener("click", () => {
-            if (onTaskClick) {
-                onTaskClick(task);
-            }
-        });
+
     }
 }
 

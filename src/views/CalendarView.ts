@@ -1053,20 +1053,6 @@ export class CalendarView extends ItemView {
                     },
                     async (task) => {
                         await this.eventHandler.handleTaskDoubleClick(task);
-                    },
-                    async (task) => {
-                        // 打开任务编辑窗口
-                        const modal = new TaskModal({
-                            plugin: this.plugin,
-                            task: task,
-                            date: this.selectedDate || new Date(),
-                            onTaskUpdated: async () => {
-                                // 任务更新后刷新数据缓存
-                                await this.plugin.calendarDataManager.refreshTasks();
-                                await this.refreshTaskList();
-                            }
-                        });
-                        modal.open();
                     }
                 );
             }
@@ -1368,18 +1354,6 @@ export class CalendarView extends ItemView {
             },
             async (task) => {
                 await this.eventHandler.handleTaskDoubleClick(task);
-            },
-            async (task) => {
-                // 打开任务编辑窗口
-                const modal = new TaskModal({
-                    plugin: this.plugin,
-                    task: task,
-                    date: startDate,
-                    onTaskUpdated: async () => {
-                        await this.renderTaskListByDateRange(startDate, endDate);
-                    }
-                });
-                modal.open();
             }
         );
     }
