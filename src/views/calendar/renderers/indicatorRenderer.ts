@@ -264,6 +264,17 @@ export class IndicatorRenderer {
     async updateWeekIndicators(container: any, currentDate: Date) {
         const weekCells = Array.from(container.querySelectorAll('.week-number-cell'));
         
+        // 批量收集所有周的数据
+        const indicatorData = new Map<number, { hasNote: boolean; hasTask: boolean }>();
+        
+        // 先提取所有任务，避免重复提取
+        let allTasks: Task[] = [];
+        try {
+            allTasks = await extractTasks(this.plugin.app, this.plugin.settings);
+        } catch (error) {
+            console.error('Failed to extract tasks for week indicators:', error);
+        }
+        
         for (const cell of weekCells) {
             const cellEl = cell as any;
             const weekNumberEl = cellEl.querySelector('.week-number-text');
@@ -280,65 +291,73 @@ export class IndicatorRenderer {
             const weekStartDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
             weekStartDate.setDate(weekStartDate.getDate() - prevMonthDaysToShow + (weekNumber - 1) * 7);
             
-            // 更新周数指示器
-            await this.updateSingleWeekIndicator(cellEl, weekStartDate, weekNumber);
-        }
-    }
-
-    /**
-     * 更新单个周数的指示器
-     */
-    private async updateSingleWeekIndicator(cell: any, weekStartDate: Date, weekNumber: number) {
-        // 计算周结束日期
-        const weekEndDate = new Date(weekStartDate);
-        weekEndDate.setDate(weekEndDate.getDate() + 6);
-        
-        let hasWeeklyNote = false;
-        let hasWeeklyTask = false;
-        
-        // 获取周报设置
-        const weeklySettings = this.plugin.settings.weeklyNote;
-        const weeklyFileName = formatDate(weekStartDate, weeklySettings.fileNameFormat);
-        
-        // 检查多种可能的周报路径
-        const possiblePaths = [
-            `${weeklySettings.savePath}/${weeklyFileName}.md`,
-            `00-周期笔记/2-周报/${weeklyFileName}.md`,
-            `00-周期笔记/2-周报/${formatDate(weekStartDate, "YYYY-wWW")}.md`,
-            `00-周期笔记/2-周报/${formatDate(weekStartDate, "YYYY-WW")}.md`
-        ];
-        
-        // 检查是否存在周报
-        for (const path of possiblePaths) {
-            if (await noteExists(this.plugin.app, path)) {
-                hasWeeklyNote = true;
-                break;
-            }
-        }
-        
-        // 检查本周内是否有截止任务
-        const allTasks = await extractTasks(this.plugin.app, this.plugin.settings);
-        
-        for (const task of allTasks) {
-            if (task.dueDate && task.dueDate >= weekStartDate && task.dueDate <= weekEndDate) {
-                hasWeeklyTask = true;
-                break;
-            }
-        }
-        
-        // 清空现有指示器
-        const indicators = cell.querySelector('.week-indicators');
-        if (indicators) {
-            indicators.empty();
+            // 计算周结束日期
+            const weekEndDate = new Date(weekStartDate);
+            weekEndDate.setDate(weekEndDate.getDate() + 6);
             
-            // 添加实心小圆点表示周报
-            if (hasWeeklyNote) {
-                indicators.createEl('div', {cls: 'indicator-dot solid-dot'});
+            let hasWeeklyNote = false;
+            let hasWeeklyTask = false;
+            
+            // 获取周报设置
+            const weeklySettings = this.plugin.settings.weeklyNote;
+            const weeklyFileName = formatDate(weekStartDate, weeklySettings.fileNameFormat);
+            
+            // 检查多种可能的周报路径
+            const possiblePaths = [
+                `${weeklySettings.savePath}/${weeklyFileName}.md`,
+                `00-周期笔记/2-周报/${weeklyFileName}.md`,
+                `00-周期笔记/2-周报/${formatDate(weekStartDate, "YYYY-wWW")}.md`,
+                `00-周期笔记/2-周报/${formatDate(weekStartDate, "YYYY-WW")}.md`
+            ];
+            
+            // 检查是否存在周报
+            for (const path of possiblePaths) {
+                if (await noteExists(this.plugin.app, path)) {
+                    hasWeeklyNote = true;
+                    break;
+                }
             }
             
-            // 添加空心小圆点表示任务
-            if (hasWeeklyTask) {
-                indicators.createEl('div', {cls: 'indicator-dot hollow-dot'});
+            // 检查本周内是否有截止任务
+            if (allTasks.length > 0) {
+                for (const task of allTasks) {
+                    if (task.dueDate && task.dueDate >= weekStartDate && task.dueDate <= weekEndDate) {
+                        hasWeeklyTask = true;
+                        break;
+                    }
+                }
+            }
+            
+            // 存储数据，使用周数作为键
+            indicatorData.set(weekNumber, { hasNote: hasWeeklyNote, hasTask: hasWeeklyTask });
+        }
+        
+        // 一次性应用所有更新
+        for (const cell of weekCells) {
+            const cellEl = cell as any;
+            const weekNumberEl = cellEl.querySelector('.week-number-text');
+            if (!weekNumberEl) continue;
+            
+            const weekNumber = parseInt(weekNumberEl.textContent || '0');
+            if (isNaN(weekNumber)) continue;
+            
+            const data = indicatorData.get(weekNumber);
+            if (data) {
+                // 清空现有指示器
+                const indicators = cellEl.querySelector('.week-indicators');
+                if (indicators) {
+                    indicators.empty();
+                    
+                    // 添加实心小圆点表示周报
+                    if (data.hasNote) {
+                        indicators.createEl('div', {cls: 'indicator-dot solid-dot'});
+                    }
+                    
+                    // 添加空心小圆点表示任务
+                    if (data.hasTask) {
+                        indicators.createEl('div', {cls: 'indicator-dot hollow-dot'});
+                    }
+                }
             }
         }
     }

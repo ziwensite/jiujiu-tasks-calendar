@@ -747,6 +747,7 @@
     font-size: 0.9em;
     box-shadow: none !important;
     outline: none !important;
+    min-width: 20px !important;
 }
 
 /* 添加事件按钮 */
@@ -802,8 +803,8 @@
 
 /* 任务列表样式 - 移除过渡效果以提高更新流畅度 */
 .task-list-container {
-    margin-top: 0.5em;
-    padding-top: 1em;
+    margin-top: 0em;
+    padding-top: 0.3em;
     border-top: 1px solid var(--divider-color);
 }
 
@@ -822,19 +823,25 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1em;
+    margin-bottom: 0.5em;
     cursor: pointer;
-    padding: 0.5em;
+    padding: 0.3em;
     border-bottom: 1px solid var(--divider-color);
+    box-sizing: border-box;
+    overflow: hidden;
+    width: 100%;
 }
 
 /* 任务列表头部添加事件容器 */
 .task-list-header-add-event {
     display: flex;
     align-items: center;
-    gap: 0.5em;
+    gap: 0.3em;
     flex: 1;
-    margin-left: 1em;
+    margin-left: 0.5em;
+    box-sizing: border-box;
+    overflow: hidden;
+    max-width: calc(100% - 1em); /* 确保容器宽度适应 */
 }
 
 /* 任务列表头部添加事件输入框 */
@@ -847,6 +854,9 @@
     color: var(--text-normal);
     font-size: 0.9em;
     outline: none;
+    min-width: 60px; /* 调整为更小的最小值 */
+    box-sizing: border-box;
+    max-width: calc(100% - 2.5em); /* 确保输入框不会占据所有空间，留出按钮位置 */
 }
 
 /* 任务列表头部添加事件按钮 */

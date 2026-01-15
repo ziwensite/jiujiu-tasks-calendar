@@ -122,15 +122,10 @@ export class CalendarView extends ItemView {
             await this.updateCalendarContent();
         }
 
+        // 1. 首先更新日期选择状态，确保任务列表能显示正确的日期内容
         this.updateDaySelection();
         
-        // 更新周数指示器
-        if (this.viewType === 'month') {
-            const targetDate = this.selectedDate || this.currentDate;
-            this.indicatorRenderer.updateWeekIndicators(this.containerEl, targetDate);
-        }
-        
-        // 更新任务列表，确保视图切换时任务列表会根据selectedDate自动显示
+        // 2. 优先更新任务列表，让用户尽快看到关键内容
         if (this.selectedDate) {
             if (this.viewType === 'month' && this.selectionType === 'month') {
                 // 月视图且选择类型为月份：显示整个月份的任务
@@ -145,10 +140,17 @@ export class CalendarView extends ItemView {
             }
         }
         
-        // 调整任务列表高度，确保滚动条在需要时显示
-        setTimeout(() => {
-            this.adjustTaskListHeight();
-        }, 100);
+        // 3. 调整任务列表高度，确保滚动条在需要时显示
+        this.adjustTaskListHeight();
+        
+        // 4. 最后更新非关键的指示器，这些操作不影响用户核心体验
+        if (this.viewType === 'month') {
+            // 使用异步方式更新周数指示器，不阻塞主线程
+            setTimeout(() => {
+                const targetDate = this.selectedDate || this.currentDate;
+                this.indicatorRenderer.updateWeekIndicators(this.containerEl, targetDate);
+            }, 0);
+        }
     }
 
     /**
@@ -497,6 +499,7 @@ export class CalendarView extends ItemView {
             (prevMonthBtn as HTMLElement).title = "上一月";
             prevMonthBtn.addEventListener("click", () => {
                 this.currentDate.setMonth(this.currentDate.getMonth() - 1);
+                this.selectedDate = this.currentDate;
                 this.renderCalendar();
             });
         }
@@ -505,6 +508,7 @@ export class CalendarView extends ItemView {
             (nextMonthBtn as HTMLElement).title = "下一月";
             nextMonthBtn.addEventListener("click", () => {
                 this.currentDate.setMonth(this.currentDate.getMonth() + 1);
+                this.selectedDate = this.currentDate;
                 this.renderCalendar();
             });
         }
@@ -539,6 +543,7 @@ export class CalendarView extends ItemView {
             (prevYearBtn as HTMLElement).title = "上一年";
             prevYearBtn.addEventListener("click", () => {
                 this.currentDate.setFullYear(this.currentDate.getFullYear() - 1);
+                this.selectedDate = this.currentDate;
                 this.renderCalendar();
             });
         }
@@ -547,6 +552,7 @@ export class CalendarView extends ItemView {
             (nextYearBtn as HTMLElement).title = "下一年";
             nextYearBtn.addEventListener("click", () => {
                 this.currentDate.setFullYear(this.currentDate.getFullYear() + 1);
+                this.selectedDate = this.currentDate;
                 this.renderCalendar();
             });
         }
@@ -601,9 +607,12 @@ export class CalendarView extends ItemView {
                 this.selectionType = 'date'; // 更新选择类型为日期
                 this.selectedWeekRange = null;
                 this.selectedQuarter = null;
+                
+                // 先更新选择状态，让用户立即看到日期变化
+                this.updateSelectionState();
+                
+                // 然后刷新视图
                 this.renderCalendar();
-                // 更新选择状态并刷新日期显示
-                await this.updateSelectionState();
             });
         }
         
@@ -624,6 +633,10 @@ export class CalendarView extends ItemView {
                     this.selectedQuarter = null;
                 }
                 
+                // 先更新选择状态，让用户立即看到日期变化
+                this.updateSelectionState();
+                
+                // 然后刷新视图
                 await this.renderCalendar();
                 
                 // 如果切换到年视图，默认选择当前选中日期所在的月份
@@ -642,9 +655,6 @@ export class CalendarView extends ItemView {
                         monthContainers[currentMonthIndex].classList.add("selected");
                     }
                 }
-                
-                // 更新选择状态并刷新日期显示
-                await this.updateSelectionState();
             });
         }
         
@@ -662,9 +672,12 @@ export class CalendarView extends ItemView {
                 }
                 this.selectedWeekRange = null;
                 this.selectedQuarter = null;
+                
+                // 先更新选择状态，让用户立即看到日期变化
+                this.updateSelectionState();
+                
+                // 然后刷新视图
                 await this.renderCalendar();
-                // 更新选择状态并刷新日期显示
-                await this.updateSelectionState();
             });
         }
         
@@ -679,9 +692,12 @@ export class CalendarView extends ItemView {
                 this.currentDate = new Date();
                 this.selectedWeekRange = null;
                 this.selectedQuarter = null;
+                
+                // 先更新选择状态，让用户立即看到日期变化
+                this.updateSelectionState();
+                
+                // 然后刷新视图
                 this.renderCalendar();
-                // 更新选择状态并刷新日期显示
-                await this.updateSelectionState();
             });
         }
         
@@ -696,9 +712,12 @@ export class CalendarView extends ItemView {
                 this.currentDate = new Date();
                 this.selectedWeekRange = null;
                 this.selectedQuarter = null;
+                
+                // 先更新选择状态，让用户立即看到日期变化
+                this.updateSelectionState();
+                
+                // 然后刷新视图
                 this.renderCalendar();
-                // 更新选择状态并刷新日期显示
-                await this.updateSelectionState();
             });
         }
     }
@@ -1021,8 +1040,8 @@ export class CalendarView extends ItemView {
     private async handleFileChange(file: any) {
         // 检查文件是否是笔记文件
         if (file.extension === 'md') {
-            // 刷新日历和任务列表
-            await this.refreshCalendar();
+            // 只刷新任务列表，日历指示器会在视图更新时自动更新
+            // 避免重复提取任务，提升性能
             await this.refreshTaskList();
         }
     }
@@ -1651,10 +1670,7 @@ export class CalendarView extends ItemView {
             // 年视图：更新月份指示器
             await this.updateYearViewMonthIndicators();
         }
-        // 如果选中了日期，更新任务列表
-        if (this.selectedDate) {
-            await this.refreshTaskList();
-        }
+        // 移除不必要的refreshTaskList调用，避免重复提取任务
     }
 
     private async updateYearViewMonthIndicators() {
