@@ -314,8 +314,7 @@ export class CalendarView extends ItemView {
         // 使用 calendarRenderer 构建日历结构（不包含输入框，输入框将在任务列表容器的下方创建）
         await this.calendarRenderer.buildCalendarStructure(container, this.currentDate, this.selectedDate || this.currentDate, this.viewType, this.navigationType);
         
-        // 重新初始化侧边栏，为新创建的侧边栏按钮添加事件监听器
-        this.initSidebar();
+        
         
         // 添加导航按钮事件监听器
         this.addNavigationEventListeners();
@@ -1013,11 +1012,6 @@ export class CalendarView extends ItemView {
                 }
             });
         }
-    }
-
-    private initSidebar() {
-        // 侧边栏初始化已由calendarRenderer处理
-        // 此方法保留以确保兼容性
     }
 
     private async refreshAll() {

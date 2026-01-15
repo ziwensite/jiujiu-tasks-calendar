@@ -101,11 +101,7 @@ export class CalendarRenderer {
         // 单行：从左到右排列：侧边栏按钮、导航、年按钮、今日按钮
         const singleRow = header.createEl("div", {cls: "calendar-header-row"});
         
-        // 最左侧：侧边栏按钮
-        singleRow.createEl("div", {
-            text: "☰",
-            cls: "sidebar-toggle"
-        });
+        
         
         // 左侧：根据导航类型渲染不同的导航
         if (navigationType === 'month') {
