@@ -1,6 +1,7 @@
 import {App, Plugin, WorkspaceLeaf} from 'obsidian';
 import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
 import {CalendarView} from "./views/CalendarView";
+import {TasksView} from "./views/TasksView";
 import { CalendarViewController } from './core/CalendarViewController';
 import { CalendarDataManager } from './core/CalendarDataManager';
 import { EventEmitter, CalendarEvent } from './core/EventEmitter';
@@ -32,6 +33,11 @@ export class MyPlugin extends Plugin {
         this.registerView(
             "jiujiu-calendar-view",
             (leaf) => new CalendarView(leaf, this)
+        );
+        
+        this.registerView(
+            "jiujiu-tasks-view",
+            (leaf) => new TasksView(leaf, this)
         );
 
         // 添加侧边栏按钮

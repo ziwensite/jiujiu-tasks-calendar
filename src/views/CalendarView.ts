@@ -16,12 +16,12 @@ export class CalendarView extends ItemView {
     private plugin: MyPlugin;
 
     private selectedDate: Date | null = null;
-    private viewType: 'month' | 'year' | 'week' | 'day' | 'schedule' = 'month';
+    private viewType: 'month' | 'year' | 'week' | 'day' | 'schedule' | 'tasks' = 'month';
     private lastRenderedYear: number = -1;
     private lastRenderedMonth: number = -1;
-    private lastRenderedViewType: 'month' | 'year' | 'week' | 'day' | 'schedule' = 'month';
+    private lastRenderedViewType: 'month' | 'year' | 'week' | 'day' | 'schedule' | 'tasks' = 'month';
     private lastRenderedRows: number = -1;
-    private selectionType: 'date' | 'week' | 'month' | 'quarter' | 'year' | 'schedule' = 'date';
+    private selectionType: 'date' | 'week' | 'month' | 'quarter' | 'year' | 'schedule' | 'tasks' = 'date';
     private selectedWeekRange: { start: Date; end: Date } | null = null;
     private selectedQuarter: number | null = null;
     private lastRenderedNavigationType: 'month' | 'year' = 'month';
@@ -749,6 +749,36 @@ export class CalendarView extends ItemView {
                 
                 // 然后刷新视图
                 this.renderCalendar();
+            });
+        }
+        
+        const tasksBtn = this.containerEl.querySelector(".calendar-header-label-tasks");
+        if (tasksBtn) {
+            // 任务按钮：在工作区打开任务视图
+            tasksBtn.className = `calendar-header-label-tasks ${this.viewType === 'tasks' ? 'today-selected' : 'today-unselected'}`;
+            tasksBtn.addEventListener("click", async () => {
+                // 在新标签页打开任务视图
+                const { workspace } = this.app;
+                
+                let leaf: WorkspaceLeaf | null = null;
+                const leaves = workspace.getLeavesOfType("jiujiu-tasks-view");
+                
+                if (leaves.length > 0 && leaves[0]) {
+                    leaf = leaves[0];
+                } else {
+                    // 在新标签页中打开
+                    leaf = workspace.getLeaf('tab');
+                    if (leaf) {
+                        await leaf.setViewState({
+                            type: "jiujiu-tasks-view",
+                            active: true,
+                        });
+                    }
+                }
+                
+                if (leaf) {
+                    workspace.revealLeaf(leaf);
+                }
             });
         }
     }

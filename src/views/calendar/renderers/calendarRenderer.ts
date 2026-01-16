@@ -12,7 +12,7 @@ export class CalendarRenderer {
     /**
      * 构建日历结构
      */
-    async buildCalendarStructure(container: HTMLElement, currentDate: Date, selectedDate: Date, viewType: 'month' | 'year' | 'week' | 'day' | 'schedule', navigationType: 'month' | 'year' = 'month') {
+    async buildCalendarStructure(container: HTMLElement, currentDate: Date, selectedDate: Date, viewType: 'month' | 'year' | 'week' | 'day' | 'schedule' | 'tasks', navigationType: 'month' | 'year' = 'month') {
         if (viewType === 'month') {
             await this.buildMonthView(container, currentDate, selectedDate, navigationType);
         } else if (viewType === 'year') {
@@ -23,6 +23,9 @@ export class CalendarRenderer {
             await this.buildDayView(container, currentDate, selectedDate, navigationType);
         } else if (viewType === 'schedule') {
             await this.buildScheduleView(container, currentDate, selectedDate, navigationType);
+        } else if (viewType === 'tasks') {
+            // 任务视图：在工作区打开，不在这里渲染
+            // 由CalendarView中的任务按钮点击事件处理
         }
     }
 
@@ -121,6 +124,12 @@ export class CalendarRenderer {
         singleRow.createEl("div", { 
             text: `${today.getDate()}`,
             cls: "calendar-header-label-today today-unselected"
+        });
+        
+        // 任务按钮
+        singleRow.createEl("div", { 
+            text: "任务",
+            cls: "calendar-header-label-tasks today-unselected"
         });
     }
 
