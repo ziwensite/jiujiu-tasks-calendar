@@ -76,15 +76,15 @@ export class CalendarView extends ItemView {
         this.registerEvent(this.app.vault.on('create', async (file) => {
             await this.handleFileChange(file);
         }));
-        
-        this.registerEvent(this.app.vault.on('modify', async (file) => {
-            await this.handleFileChange(file);
-        }));
-        
+
         this.registerEvent(this.app.vault.on('delete', async (file) => {
             await this.handleFileChange(file);
         }));
-        
+
+        this.registerEvent(this.app.vault.on('modify', async (file) => {
+            await this.handleFileChange(file);
+        }));
+
         this.registerEvent(this.app.vault.on('rename', async (file, oldPath) => {
             await this.handleFileChange(file);
         }));
@@ -94,11 +94,15 @@ export class CalendarView extends ItemView {
             // 文件变化时，刷新任务数据缓存并更新任务列表
             await this.plugin.calendarDataManager.refreshTasks();
             await this.refreshTaskList();
+            // 更新所有日期指示器
+            await this.updateIndicators();
         });
         
         this.plugin.eventEmitter.on(CalendarEvent.TASK_DATA_UPDATED, async () => {
             // 任务数据更新时，刷新任务列表
             await this.refreshTaskList();
+            // 更新所有日期指示器
+            await this.updateIndicators();
         });
         
         this.plugin.eventEmitter.on(CalendarEvent.CALENDAR_VIEW_UPDATED, async () => {
@@ -351,10 +355,13 @@ export class CalendarView extends ItemView {
         
         // 处理添加按钮点击事件
         const handleAddEvent = async () => {
+            console.log("handleAddEvent called");
             const inputText = inputEl.value.trim();
+            console.log("Input text:", inputText);
             
             if (inputText === "") {
                 // 输入框为空，弹出任务模态窗口
+                console.log("Input is empty, opening modal");
                 const modal = new TaskModal({
                     plugin: this.plugin,
                     date: selectedDate || new Date(),
@@ -364,8 +371,11 @@ export class CalendarView extends ItemView {
                 });
                 modal.open();
             } else {
-                // 输入框有内容，按照默认设置自动添加任务到当天日记
+                // 输入框有内容，直接调用 createTaskInNote，不使用 TaskTextBuilder
                 try {
+                    console.log("Creating task with input:", inputText);
+                    
+                    console.log("Calling createTaskInNote directly");
                     await createTaskInNote(
                         this.app,
                         inputText,
@@ -374,6 +384,7 @@ export class CalendarView extends ItemView {
                         "daily"
                     );
                     
+                    console.log("Task created successfully");
                     // 清空输入框
                     inputEl.value = "";
                     
@@ -381,6 +392,7 @@ export class CalendarView extends ItemView {
                     await this.refreshTaskList();
                 } catch (error) {
                     console.error("Failed to create task:", error);
+                    new Notice(`创建任务失败: ${error instanceof Error ? error.message : '未知错误'}`, 4000);
                 }
             }
         };
@@ -389,9 +401,9 @@ export class CalendarView extends ItemView {
         addBtn.addEventListener("click", handleAddEvent);
         
         // 绑定回车键事件
-        inputEl.addEventListener("keydown", (e) => {
+        inputEl.addEventListener("keydown", async (e) => {
             if (e.key === "Enter") {
-                handleAddEvent();
+                await handleAddEvent();
             }
         });
         
@@ -471,10 +483,13 @@ export class CalendarView extends ItemView {
         
         // 处理添加按钮点击事件
         const handleAddEvent = async () => {
+            console.log("buildAddEventInput: handleAddEvent called");
             const inputText = inputEl.value.trim();
+            console.log("buildAddEventInput: Input text:", inputText);
             
             if (inputText === "") {
                 // 输入框为空，弹出任务模态窗口
+                console.log("buildAddEventInput: Input is empty, opening modal");
                 const modal = new TaskModal({
                     plugin: this.plugin,
                     date: selectedDate || new Date(),
@@ -484,8 +499,11 @@ export class CalendarView extends ItemView {
                 });
                 modal.open();
             } else {
-                // 输入框有内容，按照默认设置自动添加任务到当天日记
+                // 输入框有内容，直接调用 createTaskInNote，不使用 TaskTextBuilder
                 try {
+                    console.log("buildAddEventInput: Creating task with input:", inputText);
+                    
+                    console.log("buildAddEventInput: Calling createTaskInNote directly");
                     await createTaskInNote(
                         this.app,
                         inputText,
@@ -494,13 +512,15 @@ export class CalendarView extends ItemView {
                         "daily"
                     );
                     
+                    console.log("buildAddEventInput: Task created successfully");
                     // 清空输入框
                     inputEl.value = "";
                     
                     // 刷新任务列表
                     await this.refreshTaskList();
                 } catch (error) {
-                    console.error("Failed to create task:", error);
+                    console.error("buildAddEventInput: Failed to create task:", error);
+                    new Notice(`创建任务失败: ${error instanceof Error ? error.message : '未知错误'}`, 4000);
                 }
             }
         };
@@ -509,9 +529,9 @@ export class CalendarView extends ItemView {
         addBtn.addEventListener("click", handleAddEvent);
         
         // 绑定回车键事件
-        inputEl.addEventListener("keydown", (e) => {
+        inputEl.addEventListener("keydown", async (e) => {
             if (e.key === "Enter") {
-                handleAddEvent();
+                await handleAddEvent();
             }
         });
     }

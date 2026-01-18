@@ -102,6 +102,8 @@ export class CalendarDataManager {
      * 刷新任务数据
      */
     public async refreshTasks(): Promise<void> {
+        // 清除任务缓存，确保获取最新的任务数据
+        await import('../services/taskService').then(({ clearTaskCache }) => clearTaskCache());
         this.tasks = await extractTasks(this.plugin.app, this.plugin.settings);
         this.lastTaskUpdateTime = Date.now();
     }

@@ -104,6 +104,20 @@ export interface TaskFilterSettings {
     customFilter: string;
 }
 
+// 集成设置接口
+export interface IntegrationSettings {
+    // 是否使用Tasks插件格式
+    useTasksPluginFormat: boolean;
+    // 是否自动添加创建日期
+    autoCreateCreatedDate: boolean;
+    // 是否自动添加截止日期
+    autoCreateDueDate: boolean;
+    // 截止日期选项：当天、自定义天数、本周末、本月底、本年底
+    dueDateOption: "today" | "custom" | "weekend" | "monthEnd" | "yearEnd";
+    // 自定义截止天数
+    customDueDays: number;
+}
+
 export interface MyPluginSettings {
     dailyNote: NoteTemplateSettings;
     weeklyNote: NoteTemplateSettings;
@@ -112,6 +126,8 @@ export interface MyPluginSettings {
     yearlyNote: NoteTemplateSettings;
     taskFilter: TaskFilterSettings;
     taskSettings: TaskSettings;
+    // 集成设置
+    integrations: IntegrationSettings;
 }
 
 export const DEFAULT_SETTINGS: MyPluginSettings = {
@@ -438,6 +454,14 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                 }
             ]
         }
+    },
+    // 集成设置
+    integrations: {
+        useTasksPluginFormat: true,
+        autoCreateCreatedDate: true,
+        autoCreateDueDate: false,
+        dueDateOption: "today",
+        customDueDays: 1
     }
 }
 
@@ -462,8 +486,8 @@ export class SampleSettingTab extends PluginSettingTab {
         // 渲染任务显示筛选设置
         this.renderTaskFilterSettings();
         
-        // 渲染任务创建设置
-        this.renderTaskSettings();
+        // 渲染集成设置
+        this.renderIntegrationSettings();
         
         // 渲染 Capture To 设置
         this.renderCaptureToSettings();
@@ -560,6 +584,87 @@ export class SampleSettingTab extends PluginSettingTab {
                 textArea.inputEl.style.resize = "vertical";
                 textArea.inputEl.style.maxHeight = "100px";
             });
+    }
+
+    private renderIntegrationSettings(): void {
+        const section = this.containerEl.createEl("div", {cls: "setting-section"});
+        section.createEl("h4", {text: "任务格式集成设置"});
+
+        // 使用Tasks插件格式
+        new Setting(section)
+            .setName("使用 Tasks 插件格式")
+            .setDesc("创建任务时使用 Tasks 插件的语法格式")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.integrations.useTasksPluginFormat)
+                .onChange((value) => {
+                    this.plugin.settings.integrations.useTasksPluginFormat = value;
+                    this.settingsChanged = true;
+                }));
+
+        // 自动添加创建日期
+        new Setting(section)
+            .setName("自动添加创建日期")
+            .setDesc("创建任务时自动添加创建日期标记 ➕ YYYY-MM-DD")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.integrations.autoCreateCreatedDate)
+                .onChange((value) => {
+                    this.plugin.settings.integrations.autoCreateCreatedDate = value;
+                    this.settingsChanged = true;
+                }));
+
+        // 自动添加截止日期
+        const autoDueDateSetting = new Setting(section)
+            .setName("自动添加截止日期")
+            .setDesc("创建任务时自动添加截止日期标记 📅 YYYY-MM-DD")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.integrations.autoCreateDueDate)
+                .onChange((value) => {
+                    this.plugin.settings.integrations.autoCreateDueDate = value;
+                    this.settingsChanged = true;
+                    // 刷新设置页面，显示或隐藏下级菜单
+                    this.display();
+                }));
+
+        // 只有当自动添加截止日期开启时，才显示下级菜单
+        if (this.plugin.settings.integrations.autoCreateDueDate) {
+            // 截止日期计算方式
+            const dueDateOptionSetting = new Setting(section)
+                .setName("截止日期计算方式")
+                .setDesc("选择自动添加截止日期的计算方式")
+                .addDropdown(dropdown => {
+                    dropdown.addOption("today", "当天");
+                    dropdown.addOption("custom", "自定义天数");
+                    dropdown.addOption("weekend", "本周末");
+                    dropdown.addOption("monthEnd", "本月底");
+                    dropdown.addOption("yearEnd", "本年底");
+                    dropdown.setValue(this.plugin.settings.integrations.dueDateOption)
+                        .onChange((value) => {
+                            this.plugin.settings.integrations.dueDateOption = value as any;
+                            this.settingsChanged = true;
+                            // 刷新设置页面，显示或隐藏自定义天数输入框
+                            this.display();
+                        });
+                });
+            dueDateOptionSetting.settingEl.style.marginLeft = "20px";
+
+            // 自定义天数输入框，只有当选择自定义天数时才显示
+            if (this.plugin.settings.integrations.dueDateOption === "custom") {
+                const customDaysSetting = new Setting(section)
+                    .setName("自定义天数")
+                    .setDesc("设置自定义截止日期的天数")
+                    .addText(text => text
+                        .setPlaceholder("输入天数")
+                        .setValue(this.plugin.settings.integrations.customDueDays.toString())
+                        .onChange((value) => {
+                            const days = parseInt(value);
+                            if (!isNaN(days)) {
+                                this.plugin.settings.integrations.customDueDays = days;
+                                this.settingsChanged = true;
+                            }
+                        }));
+                customDaysSetting.settingEl.style.marginLeft = "40px";
+            }
+        }
     }
 
     private renderTaskSettings(): void {

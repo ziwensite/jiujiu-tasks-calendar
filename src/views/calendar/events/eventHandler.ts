@@ -33,37 +33,55 @@ export class EventHandler {
     }
 
     /**
-     * 处理任务双击事件
+     * 处理任务双击事件：打开文件并高亮选中任务
      */
     async handleTaskDoubleClick(task: Task) {
         const file = this.plugin.app.vault.getAbstractFileByPath(task.filePath);
-        if (file && 'stat' in file) {
+        if (!file || !('stat' in file)) return;
+
+        try {
+            // 1. 打开文件
             const leaf = this.plugin.app.workspace.getLeaf(false);
-            await leaf.openFile(file as any);
-            
-            // 尝试选中任务（如果是Markdown文件）
+            await leaf.openFile(file);
+
+            // 2. 等待文件完全打开和渲染
+            await new Promise(resolve => setTimeout(resolve, 200));
+
             const activeView = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
-            if (activeView) {
-                const editor = activeView.editor;
-                const content = editor.getValue();
-                const taskIndex = content.indexOf(task.text);
-                if (taskIndex !== -1) {
-                    const line = content.substring(0, taskIndex).split('\n').length - 1;
-                    const lines = content.split('\n');
-                    const lineContent = lines[line];
-                    if (lineContent) {
-                        const taskStart = lineContent.indexOf(task.text);
-                        if (taskStart !== -1) {
-                            const taskEnd = taskStart + task.text.length;
-                            const startPos = { line, ch: taskStart };
-                            const endPos = { line, ch: taskEnd };
-                            editor.setSelection(startPos, endPos);
-                            // 滚动到任务位置
-                            editor.scrollIntoView({ from: startPos, to: endPos });
-                        }
-                    }
-                }
-            }
+            if (!activeView) return;
+
+            const editor = activeView.editor;
+            const content = editor.getValue();
+
+            // 3. 查找任务在文件中的位置
+            const taskIndex = content.indexOf(task.text);
+            if (taskIndex === -1) return;
+
+            // 4. 计算任务所在行
+            const line = content.substring(0, taskIndex).split('\n').length - 1;
+            const lineText = editor.getLine(line);
+            if (!lineText) return;
+
+            // 5. 查找任务文本在该行中的起始位置
+            const taskStart = lineText.indexOf(task.text);
+            if (taskStart === -1) return;
+
+            // 6. 计算任务结束位置
+            const taskEnd = taskStart + task.text.length;
+            const startPos = { line, ch: taskStart };
+            const endPos = { line, ch: taskEnd };
+
+            // 7. 选中任务文本
+            editor.setSelection(startPos, endPos);
+
+            // 8. 滚动到视口中间
+            editor.scrollIntoView(
+                { from: startPos, to: endPos },
+                { y: 'center' } // ← 居中！
+            );
+
+        } catch (error) {
+            console.warn('Failed to highlight and center task:', error);
         }
     }
 

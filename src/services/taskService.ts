@@ -408,11 +408,37 @@ export async function updateTaskInNote(app: App, task: Task, completed: boolean)
             const content = await app.vault.read(file);
             
             // 构建任务的正则表达式，匹配原始任务行
-            const taskRegex = new RegExp(`^\s*-\s*\[(.)\]\s*${escapeRegExp(task.rawText)}`, 'm');
+            const taskRegex = new RegExp(`^\s*-\s*\[(.)\]\s*(${escapeRegExp(task.rawText)})`, 'm');
             
-            // 替换任务状态
-            const newContent = content.replace(taskRegex, (match, status) => {
-                return match.replace(`[${status}]`, completed ? '[x]' : '[ ]');
+            // 替换任务状态和完成日期
+            const newContent = content.replace(taskRegex, (match, status, taskText) => {
+                const checkbox = completed ? '[x]' : '[ ]';
+                let updatedTaskText = taskText;
+                
+                // 根据Tasks插件格式，处理完成日期
+                if (completed) {
+                    // 如果任务已完成，添加完成日期标记 ✅ YYYY-MM-DD
+                    const today = new Date().toISOString().split('T')[0];
+                    const doneDateRegex = /\s*✅\s*\d{4}-\d{2}-\d{2}/;
+                    
+                    if (doneDateRegex.test(updatedTaskText)) {
+                        // 如果已经有完成日期，更新它
+                        updatedTaskText = updatedTaskText.replace(doneDateRegex, ` ✅ ${today}`);
+                    } else {
+                        // 如果没有完成日期，添加它
+                        updatedTaskText += ` ✅ ${today}`;
+                    }
+                } else {
+                    // 如果任务未完成，移除完成日期标记
+                    const doneDateRegex = /\s*✅\s*\d{4}-\d{2}-\d{2}/;
+                    updatedTaskText = updatedTaskText.replace(doneDateRegex, '').trim();
+                }
+                
+                // 保持原始的缩进
+                const indentMatch = match.match(/^(\s*)/);
+                const indent = indentMatch ? indentMatch[1] : '';
+                
+                return `${indent}- ${checkbox} ${updatedTaskText}`;
             });
             
             // 保存修改后的内容
@@ -523,6 +549,69 @@ export async function createTaskInNote(
                 captureToPath = configToUse.defaultCapturePath;
             }
             
+            // 生成 Tasks 格式的任务文本
+            let finalTaskText: string;
+            if (settings.integrations.useTasksPluginFormat) {
+                // 导入 TaskTextBuilder
+                const { TaskTextBuilder } = await import('./tasksFormatBuilder');
+                
+                // 解析现有的任务文本，保留其中的属性
+                const taskBuilder = TaskTextBuilder.parse(taskText);
+                
+                // 检查任务文本中是否已经包含创建日期
+                const hasCreatedDate = /\s*(\+|➕)\s*(\d{4}-\d{2}-\d{2})\s*/.test(taskText);
+                // 只有当任务文本中没有创建日期，且设置允许自动添加时，才添加创建日期
+                if (settings.integrations.autoCreateCreatedDate && !hasCreatedDate) {
+                    taskBuilder.setCreatedDate(date);
+                }
+                
+                // 检查任务文本中是否已经包含截止日期
+                const hasDueDate = /\s*(📅|due:)\s*(\d{4}-\d{2}-\d{2})\s*/.test(taskText);
+                // 只有当任务文本中没有截止日期，且设置允许自动添加时，才添加截止日期
+                if (settings.integrations.autoCreateDueDate && !hasDueDate) {
+                    // 计算截止日期的辅助函数
+                    const calculateDueDate = (baseDate: Date, option: string, customDays: number): Date => {
+                        const result = new Date(baseDate);
+                        
+                        switch (option) {
+                            case "today":
+                                return result;
+                            case "custom":
+                                result.setDate(result.getDate() + customDays);
+                                return result;
+                            case "weekend":
+                                // 计算本周末（周六）
+                                const dayOfWeek = result.getDay();
+                                const daysToSaturday = 6 - dayOfWeek;
+                                result.setDate(result.getDate() + daysToSaturday);
+                                return result;
+                            case "monthEnd":
+                                // 计算本月底
+                                result.setMonth(result.getMonth() + 1, 0);
+                                return result;
+                            case "yearEnd":
+                                // 计算本年底
+                                result.setMonth(11, 31);
+                                return result;
+                            default:
+                                return result;
+                        }
+                    };
+                    
+                    const dueDate = calculateDueDate(
+                        date,
+                        settings.integrations.dueDateOption,
+                        settings.integrations.customDueDays
+                    );
+                    taskBuilder.setDueDate(dueDate);
+                }
+                
+                finalTaskText = taskBuilder.build();
+            } else {
+                // 兼容旧格式，不自动添加-[ ]标记，由捕获插入设置决定
+                finalTaskText = taskText;
+            }
+            
             const captureChoice = {
                 name: "Create Task",
                 id: "create-task",
@@ -537,7 +626,7 @@ export async function createTaskInNote(
                 },
                 format: {
                     enabled: configToUse.format.enabled,
-                    format: configToUse.format.format.replace("{{TASK_TEXT}}", taskText).replace("{{DATE}}", formatDate(date, "YYYY-MM-DD")),
+                    format: configToUse.format.format.replace("{{TASK_TEXT}}", finalTaskText).replace("{{DATE}}", formatDate(date, "YYYY-MM-DD")),
                 },
                 prepend: configToUse.prepend,
                 appendLink: configToUse.appendLink,

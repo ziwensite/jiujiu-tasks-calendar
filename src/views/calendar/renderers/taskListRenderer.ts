@@ -46,7 +46,11 @@ export class TaskListRenderer {
             taskText.addClass("completed");
         }
         
-
+        // 为任务项添加双击事件监听器
+        taskItem.addEventListener("dblclick", () => {
+            onTaskDoubleClick(task);
+        });
+        
     }
 }
 

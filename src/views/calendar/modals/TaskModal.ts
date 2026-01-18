@@ -1111,10 +1111,36 @@ export class TaskModal extends Modal {
                 console.log("Added .md extension to path:", validatedPath);
             }
             
+            // 根据Tasks插件格式生成任务文本
+            let finalTaskText = taskText;
+            
+            if (this.plugin.settings.integrations.useTasksPluginFormat) {
+                // 导入TaskTextBuilder
+                const { TaskTextBuilder } = await import('../../../services/tasksFormatBuilder');
+                
+                const taskBuilder = new TaskTextBuilder();
+                taskBuilder.setTitle(taskText);
+                
+                // 根据设置添加创建日期（使用模态框设定的开始日期）
+                if (this.plugin.settings.integrations.autoCreateCreatedDate) {
+                    taskBuilder.setCreatedDate(this.selectedStartDate);
+                }
+                
+                // 根据设置添加截止日期（使用模态框设定的结束日期）
+                if (this.plugin.settings.integrations.autoCreateDueDate) {
+                    taskBuilder.setDueDate(this.selectedEndDate);
+                }
+                
+                // 添加标签（如果有）
+                // 这里可以根据需求从界面元素中获取标签
+                
+                finalTaskText = taskBuilder.build();
+            }
+            
             // 调用createTaskInNote函数保存任务，使用"note"模式以使用自定义路径
             await createTaskInNote(
                 this.app,
-                taskText,
+                finalTaskText,
                 this.selectedStartDate,
                 this.plugin.settings,
                 "note",
