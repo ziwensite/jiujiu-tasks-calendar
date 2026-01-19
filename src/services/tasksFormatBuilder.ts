@@ -211,7 +211,8 @@ export class TaskTextBuilder {
     
     private formatDate(date: Date): string {
         // Tasks插件标准日期格式：YYYY-MM-DD
-        return date.toISOString().split('T')[0];
+        const isoString = date.toISOString().split('T')[0];
+        return isoString || '';
     }
     
     /**
@@ -222,42 +223,42 @@ export class TaskTextBuilder {
         
         // 解析优先级：#A, #B, #C, #D
         const priorityMatch = taskText.match(/\s*(#(?:A|B|C|D))\s*/);
-        if (priorityMatch) {
+        if (priorityMatch && priorityMatch[1]) {
             builder.setPriority(priorityMatch[1]);
             taskText = taskText.replace(priorityMatch[0], '').trim();
         }
         
         // 解析创建日期：+ YYYY-MM-DD 或 ➕ YYYY-MM-DD
         const createdMatch = taskText.match(/\s*(\+|➕)\s*(\d{4}-\d{2}-\d{2})\s*/);
-        if (createdMatch) {
+        if (createdMatch && createdMatch[2]) {
             builder.setCreatedDate(new Date(createdMatch[2]));
             taskText = taskText.replace(createdMatch[0], '').trim();
         }
         
         // 解析计划日期：⏳ YYYY-MM-DD
         const scheduledMatch = taskText.match(/\s*⏳\s*(\d{4}-\d{2}-\d{2})\s*/);
-        if (scheduledMatch) {
+        if (scheduledMatch && scheduledMatch[1]) {
             builder.setScheduledDate(new Date(scheduledMatch[1]));
             taskText = taskText.replace(scheduledMatch[0], '').trim();
         }
         
         // 解析开始日期：🔼 YYYY-MM-DD
         const startMatch = taskText.match(/\s*🔼\s*(\d{4}-\d{2}-\d{2})\s*/);
-        if (startMatch) {
+        if (startMatch && startMatch[1]) {
             builder.setStartDate(new Date(startMatch[1]));
             taskText = taskText.replace(startMatch[0], '').trim();
         }
         
         // 解析截止日期：📅 YYYY-MM-DD
         const dueMatch = taskText.match(/\s*📅\s*(\d{4}-\d{2}-\d{2})\s*/);
-        if (dueMatch) {
+        if (dueMatch && dueMatch[1]) {
             builder.setDueDate(new Date(dueMatch[1]));
             taskText = taskText.replace(dueMatch[0], '').trim();
         }
         
         // 解析完成日期：✅ YYYY-MM-DD
         const doneMatch = taskText.match(/\s*✅\s*(\d{4}-\d{2}-\d{2})\s*/);
-        if (doneMatch) {
+        if (doneMatch && doneMatch[1]) {
             builder.setDoneDate(new Date(doneMatch[1]));
             builder.setCompleted(true);
             taskText = taskText.replace(doneMatch[0], '').trim();
@@ -265,14 +266,14 @@ export class TaskTextBuilder {
         
         // 解析等待日期：⏸️ YYYY-MM-DD
         const waitMatch = taskText.match(/\s*⏸️\s*(\d{4}-\d{2}-\d{2})\s*/);
-        if (waitMatch) {
+        if (waitMatch && waitMatch[1]) {
             builder.setWaitDate(new Date(waitMatch[1]));
             taskText = taskText.replace(waitMatch[0], '').trim();
         }
         
         // 解析重复规则：🔁 规则
         const repeatMatch = taskText.match(/\s*🔁\s*([^\s]+)\s*/);
-        if (repeatMatch) {
+        if (repeatMatch && repeatMatch[1]) {
             builder.setRepeatRule(repeatMatch[1]);
             taskText = taskText.replace(repeatMatch[0], '').trim();
         }
@@ -287,7 +288,7 @@ export class TaskTextBuilder {
         }
         
         // 解析描述（换行后的内容）
-        const descriptionMatch = taskText.match(/\n(?:\s{2,}.*)+/s);
+        const descriptionMatch = taskText.match(/\n(?:\s{2,}.*)+/);
         let description = '';
         if (descriptionMatch) {
             description = descriptionMatch[0].replace(/^\n\s{2}/, '').replace(/\n\s{2}/g, '\n');

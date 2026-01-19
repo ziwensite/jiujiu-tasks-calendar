@@ -1,7 +1,8 @@
 import { ItemView, WorkspaceLeaf, App } from 'obsidian';
 import { MyPlugin } from '../main';
-import { extractTasks, filterTasks, Task } from '../services/taskService';
+import { Task } from '../services/taskService';
 import { formatDate } from '../utils/dateUtils';
+import { CalendarDataManager } from '../core/CalendarDataManager';
 
 const VIEW_TYPE_TASKS = "jiujiu-tasks-view";
 
@@ -9,11 +10,13 @@ export class TasksView extends ItemView {
     private plugin: MyPlugin;
     private currentTab: 'all' | 'year' | 'month' | 'week' | 'schedule' = 'all';
     private currentDate: Date;
+    private calendarDataManager: CalendarDataManager;
 
     constructor(leaf: WorkspaceLeaf, plugin: MyPlugin) {
         super(leaf);
         this.plugin = plugin;
         this.currentDate = new Date();
+        this.calendarDataManager = new CalendarDataManager(plugin);
     }
 
     getViewType(): string {
@@ -34,6 +37,23 @@ export class TasksView extends ItemView {
 
         container.empty();
         this.buildTasksView(container);
+        
+        // 添加文件系统事件监听，实现实时更新
+        this.registerEvent(this.app.vault.on('create', async (file) => {
+            await this.handleFileChange(file);
+        }));
+
+        this.registerEvent(this.app.vault.on('delete', async (file) => {
+            await this.handleFileChange(file);
+        }));
+
+        this.registerEvent(this.app.vault.on('modify', async (file) => {
+            await this.handleFileChange(file);
+        }));
+
+        this.registerEvent(this.app.vault.on('rename', async (file, oldPath) => {
+            await this.handleFileChange(file);
+        }));
     }
 
     async onClose() {
@@ -91,8 +111,8 @@ export class TasksView extends ItemView {
     private async renderTasksList(container: HTMLElement) {
         container.empty();
         
-        // 获取所有任务
-        const allTasks = await extractTasks(this.app, this.plugin.settings);
+        // 获取所有任务（使用缓存机制）
+        const allTasks = await this.calendarDataManager.getTasks(true);
         
         let filteredTasks: Task[] = [];
         
@@ -182,5 +202,22 @@ export class TasksView extends ItemView {
         // 这里可以实现任务状态切换逻辑
         // 暂时只更新本地状态
         console.log(`Toggle task: ${task.text}, completed: ${completed}`);
+    }
+
+    /**
+     * 处理文件变化事件
+     */
+    private async handleFileChange(file: any) {
+        // 检查是否是Markdown文件
+        if (!file || !('extension' in file) || file.extension !== 'md') return;
+        
+        // 强制刷新任务数据缓存
+        await this.calendarDataManager.refreshTasks();
+        
+        // 重新渲染任务列表
+        const contentContainer = this.containerEl.querySelector(".tasks-view-content") as HTMLElement;
+        if (contentContainer) {
+            await this.renderTasksList(contentContainer);
+        }
     }
 }

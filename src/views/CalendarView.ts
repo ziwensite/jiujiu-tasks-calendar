@@ -1105,10 +1105,14 @@ export class CalendarView extends ItemView {
 
     private async handleFileChange(file: any) {
         // 检查文件是否是笔记文件
-        if (file.extension === 'md') {
-            // 触发文件变化事件
-            this.plugin.eventEmitter.emit(CalendarEvent.FILE_CHANGED, file);
-        }
+        if (!file || !('extension' in file) || file.extension !== 'md') return;
+        
+        // 强制刷新任务数据缓存
+        await this.plugin.calendarDataManager.refreshTasks();
+        
+        // 立即更新任务列表和指示器
+        await this.refreshTaskList();
+        await this.updateIndicators();
     }
 
     private async onDayClick(date: Date) {

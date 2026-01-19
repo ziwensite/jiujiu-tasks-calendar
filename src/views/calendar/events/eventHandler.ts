@@ -1,4 +1,4 @@
-import { MarkdownView } from 'obsidian';
+import { MarkdownView, TFile } from 'obsidian';
 import { MyPlugin } from '../../../main';
 import { Task, updateTaskInNote, createTaskInNote } from '../../../services/taskService';
 import { formatDate } from '../../../utils/dateUtils';
@@ -42,7 +42,7 @@ export class EventHandler {
         try {
             // 1. 打开文件
             const leaf = this.plugin.app.workspace.getLeaf(false);
-            await leaf.openFile(file);
+            await leaf.openFile(file as TFile);
 
             // 2. 等待文件完全打开和渲染
             await new Promise(resolve => setTimeout(resolve, 200));
@@ -77,7 +77,7 @@ export class EventHandler {
             // 8. 滚动到视口中间
             editor.scrollIntoView(
                 { from: startPos, to: endPos },
-                { y: 'center' } // ← 居中！
+                true
             );
 
         } catch (error) {
