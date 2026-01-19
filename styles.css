@@ -169,18 +169,18 @@
     order: 6;
 }
 
-/* 任务按钮 */
-.calendar-header-label-tasks {
+/* 更多按钮 */
+.calendar-header-label-more {
     order: 7;
 }
 
-/* 统一调整年、周、日、日程、今日、任务按钮的宽度为两个字符 */
+/* 统一调整年、周、日、日程、今日、任务、更多按钮的宽度为两个字符 */
 .calendar-header-label-year,
 .calendar-header-label-week,
 .calendar-header-label-day,
 .calendar-header-label-schedule,
 .calendar-header-label-today,
-.calendar-header-label-tasks {
+.calendar-header-label-more {
     width: 2.5em;
     text-align: center;
     border-radius: 0.3em;
@@ -193,7 +193,7 @@
 .calendar-header-label-day:hover,
 .calendar-header-label-schedule:hover,
 .calendar-header-label-today:hover,
-.calendar-header-label-tasks:hover {
+.calendar-header-label-more:hover {
     background-color: var(--interactive-hover);
     border-radius: 0.3em;
 }
@@ -204,7 +204,7 @@
 .calendar-header-label-day.today-selected,
 .calendar-header-label-schedule.today-selected,
 .calendar-header-label-today.today-selected,
-.calendar-header-label-tasks.today-selected {
+.calendar-header-label-more.today-selected {
     background-color: var(--interactive-accent);
     color: var(--text-on-accent);
     border-radius: 0.3em;

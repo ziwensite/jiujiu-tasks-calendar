@@ -96,6 +96,11 @@ export class MyPlugin extends Plugin {
                     ...DEFAULT_SETTINGS.taskSettings.captureToSettings,
                     ...savedSettings.taskSettings?.captureToSettings
                 }
+            },
+            // 确保moreLabelSettings包含所有必需的属性
+            moreLabelSettings: {
+                ...DEFAULT_SETTINGS.moreLabelSettings,
+                ...savedSettings.moreLabelSettings
             }
         };
 

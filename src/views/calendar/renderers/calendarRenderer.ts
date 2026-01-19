@@ -126,10 +126,10 @@ export class CalendarRenderer {
             cls: "calendar-header-label-today today-unselected"
         });
         
-        // 任务按钮
+        // 更多按钮（替换原任务按钮）
         singleRow.createEl("div", { 
-            text: "任务",
-            cls: "calendar-header-label-tasks today-unselected"
+            text: "⋮",
+            cls: "calendar-header-label-more today-unselected"
         });
     }
 

@@ -111,6 +111,14 @@ export interface TaskFilterSettings {
     customFilter: string;
 }
 
+// 更多标签设置
+export interface MoreLabelSettings {
+    enabled: boolean;
+    actionType: "systemCommand" | "dataview" | "dataviewjs";
+    systemCommand: string;
+    dataviewCode: string;
+    dataviewJsCode: string;
+}
 
 
 export interface MyPluginSettings {
@@ -122,6 +130,7 @@ export interface MyPluginSettings {
     yearlyNote: NoteTemplateSettings;
     taskFilter: TaskFilterSettings;
     taskSettings: TaskSettings;
+    moreLabelSettings: MoreLabelSettings;
 }
 
 export const DEFAULT_SETTINGS: MyPluginSettings = {
@@ -572,6 +581,13 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                 }
             ]
         }
+    },
+    moreLabelSettings: {
+        enabled: false,
+        actionType: "systemCommand",
+        systemCommand: "",
+        dataviewCode: "",
+        dataviewJsCode: ""
     }
 }
 
@@ -628,9 +644,87 @@ export class SampleSettingTab extends PluginSettingTab {
             this.plugin.settings.yearlyNote = newSettings;
             this.settingsChanged = true;
         });
+
+        // 渲染更多标签设置
+        this.renderMoreLabelSettings();
         
         // 监听设置页面关闭事件
         this.registerEvents();
+    }
+
+    private renderMoreLabelSettings(): void {
+        const section = this.containerEl.createEl("div", {cls: "setting-section"});
+        section.createEl("h4", {text: "更多标签设置"});
+
+        const moreSettings = this.plugin.settings.moreLabelSettings;
+
+        // 启用/禁用开关
+        new Setting(section)
+            .setName("启用更多标签")
+            .setDesc("启用或禁用日历右上角的更多标签功能")
+            .addToggle(toggle => toggle
+                .setValue(moreSettings.enabled)
+                .onChange(value => {
+                    this.plugin.settings.moreLabelSettings.enabled = value;
+                    this.settingsChanged = true;
+                }));
+
+        // 操作类型选择
+        new Setting(section)
+            .setName("操作类型")
+            .setDesc("选择点击更多标签后执行的操作类型")
+            .addDropdown(dropdown => dropdown
+                .addOption("systemCommand", "系统命令")
+                .addOption("dataview", "Dataview代码")
+                .addOption("dataviewjs", "DataviewJS代码")
+                .setValue(moreSettings.actionType)
+                .onChange(value => {
+                    this.plugin.settings.moreLabelSettings.actionType = value as "systemCommand" | "dataview" | "dataviewjs";
+                    this.settingsChanged = true;
+                    // 重新渲染设置页面，以更新显示的输入框
+                    this.display();
+                }));
+
+        // 根据操作类型显示相应的输入框
+        if (moreSettings.actionType === "systemCommand") {
+            // 系统命令输入框
+            new Setting(section)
+                .setName("系统命令")
+                .setDesc("输入要执行的Obsidian系统命令ID")
+                .addText(text => text
+                    .setPlaceholder("例如：app:open-vault")
+                    .setValue(moreSettings.systemCommand)
+                    .onChange(value => {
+                        this.plugin.settings.moreLabelSettings.systemCommand = value;
+                        this.settingsChanged = true;
+                    }));
+        } else if (moreSettings.actionType === "dataview") {
+            // Dataview代码输入框
+            new Setting(section)
+                .setName("Dataview代码")
+                .setDesc("输入要执行的Dataview查询代码")
+                .addTextArea(textArea => textArea
+                    .setPlaceholder("例如：LIST FROM '' WHERE file.mtime >= date(today) - dur(7 days)")
+                    .setValue(moreSettings.dataviewCode)
+                    .onChange(value => {
+                        this.plugin.settings.moreLabelSettings.dataviewCode = value;
+                        this.settingsChanged = true;
+                    })
+                    .inputEl.setAttr("rows", 5));
+        } else if (moreSettings.actionType === "dataviewjs") {
+            // DataviewJS代码输入框
+            new Setting(section)
+                .setName("DataviewJS代码")
+                .setDesc("输入要执行的DataviewJS查询代码")
+                .addTextArea(textArea => textArea
+                    .setPlaceholder("例如：dv.list(dv.pages().where(p => p.file.mtime >= dv.date('today') - dv.duration('7 days')).file.name)")
+                    .setValue(moreSettings.dataviewJsCode)
+                    .onChange(value => {
+                        this.plugin.settings.moreLabelSettings.dataviewJsCode = value;
+                        this.settingsChanged = true;
+                    })
+                    .inputEl.setAttr("rows", 5));
+        }
     }
 
     // 添加一个变量来存储 MutationObserver 实例
