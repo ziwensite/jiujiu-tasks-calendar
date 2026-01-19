@@ -1,7 +1,6 @@
 import {App, Plugin, WorkspaceLeaf} from 'obsidian';
 import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
 import {CalendarView} from "./views/CalendarView";
-import {TasksView} from "./views/TasksView";
 import { CalendarViewController } from './core/CalendarViewController';
 import { CalendarDataManager } from './core/CalendarDataManager';
 import { EventEmitter, CalendarEvent } from './core/EventEmitter';
@@ -33,11 +32,6 @@ export class MyPlugin extends Plugin {
         this.registerView(
             "jiujiu-calendar-view",
             (leaf) => new CalendarView(leaf, this)
-        );
-        
-        this.registerView(
-            "jiujiu-tasks-view",
-            (leaf) => new TasksView(leaf, this)
         );
 
         // 添加侧边栏按钮
@@ -96,7 +90,12 @@ export class MyPlugin extends Plugin {
             // 确保taskSettings包含所有必需的嵌套属性
             taskSettings: {
                 ...DEFAULT_SETTINGS.taskSettings,
-                ...savedSettings.taskSettings
+                ...savedSettings.taskSettings,
+                // 确保captureToSettings包含所有必需的嵌套属性
+                captureToSettings: {
+                    ...DEFAULT_SETTINGS.taskSettings.captureToSettings,
+                    ...savedSettings.taskSettings?.captureToSettings
+                }
             }
         };
 
@@ -170,6 +169,16 @@ export class MyPlugin extends Plugin {
      */
     public async executeCaptureToConfig(config: any) {
         try {
+            console.log('[executeCaptureToConfig] Starting execution:', config.name);
+            console.log('[executeCaptureToConfig] Config:', config);
+            
+            // 检查配置是否有效
+            if (!config || !config.id) {
+                console.error('[executeCaptureToConfig] Invalid config provided:', config);
+                new (require('obsidian').Notice)('Error executing capture: Invalid config');
+                return;
+            }
+            
             // 创建一个简单的 IChoiceExecutor 实例
             const choiceExecutor = {
                 variables: new Map()
@@ -198,15 +207,37 @@ export class MyPlugin extends Plugin {
                 openFile: config.openFile,
                 fileOpening: config.fileOpening,
                 inputMethod: config.inputMethod,
-                _targetDate: config._targetDate // 传递目标日期
+                _targetDate: config._targetDate || new Date() // 传递目标日期，默认为当前日期
             };
+            
+            console.log('[executeCaptureToConfig] Converted to captureChoice:', captureChoice);
 
             // 创建 CaptureChoiceEngine 实例并执行捕获操作
-            const { CaptureChoiceEngine } = await import('./engine/CaptureChoiceEngine');
+            let CaptureChoiceEngine;
+            try {
+                console.log('[executeCaptureToConfig] Importing CaptureChoiceEngine...');
+                const module = await import('./engine/CaptureChoiceEngine');
+                CaptureChoiceEngine = module.CaptureChoiceEngine;
+                console.log('[executeCaptureToConfig] CaptureChoiceEngine imported successfully');
+            } catch (importError) {
+                console.error('[executeCaptureToConfig] Failed to import CaptureChoiceEngine:', importError);
+                new (require('obsidian').Notice)('Error executing capture: Failed to load CaptureChoiceEngine');
+                return;
+            }
+            
+            if (!CaptureChoiceEngine) {
+                console.error('[executeCaptureToConfig] CaptureChoiceEngine is undefined');
+                new (require('obsidian').Notice)('Error executing capture: CaptureChoiceEngine not found');
+                return;
+            }
+            
+            console.log('[executeCaptureToConfig] Creating CaptureChoiceEngine instance...');
             const engine = new CaptureChoiceEngine(this.app, this, captureChoice, choiceExecutor);
+            console.log('[executeCaptureToConfig] Running engine...');
             await engine.run();
+            console.log('[executeCaptureToConfig] Execution completed successfully');
         } catch (error) {
-            console.error(`Error executing capture to config "${config.name}":`, error);
+            console.error(`[executeCaptureToConfig] Error executing capture to config "${config.name}":`, error);
             new (require('obsidian').Notice)(`Error executing capture: ${(error as Error).message}`);
         }
     }

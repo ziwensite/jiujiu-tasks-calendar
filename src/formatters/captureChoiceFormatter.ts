@@ -61,19 +61,67 @@ export class CaptureChoiceFormatter {
 	public async formatContentOnly(input: string): Promise<string> {
 		let formatted = input;
 		// Replace {{VALUE}} or {{TASK_TEXT}} with selected text or user input
+		let taskText = "";
 		if (formatted.includes("{{VALUE}}")) {
 			const selectedText = await this.getSelectedText();
-			const value = selectedText.trim() || "";
-			formatted = formatted.replace(/\{\{VALUE\}\}/g, value);
+			taskText = selectedText.trim() || "";
+			formatted = formatted.replace(/\{\{VALUE\}\}/g, taskText);
 		} else if (formatted.includes("{{TASK_TEXT}}")) {
 			const selectedText = await this.getSelectedText();
-			const value = selectedText.trim() || "";
-			formatted = formatted.replace(/\{\{TASK_TEXT\}\}/g, value);
+			taskText = selectedText.trim() || "";
+			formatted = formatted.replace(/\{\{TASK_TEXT\}\}/g, taskText);
 		}
 		// Replace {{TITLE}} with file title
 		if (formatted.includes("{{TITLE}}")) {
 			formatted = formatted.replace(/\{\{TITLE\}\}/g, this.title);
 		}
+		
+		// 自动添加创建日期和截止日期
+		if (this.choice && taskText) {
+			let dateString = "";
+			
+			// 自动添加创建日期
+			if (this.choice.autoAddCreatedDate) {
+				const createdDate = new Date().toISOString().split('T')[0];
+				dateString += ` ➕ ${createdDate}`;
+			}
+			
+			// 自动添加截止日期
+			if (this.choice.autoAddDueDate) {
+				let dueDate = new Date();
+				switch (this.choice.dueDateOption) {
+					case "today":
+						// 使用当前日期
+						break;
+					case "custom":
+						// 自定义天数
+						dueDate.setDate(dueDate.getDate() + (this.choice.customDueDays || 1));
+						break;
+					case "weekend":
+						// 本周末（周六）
+						const dayOfWeek = dueDate.getDay();
+						const daysToWeekend = dayOfWeek === 0 ? 6 : 6 - dayOfWeek;
+						dueDate.setDate(dueDate.getDate() + daysToWeekend);
+						break;
+					case "monthEnd":
+						// 本月底
+						dueDate.setMonth(dueDate.getMonth() + 1, 0);
+						break;
+					case "yearEnd":
+						// 本年底
+						dueDate = new Date(dueDate.getFullYear(), 11, 31);
+						break;
+				}
+				const dueDateStr = dueDate.toISOString().split('T')[0];
+				dateString += ` 📅 ${dueDateStr}`;
+			}
+			
+			// 如果需要添加日期，将其插入到任务文本后面
+			if (dateString) {
+				formatted = formatted.replace(taskText, `${taskText}${dateString}`);
+			}
+		}
+		
 		return formatted;
 	}
 
@@ -198,6 +246,18 @@ export class CaptureChoiceFormatter {
 			
 			// 替换 {{年报模板}} 为 ${yearlySettings.templatePath}
 			fileName = fileName.replace(/\{\{年报模板\}\}/g, yearlySettings.templatePath);
+		}
+		
+		// 替换 {{闪念}} 为 ${fleetingNote.savePath}/${fleetingNoteFileName}.md
+		const fleetingNoteSettings = this.plugin.settings.fleetingNote;
+		if (fleetingNoteSettings) {
+			// 使用目标日期
+			const fleetingNoteFileName = formatDate(targetDate, fleetingNoteSettings.fileNameFormat);
+			const fleetingNotePath = `${fleetingNoteSettings.savePath}/${fleetingNoteFileName}.md`;
+			fileName = fileName.replace(/\{\{闪念\}\}/g, fleetingNotePath);
+			
+			// 替换 {{闪念模板}} 为 ${fleetingNoteSettings.templatePath}
+			fileName = fileName.replace(/\{\{闪念模板\}\}/g, fleetingNoteSettings.templatePath);
 		}
 		
 		return fileName;

@@ -486,13 +486,13 @@ export async function createTaskInNote(
                 selectedConfigId = configId;
             } else if (insertTarget === "daily") {
                 // 对于每日笔记，使用默认配置
-                selectedConfigId = captureSettings.defaultConfigId;
+                selectedConfigId = captureSettings.taskConfigId;
             } else if (insertTarget === "note") {
                 // 对于普通笔记，使用默认配置
-                selectedConfigId = captureSettings.defaultConfigId;
+                selectedConfigId = captureSettings.taskConfigId;
             } else {
                 // 对于当前笔记，使用默认配置
-                selectedConfigId = captureSettings.defaultConfigId;
+                selectedConfigId = captureSettings.taskConfigId;
             }
             
             const selectedConfig = captureSettings.configs.find(config => config.id === selectedConfigId && config.enabled);
@@ -501,49 +501,53 @@ export async function createTaskInNote(
             let configToUse = selectedConfig || captureSettings.configs.find(config => config.enabled) || captureSettings.configs[0];
             
             // 如果没有配置，使用默认配置
-            if (!configToUse) {
-                configToUse = {
-                    id: "default",
-                    name: "默认配置",
-                    description: "默认的 Capture To 配置",
+        if (!configToUse) {
+            configToUse = {
+                id: "default",
+                name: "默认配置",
+                description: "默认的 Capture To 配置",
+                enabled: true,
+                defaultCapturePath: "{{日记}}",
+                captureToActiveFile: false,
+                hotkey: null,
+                inputMethod: "single-line",
+                createFileIfItDoesntExist: {
                     enabled: true,
-                    defaultCapturePath: "{{日记}}",
-                    captureToActiveFile: false,
-                    hotkey: null,
-                    inputMethod: "single-line",
-                    createFileIfItDoesntExist: {
-                        enabled: true,
-                        createWithTemplate: true,
-                        template: "{{日记模板}}"
-                    },
-                    format: {
-                        enabled: true,
-                        format: "{{TASK_TEXT}}\n"
-                    },
-                    prepend: false,
-                    appendLink: false,
-                    task: true,
-                    insertAfter: {
-                        enabled: true,
-                        after: "## 日常记录",
-                        insertAtEnd: true,
-                        considerSubsections: false,
-                        createIfNotFound: true,
-                        createIfNotFoundLocation: "bottom"
-                    },
-                    newLineCapture: {
-                        enabled: false,
-                        direction: "below"
-                    },
-                    openFile: false,
-                    fileOpening: {
-                        location: "tab",
-                        direction: "vertical",
-                        mode: "default",
-                        focus: true
-                    }
-                };
-            }
+                    createWithTemplate: true,
+                    template: "{{日记模板}}"
+                },
+                format: {
+                    enabled: true,
+                    format: "{{TASK_TEXT}}\n"
+                },
+                autoAddCreatedDate: true,
+                autoAddDueDate: false,
+                dueDateOption: "today",
+                customDueDays: 1,
+                prepend: false,
+                appendLink: false,
+                task: true,
+                insertAfter: {
+                    enabled: true,
+                    after: "## 日常记录",
+                    insertAtEnd: true,
+                    considerSubsections: false,
+                    createIfNotFound: true,
+                    createIfNotFoundLocation: "bottom"
+                },
+                newLineCapture: {
+                    enabled: false,
+                    direction: "below"
+                },
+                openFile: false,
+                fileOpening: {
+                    location: "tab",
+                    direction: "vertical",
+                    mode: "default",
+                    focus: true
+                }
+            };
+        }
             
             // 构建 capture choice
             let captureToPath = "";
@@ -557,66 +561,62 @@ export async function createTaskInNote(
             
             // 生成 Tasks 格式的任务文本
             let finalTaskText: string;
-            if (settings.integrations.useTasksPluginFormat) {
-                // 导入 TaskTextBuilder
-                const { TaskTextBuilder } = await import('./tasksFormatBuilder');
-                
-                // 解析现有的任务文本，保留其中的属性
-                const taskBuilder = TaskTextBuilder.parse(taskText);
-                
-                // 检查任务文本中是否已经包含创建日期
-                const hasCreatedDate = /\s*(\+|➕)\s*(\d{4}-\d{2}-\d{2})\s*/.test(taskText);
-                // 只有当任务文本中没有创建日期，且设置允许自动添加时，才添加创建日期
-                if (settings.integrations.autoCreateCreatedDate && !hasCreatedDate) {
-                    taskBuilder.setCreatedDate(date);
-                }
-                
-                // 检查任务文本中是否已经包含截止日期
-                const hasDueDate = /\s*(📅|due:)\s*(\d{4}-\d{2}-\d{2})\s*/.test(taskText);
-                // 只有当任务文本中没有截止日期，且设置允许自动添加时，才添加截止日期
-                if (settings.integrations.autoCreateDueDate && !hasDueDate) {
-                    // 计算截止日期的辅助函数
-                    const calculateDueDate = (baseDate: Date, option: string, customDays: number): Date => {
-                        const result = new Date(baseDate);
-                        
-                        switch (option) {
-                            case "today":
-                                return result;
-                            case "custom":
-                                result.setDate(result.getDate() + customDays);
-                                return result;
-                            case "weekend":
-                                // 计算本周末（周六）
-                                const dayOfWeek = result.getDay();
-                                const daysToSaturday = 6 - dayOfWeek;
-                                result.setDate(result.getDate() + daysToSaturday);
-                                return result;
-                            case "monthEnd":
-                                // 计算本月底
-                                result.setMonth(result.getMonth() + 1, 0);
-                                return result;
-                            case "yearEnd":
-                                // 计算本年底
-                                result.setMonth(11, 31);
-                                return result;
-                            default:
-                                return result;
-                        }
-                    };
-                    
-                    const dueDate = calculateDueDate(
-                        date,
-                        settings.integrations.dueDateOption,
-                        settings.integrations.customDueDays
-                    );
-                    taskBuilder.setDueDate(dueDate);
-                }
-                
-                finalTaskText = taskBuilder.build();
-            } else {
-                // 兼容旧格式，不自动添加-[ ]标记，由捕获插入设置决定
-                finalTaskText = taskText;
+            // 所有配置都使用Tasks插件格式
+            // 导入 TaskTextBuilder
+            const { TaskTextBuilder } = await import('./tasksFormatBuilder');
+            
+            // 解析现有的任务文本，保留其中的属性
+            const taskBuilder = TaskTextBuilder.parse(taskText);
+            
+            // 检查任务文本中是否已经包含创建日期
+            const hasCreatedDate = /\s*(\+|➕)\s*(\d{4}-\d{2}-\d{2})\s*/.test(taskText);
+            // 只有当任务文本中没有创建日期，且配置允许自动添加时，才添加创建日期
+            if (configToUse.autoAddCreatedDate && !hasCreatedDate) {
+                taskBuilder.setCreatedDate(date);
             }
+            
+            // 检查任务文本中是否已经包含截止日期
+            const hasDueDate = /\s*(📅|due:)\s*(\d{4}-\d{2}-\d{2})\s*/.test(taskText);
+            // 只有当任务文本中没有截止日期，且配置允许自动添加时，才添加截止日期
+            if (configToUse.autoAddDueDate && !hasDueDate) {
+                // 计算截止日期的辅助函数
+                const calculateDueDate = (baseDate: Date, option: string, customDays: number): Date => {
+                    const result = new Date(baseDate);
+                    
+                    switch (option) {
+                        case "today":
+                            return result;
+                        case "custom":
+                            result.setDate(result.getDate() + customDays);
+                            return result;
+                        case "weekend":
+                            // 计算本周末（周六）
+                            const dayOfWeek = result.getDay();
+                            const daysToSaturday = 6 - dayOfWeek;
+                            result.setDate(result.getDate() + daysToSaturday);
+                            return result;
+                        case "monthEnd":
+                            // 计算本月底
+                            result.setMonth(result.getMonth() + 1, 0);
+                            return result;
+                        case "yearEnd":
+                            // 计算本年底
+                            result.setMonth(11, 31);
+                            return result;
+                        default:
+                            return result;
+                    }
+                };
+                
+                const dueDate = calculateDueDate(
+                    date,
+                    configToUse.dueDateOption,
+                    configToUse.customDueDays
+                );
+                taskBuilder.setDueDate(dueDate);
+            }
+            
+            finalTaskText = taskBuilder.build();
             
             const captureChoice = {
                 name: "Create Task",
@@ -656,7 +656,11 @@ export async function createTaskInNote(
                     mode: configToUse.fileOpening.mode,
                     focus: configToUse.fileOpening.focus,
                 },
-                inputMethod: configToUse.inputMethod
+                inputMethod: configToUse.inputMethod,
+                autoAddCreatedDate: configToUse.autoAddCreatedDate,
+                autoAddDueDate: configToUse.autoAddDueDate,
+                dueDateOption: configToUse.dueDateOption,
+                customDueDays: configToUse.customDueDays
             };
             
             // 创建并运行 CaptureChoiceEngine

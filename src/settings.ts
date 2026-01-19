@@ -79,6 +79,12 @@ export interface CaptureToConfig {
     // 任务设置
     task: boolean;
     
+    // 日期设置
+    autoAddCreatedDate: boolean;
+    autoAddDueDate: boolean;
+    dueDateOption: "today" | "custom" | "weekend" | "monthEnd" | "yearEnd";
+    customDueDays: number;
+    
     // 插入位置设置
     insertAfter: InsertAfterSettings;
     newLineCapture: NewLineCaptureSettings;
@@ -90,8 +96,9 @@ export interface CaptureToConfig {
 
 export interface CaptureToSettings {
     enabled: boolean;
-    defaultConfigId: string;
-    taskListInputConfigId: string;
+    fleetingNoteConfigId: string;
+    recordConfigId: string;
+    taskConfigId: string;
     configs: CaptureToConfig[];
 }
 
@@ -104,21 +111,10 @@ export interface TaskFilterSettings {
     customFilter: string;
 }
 
-// 集成设置接口
-export interface IntegrationSettings {
-    // 是否使用Tasks插件格式
-    useTasksPluginFormat: boolean;
-    // 是否自动添加创建日期
-    autoCreateCreatedDate: boolean;
-    // 是否自动添加截止日期
-    autoCreateDueDate: boolean;
-    // 截止日期选项：当天、自定义天数、本周末、本月底、本年底
-    dueDateOption: "today" | "custom" | "weekend" | "monthEnd" | "yearEnd";
-    // 自定义截止天数
-    customDueDays: number;
-}
+
 
 export interface MyPluginSettings {
+    fleetingNote: NoteTemplateSettings;
     dailyNote: NoteTemplateSettings;
     weeklyNote: NoteTemplateSettings;
     monthlyNote: NoteTemplateSettings;
@@ -126,11 +122,14 @@ export interface MyPluginSettings {
     yearlyNote: NoteTemplateSettings;
     taskFilter: TaskFilterSettings;
     taskSettings: TaskSettings;
-    // 集成设置
-    integrations: IntegrationSettings;
 }
 
 export const DEFAULT_SETTINGS: MyPluginSettings = {
+    fleetingNote: {
+        savePath: "闪念",
+        templatePath: "模板/闪念模板",
+        fileNameFormat: "闪念 YYYY-MM"
+    },
     dailyNote: {
         savePath: "日记",
         templatePath: "模板/日记模板",
@@ -162,11 +161,102 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
     taskSettings: {
         captureToSettings: {
             enabled: true,
-            defaultConfigId: "default",
-            taskListInputConfigId: "default",
+            fleetingNoteConfigId: "fleetingNote",
+            recordConfigId: "record",
+            taskConfigId: "task",
             configs: [
                 {
-                    id: "default",
+                    id: "fleetingNote",
+                    name: "默认闪念",
+                    description: "默认的闪念捕获插入配置",
+                    enabled: true,
+                    defaultCapturePath: "{{闪念}}",
+                    captureToActiveFile: false,
+                    hotkey: null,
+                    inputMethod: "single-line",
+                    createFileIfItDoesntExist: {
+                        enabled: true,
+                        createWithTemplate: true,
+                        template: "{{闪念模板}}"
+                    },
+                    format: {
+                        enabled: true,
+                        format: "{{TASK_TEXT}}\n"
+                    },
+                    prepend: false,
+                    appendLink: false,
+                    task: false,
+                    autoAddCreatedDate: false,
+                    autoAddDueDate: false,
+                    dueDateOption: "today",
+                    customDueDays: 1,
+                    insertAfter: {
+                        enabled: false,
+                        after: "",
+                        insertAtEnd: false,
+                        considerSubsections: false,
+                        createIfNotFound: false,
+                        createIfNotFoundLocation: "bottom" as "top" | "bottom"
+                    },
+                    newLineCapture: {
+                        enabled: false,
+                        direction: "below"
+                    },
+                    openFile: true,
+                    fileOpening: {
+                        location: "tab",
+                        direction: "vertical",
+                        mode: "default",
+                        focus: true
+                    }
+                },
+                {
+                    id: "record",
+                    name: "默认记录",
+                    description: "默认的记录捕获插入配置",
+                    enabled: true,
+                    defaultCapturePath: "{{日记}}",
+                    captureToActiveFile: false,
+                    hotkey: null,
+                    inputMethod: "single-line",
+                    createFileIfItDoesntExist: {
+                        enabled: true,
+                        createWithTemplate: true,
+                        template: "{{日记模板}}"
+                    },
+                    format: {
+                        enabled: true,
+                        format: "{{TASK_TEXT}}\n"
+                    },
+                    prepend: false,
+                    appendLink: false,
+                    task: false,
+                    autoAddCreatedDate: false,
+                    autoAddDueDate: false,
+                    dueDateOption: "today",
+                    customDueDays: 1,
+                    insertAfter: {
+                        enabled: true,
+                        after: "## 日常记录",
+                        insertAtEnd: true,
+                        considerSubsections: false,
+                        createIfNotFound: true,
+                        createIfNotFoundLocation: "bottom" as "top" | "bottom"
+                    },
+                    newLineCapture: {
+                        enabled: false,
+                        direction: "below"
+                    },
+                    openFile: false,
+                    fileOpening: {
+                        location: "tab",
+                        direction: "vertical",
+                        mode: "default",
+                        focus: true
+                    }
+                },
+                {
+                    id: "task",
                     name: "默认任务",
                     description: "默认的捕获插入配置",
                     enabled: true,
@@ -186,6 +276,10 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     prepend: false,
                     appendLink: false,
                     task: true,
+                    autoAddCreatedDate: false,
+                    autoAddDueDate: true,
+                    dueDateOption: "today",
+                    customDueDays: 1,
                     insertAfter: {
                         enabled: true,
                         after: "## 日常记录",
@@ -227,6 +321,10 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     prepend: false,
                     appendLink: false,
                     task: false,
+                    autoAddCreatedDate: false,
+                    autoAddDueDate: false,
+                    dueDateOption: "today",
+                    customDueDays: 1,
                     insertAfter: {
                         enabled: true,
                         after: "## 日常记录",
@@ -268,6 +366,10 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     prepend: false,
                     appendLink: false,
                     task: false,
+                    autoAddCreatedDate: false,
+                    autoAddDueDate: false,
+                    dueDateOption: "today",
+                    customDueDays: 1,
                     insertAfter: {
                         enabled: true,
                         after: "## 工作记录",
@@ -309,6 +411,10 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     prepend: false,
                     appendLink: false,
                     task: false,
+                    autoAddCreatedDate: false,
+                    autoAddDueDate: false,
+                    dueDateOption: "today",
+                    customDueDays: 1,
                     insertAfter: {
                         enabled: true,
                         after: "## 月度总结",
@@ -350,6 +456,10 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     prepend: false,
                     appendLink: false,
                     task: false,
+                    autoAddCreatedDate: false,
+                    autoAddDueDate: false,
+                    dueDateOption: "today",
+                    customDueDays: 1,
                     insertAfter: {
                         enabled: true,
                         after: "## 季度总结",
@@ -391,6 +501,10 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     prepend: false,
                     appendLink: false,
                     task: false,
+                    autoAddCreatedDate: false,
+                    autoAddDueDate: false,
+                    dueDateOption: "today",
+                    customDueDays: 1,
                     insertAfter: {
                         enabled: true,
                         after: "## 年度总结",
@@ -432,6 +546,10 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     prepend: false,
                     appendLink: false,
                     task: false,
+                    autoAddCreatedDate: false,
+                    autoAddDueDate: false,
+                    dueDateOption: "today",
+                    customDueDays: 1,
                     insertAfter: {
                         enabled: true,
                         after: "## 日常记录",
@@ -454,14 +572,6 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                 }
             ]
         }
-    },
-    // 集成设置
-    integrations: {
-        useTasksPluginFormat: true,
-        autoCreateCreatedDate: true,
-        autoCreateDueDate: false,
-        dueDateOption: "today",
-        customDueDays: 1
     }
 }
 
@@ -486,11 +596,13 @@ export class SampleSettingTab extends PluginSettingTab {
         // 渲染任务显示筛选设置
         this.renderTaskFilterSettings();
         
-        // 渲染集成设置
-        this.renderIntegrationSettings();
-        
         // 渲染 Capture To 设置
         this.renderCaptureToSettings();
+
+        this.renderNoteSettings("闪念设置", this.plugin.settings.fleetingNote, (newSettings) => {
+            this.plugin.settings.fleetingNote = newSettings;
+            this.settingsChanged = true;
+        });
 
         this.renderNoteSettings("日记设置", this.plugin.settings.dailyNote, (newSettings) => {
             this.plugin.settings.dailyNote = newSettings;
@@ -586,87 +698,6 @@ export class SampleSettingTab extends PluginSettingTab {
             });
     }
 
-    private renderIntegrationSettings(): void {
-        const section = this.containerEl.createEl("div", {cls: "setting-section"});
-        section.createEl("h4", {text: "任务格式集成设置"});
-
-        // 使用Tasks插件格式
-        new Setting(section)
-            .setName("使用 Tasks 插件格式")
-            .setDesc("创建任务时使用 Tasks 插件的语法格式")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.integrations.useTasksPluginFormat)
-                .onChange((value) => {
-                    this.plugin.settings.integrations.useTasksPluginFormat = value;
-                    this.settingsChanged = true;
-                }));
-
-        // 自动添加创建日期
-        new Setting(section)
-            .setName("自动添加创建日期")
-            .setDesc("创建任务时自动添加创建日期标记 ➕ YYYY-MM-DD")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.integrations.autoCreateCreatedDate)
-                .onChange((value) => {
-                    this.plugin.settings.integrations.autoCreateCreatedDate = value;
-                    this.settingsChanged = true;
-                }));
-
-        // 自动添加截止日期
-        const autoDueDateSetting = new Setting(section)
-            .setName("自动添加截止日期")
-            .setDesc("创建任务时自动添加截止日期标记 📅 YYYY-MM-DD")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.integrations.autoCreateDueDate)
-                .onChange((value) => {
-                    this.plugin.settings.integrations.autoCreateDueDate = value;
-                    this.settingsChanged = true;
-                    // 刷新设置页面，显示或隐藏下级菜单
-                    this.display();
-                }));
-
-        // 只有当自动添加截止日期开启时，才显示下级菜单
-        if (this.plugin.settings.integrations.autoCreateDueDate) {
-            // 截止日期计算方式
-            const dueDateOptionSetting = new Setting(section)
-                .setName("截止日期计算方式")
-                .setDesc("选择自动添加截止日期的计算方式")
-                .addDropdown(dropdown => {
-                    dropdown.addOption("today", "当天");
-                    dropdown.addOption("custom", "自定义天数");
-                    dropdown.addOption("weekend", "本周末");
-                    dropdown.addOption("monthEnd", "本月底");
-                    dropdown.addOption("yearEnd", "本年底");
-                    dropdown.setValue(this.plugin.settings.integrations.dueDateOption)
-                        .onChange((value) => {
-                            this.plugin.settings.integrations.dueDateOption = value as any;
-                            this.settingsChanged = true;
-                            // 刷新设置页面，显示或隐藏自定义天数输入框
-                            this.display();
-                        });
-                });
-            dueDateOptionSetting.settingEl.style.marginLeft = "20px";
-
-            // 自定义天数输入框，只有当选择自定义天数时才显示
-            if (this.plugin.settings.integrations.dueDateOption === "custom") {
-                const customDaysSetting = new Setting(section)
-                    .setName("自定义天数")
-                    .setDesc("设置自定义截止日期的天数")
-                    .addText(text => text
-                        .setPlaceholder("输入天数")
-                        .setValue(this.plugin.settings.integrations.customDueDays.toString())
-                        .onChange((value) => {
-                            const days = parseInt(value);
-                            if (!isNaN(days)) {
-                                this.plugin.settings.integrations.customDueDays = days;
-                                this.settingsChanged = true;
-                            }
-                        }));
-                customDaysSetting.settingEl.style.marginLeft = "40px";
-            }
-        }
-    }
-
     private renderTaskSettings(): void {
         // 任务创建设置已移至 Capture To 设置中
     }
@@ -690,32 +721,47 @@ export class SampleSettingTab extends PluginSettingTab {
                     this.settingsChanged = true;
                 }));
 
-        // 默认配置选择
+        // 闪念标签配置
         new Setting(section)
-            .setName("默认配置")
-            .setDesc("选择默认使用的捕获插入配置")
+            .setName("闪念标签配置")
+            .setDesc("选择任务显示区域头部闪念标签对应的配置")
             .addDropdown(dropdown => {
                 captureSettings.configs.forEach(config => {
                     dropdown.addOption(config.id, config.name);
                 });
-                dropdown.setValue(captureSettings.defaultConfigId)
+                dropdown.setValue(captureSettings.fleetingNoteConfigId)
                     .onChange((value) => {
-                        this.plugin.settings.taskSettings.captureToSettings.defaultConfigId = value;
+                        this.plugin.settings.taskSettings.captureToSettings.fleetingNoteConfigId = value;
                         this.settingsChanged = true;
                     });
             });
 
-        // 任务列表输入配置选择
+        // 记录标签配置
         new Setting(section)
-            .setName("任务列表输入配置")
-            .setDesc("选择任务列表输入时使用的捕获插入配置")
+            .setName("记录标签配置")
+            .setDesc("选择任务显示区域头部记录标签对应的配置")
             .addDropdown(dropdown => {
                 captureSettings.configs.forEach(config => {
                     dropdown.addOption(config.id, config.name);
                 });
-                dropdown.setValue(captureSettings.taskListInputConfigId)
+                dropdown.setValue(captureSettings.recordConfigId)
                     .onChange((value) => {
-                        this.plugin.settings.taskSettings.captureToSettings.taskListInputConfigId = value;
+                        this.plugin.settings.taskSettings.captureToSettings.recordConfigId = value;
+                        this.settingsChanged = true;
+                    });
+            });
+
+        // 任务标签配置
+        new Setting(section)
+            .setName("任务标签配置")
+            .setDesc("选择任务显示区域头部任务标签对应的配置")
+            .addDropdown(dropdown => {
+                captureSettings.configs.forEach(config => {
+                    dropdown.addOption(config.id, config.name);
+                });
+                dropdown.setValue(captureSettings.taskConfigId)
+                    .onChange((value) => {
+                        this.plugin.settings.taskSettings.captureToSettings.taskConfigId = value;
                         this.settingsChanged = true;
                     });
             });
@@ -1068,15 +1114,6 @@ export class SampleSettingTab extends PluginSettingTab {
                     if (this.plugin.settings.taskSettings.captureToSettings.configs) {
                         this.plugin.settings.taskSettings.captureToSettings.configs.splice(index, 1);
                         
-                        // 如果删除的是默认配置，设置第一个配置为默认
-                        if (config.id === this.plugin.settings.taskSettings.captureToSettings.defaultConfigId && 
-                            this.plugin.settings.taskSettings.captureToSettings.configs.length > 0) {
-                            const firstConfig = this.plugin.settings.taskSettings.captureToSettings.configs[0];
-                            if (firstConfig) {
-                                this.plugin.settings.taskSettings.captureToSettings.defaultConfigId = firstConfig.id;
-                            }
-                        }
-                        
                         this.settingsChanged = true;
                         // 重新渲染设置页面
                         this.display();
@@ -1163,7 +1200,11 @@ export class SampleSettingTab extends PluginSettingTab {
                     direction: "vertical",
                     mode: "default",
                     focus: true
-                }
+                },
+                autoAddCreatedDate: false,
+                autoAddDueDate: false,
+                dueDateOption: "today",
+                customDueDays: 0
             };
 
             // 添加到配置列表
@@ -1195,10 +1236,99 @@ export class SampleSettingTab extends PluginSettingTab {
         defaultConfigButton.style.fontSize = "14px";
         defaultConfigButton.addEventListener("click", () => {
             // 恢复默认配置
-                this.plugin.settings.taskSettings.captureToSettings.taskListInputConfigId = "default";
                 const defaultConfigs: CaptureToConfig[] = [
                 {
-                    id: "default",
+                    id: "fleetingNote",
+                    name: "默认闪念",
+                    description: "默认的闪念捕获插入配置",
+                    enabled: true,
+                    defaultCapturePath: "{{闪念}}",
+                    captureToActiveFile: false,
+                    hotkey: null,
+                    inputMethod: "single-line",
+                    createFileIfItDoesntExist: {
+                        enabled: true,
+                        createWithTemplate: true,
+                        template: "{{闪念模板}}"
+                    },
+                    format: {
+                        enabled: true,
+                        format: "{{TASK_TEXT}}\n"
+                    },
+                    prepend: false,
+                    appendLink: false,
+                    task: false,
+                    autoAddCreatedDate: false,
+                    autoAddDueDate: false,
+                    dueDateOption: "today",
+                    customDueDays: 1,
+                    insertAfter: {
+                        enabled: false,
+                        after: "",
+                        insertAtEnd: false,
+                        considerSubsections: false,
+                        createIfNotFound: false,
+                        createIfNotFoundLocation: "bottom"
+                    },
+                    newLineCapture: {
+                        enabled: false,
+                        direction: "below"
+                    },
+                    openFile: true,
+                    fileOpening: {
+                        location: "tab",
+                        direction: "vertical",
+                        mode: "default",
+                        focus: true
+                    }
+                },
+                {
+                    id: "record",
+                    name: "默认记录",
+                    description: "默认的记录捕获插入配置",
+                    enabled: true,
+                    defaultCapturePath: "{{日记}}",
+                    captureToActiveFile: false,
+                    hotkey: null,
+                    inputMethod: "single-line",
+                    createFileIfItDoesntExist: {
+                        enabled: true,
+                        createWithTemplate: true,
+                        template: "{{日记模板}}"
+                    },
+                    format: {
+                        enabled: true,
+                        format: "{{TASK_TEXT}}\n"
+                    },
+                    prepend: false,
+                    appendLink: false,
+                    task: false,
+                    autoAddCreatedDate: false,
+                    autoAddDueDate: false,
+                    dueDateOption: "today",
+                    customDueDays: 1,
+                    insertAfter: {
+                        enabled: true,
+                        after: "## 日常记录",
+                        insertAtEnd: true,
+                        considerSubsections: false,
+                        createIfNotFound: true,
+                        createIfNotFoundLocation: "bottom"
+                    },
+                    newLineCapture: {
+                        enabled: false,
+                        direction: "below"
+                    },
+                    openFile: false,
+                    fileOpening: {
+                        location: "tab",
+                        direction: "vertical",
+                        mode: "default",
+                        focus: true
+                    }
+                },
+                {
+                    id: "task",
                     name: "默认任务",
                     description: "默认的捕获插入配置",
                     enabled: true,
@@ -1236,7 +1366,11 @@ export class SampleSettingTab extends PluginSettingTab {
                         direction: "vertical",
                         mode: "default",
                         focus: true
-                    }
+                    },
+                    autoAddCreatedDate: false,
+                    autoAddDueDate: true,
+                    dueDateOption: "today",
+                    customDueDays: 0
                 },
                 {
                     id: "daily",
@@ -1277,7 +1411,11 @@ export class SampleSettingTab extends PluginSettingTab {
                         direction: "vertical",
                         mode: "default",
                         focus: true
-                    }
+                    },
+                    autoAddCreatedDate: false,
+                    autoAddDueDate: false,
+                    dueDateOption: "today",
+                    customDueDays: 0
                 },
                 {
                     id: "weekly",
@@ -1318,7 +1456,11 @@ export class SampleSettingTab extends PluginSettingTab {
                         direction: "vertical",
                         mode: "default",
                         focus: true
-                    }
+                    },
+                    autoAddCreatedDate: false,
+                    autoAddDueDate: false,
+                    dueDateOption: "today",
+                    customDueDays: 0
                 },
                 {
                     id: "monthly",
@@ -1359,7 +1501,11 @@ export class SampleSettingTab extends PluginSettingTab {
                         direction: "vertical",
                         mode: "default",
                         focus: true
-                    }
+                    },
+                    autoAddCreatedDate: false,
+                    autoAddDueDate: false,
+                    dueDateOption: "today",
+                    customDueDays: 0
                 },
                 {
                     id: "quarterly",
@@ -1400,7 +1546,11 @@ export class SampleSettingTab extends PluginSettingTab {
                         direction: "vertical",
                         mode: "default",
                         focus: true
-                    }
+                    },
+                    autoAddCreatedDate: false,
+                    autoAddDueDate: false,
+                    dueDateOption: "today",
+                    customDueDays: 0
                 },
                 {
                     id: "yearly",
@@ -1441,7 +1591,11 @@ export class SampleSettingTab extends PluginSettingTab {
                         direction: "vertical",
                         mode: "default",
                         focus: true
-                    }
+                    },
+                    autoAddCreatedDate: false,
+                    autoAddDueDate: false,
+                    dueDateOption: "today",
+                    customDueDays: 0
                 },
                 {
                     id: "meeting",
@@ -1482,14 +1636,17 @@ export class SampleSettingTab extends PluginSettingTab {
                         direction: "vertical",
                         mode: "default",
                         focus: true
-                    }
+                    },
+                    autoAddCreatedDate: false,
+                    autoAddDueDate: false,
+                    dueDateOption: "today",
+                    customDueDays: 0
                 }
             ];
 
             // 清空现有配置并添加默认配置
             if (this.plugin.settings.taskSettings.captureToSettings.configs) {
                 this.plugin.settings.taskSettings.captureToSettings.configs = defaultConfigs;
-                this.plugin.settings.taskSettings.captureToSettings.defaultConfigId = "default";
                 this.settingsChanged = true;
                 // 重新渲染设置页面
                 this.display();

@@ -335,6 +335,63 @@ export class CalendarView extends ItemView {
         const selectedDateDisplay = taskListHeader.createEl("div", {cls: "selected-date-display"});
         this.updateSelectedDateDisplay(selectedDateDisplay);
         
+        // 右侧：操作按钮组
+        const actionButtons = taskListHeader.createEl("div", {cls: "task-list-action-buttons"});
+        
+        // 添加闪念按钮
+        const flashButton = actionButtons.createEl("button", {
+            text: "+闪念",
+            cls: "task-action-button flash-button"
+        });
+        flashButton.addEventListener("click", async () => {
+            // 获取闪念配置
+            const flashConfigId = this.plugin.settings.taskSettings.captureToSettings.fleetingNoteConfigId;
+            console.log('闪念配置ID:', flashConfigId);
+            const flashConfig = this.plugin.settings.taskSettings.captureToSettings.configs.find(
+                config => config.id === flashConfigId
+            );
+            console.log('闪念配置:', flashConfig);
+            if (flashConfig) {
+                await this.plugin.executeCaptureToConfig(flashConfig);
+            }
+        });
+        
+        // 添加记录按钮
+        const recordButton = actionButtons.createEl("button", {
+            text: "+记录",
+            cls: "task-action-button record-button"
+        });
+        recordButton.addEventListener("click", async () => {
+            // 获取记录配置
+            const recordConfigId = this.plugin.settings.taskSettings.captureToSettings.recordConfigId;
+            console.log('记录配置ID:', recordConfigId);
+            const recordConfig = this.plugin.settings.taskSettings.captureToSettings.configs.find(
+                config => config.id === recordConfigId
+            );
+            console.log('记录配置:', recordConfig);
+            if (recordConfig) {
+                await this.plugin.executeCaptureToConfig(recordConfig);
+            }
+        });
+        
+        // 添加任务按钮
+        const taskButton = actionButtons.createEl("button", {
+            text: "+任务",
+            cls: "task-action-button task-button"
+        });
+        taskButton.addEventListener("click", async () => {
+            // 获取任务配置
+            const taskConfigId = this.plugin.settings.taskSettings.captureToSettings.taskConfigId;
+            console.log('任务配置ID:', taskConfigId);
+            const taskConfig = this.plugin.settings.taskSettings.captureToSettings.configs.find(
+                config => config.id === taskConfigId
+            );
+            console.log('任务配置:', taskConfig);
+            if (taskConfig) {
+                await this.plugin.executeCaptureToConfig(taskConfig);
+            }
+        });
+        
         // 添加任务列表头部双击事件监听器，用于收缩/展开视图
         taskListHeader.addEventListener("dblclick", () => {
             this.toggleCalendarView();
@@ -971,6 +1028,11 @@ export class CalendarView extends ItemView {
     private async onDayClick(date: Date) {
         this.selectedDate = date;
         this.currentDate = date; // 使当前月切换到选中日期的月份
+        
+        // 重置选择类型为日期
+        this.selectionType = 'date';
+        this.selectedWeekRange = null;
+        this.selectedQuarter = null;
         
         // 更新日期单元格的选中状态
         this.updateDaySelection();

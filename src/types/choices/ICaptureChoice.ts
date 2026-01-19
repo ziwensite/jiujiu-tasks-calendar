@@ -53,4 +53,9 @@ export default interface ICaptureChoice extends IChoice {
 	templater?: {
 		afterCapture?: "none" | "wholeFile";
 	};
+	// 日期设置
+	autoAddCreatedDate: boolean;
+	autoAddDueDate: boolean;
+	dueDateOption: "today" | "custom" | "weekend" | "monthEnd" | "yearEnd";
+	customDueDays: number;
 }

@@ -305,7 +305,7 @@ export class EventHandler {
             // 如果没有找到匹配的配置，使用默认配置
             if (!targetConfig) {
                 targetConfig = captureSettings.configs.find(config => 
-                    config.id === captureSettings.defaultConfigId
+                    config.id === captureSettings.taskConfigId
                 );
             }
 

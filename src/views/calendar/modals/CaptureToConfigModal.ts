@@ -313,6 +313,64 @@ export class CaptureToConfigModal extends Modal {
                     this.config.format.enabled = value;
                 }));
         
+        // 自动添加创建日期
+        const createdDateSetting = new Setting(container)
+            .setName('自动添加创建日期')
+            .setDesc('自动为捕获的内容添加创建日期')
+            .addToggle(toggle => toggle
+                .setValue(this.config.autoAddCreatedDate)
+                .onChange(value => {
+                    this.config.autoAddCreatedDate = value;
+                }));
+        
+        // 自动添加截止日期
+        const dueDateSetting = new Setting(container)
+            .setName('自动添加截止日期')
+            .setDesc('自动为捕获的内容添加截止日期')
+            .addToggle(toggle => toggle
+                .setValue(this.config.autoAddDueDate)
+                .onChange(value => {
+                    this.config.autoAddDueDate = value;
+                    // 重新渲染设置
+                    this.onOpen();
+                }));
+        
+        // 截止日期选项
+        if (this.config.autoAddDueDate) {
+            new Setting(container)
+                .setName('截止日期计算方式')
+                .setDesc('选择自动添加截止日期的计算方式')
+                .addDropdown(dropdown => {
+                    dropdown.addOption("today", "当天");
+                    dropdown.addOption("custom", "自定义天数");
+                    dropdown.addOption("weekend", "本周末");
+                    dropdown.addOption("monthEnd", "本月底");
+                    dropdown.addOption("yearEnd", "本年底");
+                    dropdown.setValue(this.config.dueDateOption)
+                        .onChange(value => {
+                            this.config.dueDateOption = value as "today" | "custom" | "weekend" | "monthEnd" | "yearEnd";
+                            // 重新渲染设置
+                            this.onOpen();
+                        });
+                });
+            
+            // 自定义天数输入框，只有当选择自定义天数时才显示
+            if (this.config.dueDateOption === "custom") {
+                new Setting(container)
+                    .setName('自定义天数')
+                    .setDesc('设置自定义截止日期的天数')
+                    .addText(text => text
+                        .setPlaceholder("输入天数")
+                        .setValue(this.config.customDueDays.toString())
+                        .onChange((value) => {
+                            const days = parseInt(value);
+                            if (!isNaN(days)) {
+                                this.config.customDueDays = days;
+                            }
+                        }));
+            }
+        }
+        
         // Format
         new Setting(container)
             .setName('捕获格式')
