@@ -110,7 +110,7 @@ export async function extractBasicTasks(app: App): Promise<Task[]> {
                         }
                     }
                     
-                    // 提取任务描述（去除日期、时间、全天等标记）
+                    // 提取任务描述（去除日期、时间、全天、标签等标记）
                     let taskDescription = rawText;
                     
                     // 移除日期标记
@@ -129,6 +129,12 @@ export async function extractBasicTasks(app: App): Promise<Task[]> {
                     } else if (singleTimeMatch) {
                         taskDescription = taskDescription.replace(singleTimeRegex, '').trim();
                     }
+                    
+                    // 移除标签（以#开头的标签）
+                    taskDescription = taskDescription.replace(/#\S+/g, '').trim();
+                    
+                    // 移除emoji标签（如 🔁）
+                    taskDescription = taskDescription.replace(/[🔁📅⏳🔼📅✅⏸️🔁🔄]/g, '').trim();
                     
                     // 去除多余的空格
                     taskDescription = taskDescription.replace(/\s+/g, ' ').trim();

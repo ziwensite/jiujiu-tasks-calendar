@@ -36,49 +36,105 @@ export class EventHandler {
      * 处理任务双击事件：打开文件并高亮选中任务
      */
     async handleTaskDoubleClick(task: Task) {
+        console.log('[TaskDoubleClick] Task clicked:', task);
+        console.log('[TaskDoubleClick] Task filePath:', task.filePath);
+        console.log('[TaskDoubleClick] Task text:', task.text);
+        
         const file = this.plugin.app.vault.getAbstractFileByPath(task.filePath);
-        if (!file || !('stat' in file)) return;
+        console.log('[TaskDoubleClick] File found:', file);
+        
+        if (!file || !('stat' in file)) {
+            console.warn('[TaskDoubleClick] File not found or invalid');
+            return;
+        }
 
         try {
             // 1. 打开文件
             const leaf = this.plugin.app.workspace.getLeaf(false);
             await leaf.openFile(file as TFile);
+            console.log('[TaskDoubleClick] File opened');
 
             // 2. 等待文件完全打开和渲染
             await new Promise(resolve => setTimeout(resolve, 200));
 
             const activeView = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
-            if (!activeView) return;
+            console.log('[TaskDoubleClick] Active view:', activeView);
+            
+            if (!activeView) {
+                console.warn('[TaskDoubleClick] No active view');
+                return;
+            }
 
             const editor = activeView.editor;
             const content = editor.getValue();
+            console.log('[TaskDoubleClick] Content length:', content.length);
 
             // 3. 查找任务在文件中的位置
             const taskIndex = content.indexOf(task.text);
-            if (taskIndex === -1) return;
+            console.log('[TaskDoubleClick] Task index:', taskIndex);
+            
+            if (taskIndex === -1) {
+                console.warn('[TaskDoubleClick] Task text not found in file, trying to find by raw text');
+                // 尝试使用原始任务文本查找
+                const rawTaskIndex = content.indexOf(task.rawText || '');
+                console.log('[TaskDoubleClick] Raw task index:', rawTaskIndex);
+                
+                if (rawTaskIndex === -1) {
+                    console.warn('[TaskDoubleClick] Raw task text not found either');
+                    return;
+                }
+                
+                // 4. 计算任务所在行（使用原始文本）
+                const line = content.substring(0, rawTaskIndex).split('\n').length - 1;
+                const lineText = editor.getLine(line);
+                console.log('[TaskDoubleClick] Line:', line, 'Line text:', lineText);
+                
+                if (!lineText) {
+                    console.warn('[TaskDoubleClick] Line text is empty');
+                    return;
+                }
+
+                // 5. 只选中该行的开头，不尝试精确匹配完整文本
+                const startPos = { line, ch: 0 };
+                const endPos = { line, ch: lineText.length };
+                console.log('[TaskDoubleClick] Selection:', startPos, 'to', endPos);
+
+                // 6. 选中整行
+                editor.setSelection(startPos, endPos);
+
+                // 7. 滚动到视口中间
+                editor.scrollIntoView(
+                    { from: startPos, to: endPos },
+                    true
+                );
+                console.log('[TaskDoubleClick] Task line highlighted and scrolled');
+                return;
+            }
 
             // 4. 计算任务所在行
             const line = content.substring(0, taskIndex).split('\n').length - 1;
             const lineText = editor.getLine(line);
-            if (!lineText) return;
+            console.log('[TaskDoubleClick] Line:', line, 'Line text:', lineText);
+            
+            if (!lineText) {
+                console.warn('[TaskDoubleClick] Line text is empty');
+                return;
+            }
 
-            // 5. 查找任务文本在该行中的起始位置
-            const taskStart = lineText.indexOf(task.text);
-            if (taskStart === -1) return;
+            // 5. 只选中该行的开头，不尝试精确匹配完整文本
+            const startPos = { line, ch: 0 };
+            const endPos = { line, ch: lineText.length };
+            console.log('[TaskDoubleClick] Selection:', startPos, 'to', endPos);
 
-            // 6. 计算任务结束位置
-            const taskEnd = taskStart + task.text.length;
-            const startPos = { line, ch: taskStart };
-            const endPos = { line, ch: taskEnd };
-
-            // 7. 选中任务文本
+            // 6. 选中整行
             editor.setSelection(startPos, endPos);
 
-            // 8. 滚动到视口中间
+            // 7. 滚动到视口中间
             editor.scrollIntoView(
                 { from: startPos, to: endPos },
                 true
             );
+            console.log('[TaskDoubleClick] Task highlighted and scrolled');
 
         } catch (error) {
             console.warn('Failed to highlight and center task:', error);
