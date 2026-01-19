@@ -1,13 +1,12 @@
-import { ItemView, WorkspaceLeaf, Notice, MarkdownView, Modal, App, TFile } from 'obsidian';
+import { ItemView, WorkspaceLeaf, Notice, MarkdownView, App, TFile } from 'obsidian';
 import { MyPlugin } from '../main';
 import { MyPluginSettings } from '../settings';
 import { getLunarDate, getHolidayInfo, getHolidayStatus, getWeekNumber, getWeekInfo, getQuarter, formatDate, lunarMonthNames, lunarDayNames, calculateCalendarMonthData } from '../utils/dateUtils';
 import { Solar } from 'lunar-typescript';
 import { noteExists } from '../services/noteService';
-import { extractTasks, filterTasks, updateTaskInNote, createTaskInNote, Task, parseCustomFilter, evaluateExpression } from '../services/taskService';
+import { extractTasks, filterTasks, updateTaskInNote, Task, parseCustomFilter, evaluateExpression } from '../services/taskService';
 import { CalendarRenderer, TaskListRenderer, IndicatorRenderer, EventHandler } from './calendar';
 import { CalendarEvent } from '../core/EventEmitter';
-import { TaskModal } from './calendar/modals/TaskModal';
 
 const VIEW_TYPE_CALENDAR = "jiujiu-calendar-view";
 
@@ -336,77 +335,6 @@ export class CalendarView extends ItemView {
         const selectedDateDisplay = taskListHeader.createEl("div", {cls: "selected-date-display"});
         this.updateSelectedDateDisplay(selectedDateDisplay);
         
-        // 右侧：添加事件输入框
-        const addEventContainer = taskListHeader.createEl("div", {cls: "task-list-header-add-event"});
-        
-        // 计算当前被选择日期的月份和日期
-        const selectedDate = this.selectedDate || this.currentDate;
-        const month = selectedDate.getMonth() + 1;
-        const day = selectedDate.getDate();
-        
-        // 创建输入框，提示文字显示当前被选择的日期
-        const inputEl = addEventContainer.createEl("input", { 
-            cls: "task-list-header-add-input", 
-            placeholder: `添加事件` 
-        });
-        
-        // 创建添加按钮
-        const addBtn = addEventContainer.createEl("button", {cls: "task-list-header-add-btn", text: "+"});
-        
-        // 处理添加按钮点击事件
-        const handleAddEvent = async () => {
-            console.log("handleAddEvent called");
-            const inputText = inputEl.value.trim();
-            console.log("Input text:", inputText);
-            
-            if (inputText === "") {
-                // 输入框为空，弹出任务模态窗口
-                console.log("Input is empty, opening modal");
-                const modal = new TaskModal({
-                    plugin: this.plugin,
-                    date: selectedDate || new Date(),
-                    onTaskAdded: async () => {
-                        await this.refreshTaskList();
-                    }
-                });
-                modal.open();
-            } else {
-                // 输入框有内容，直接调用 createTaskInNote，不使用 TaskTextBuilder
-                try {
-                    console.log("Creating task with input:", inputText);
-                    
-                    console.log("Calling createTaskInNote directly");
-                    await createTaskInNote(
-                        this.app,
-                        inputText,
-                        selectedDate || new Date(),
-                        this.plugin.settings,
-                        "daily"
-                    );
-                    
-                    console.log("Task created successfully");
-                    // 清空输入框
-                    inputEl.value = "";
-                    
-                    // 刷新任务列表
-                    await this.refreshTaskList();
-                } catch (error) {
-                    console.error("Failed to create task:", error);
-                    new Notice(`创建任务失败: ${error instanceof Error ? error.message : '未知错误'}`, 4000);
-                }
-            }
-        };
-        
-        // 绑定按钮点击事件
-        addBtn.addEventListener("click", handleAddEvent);
-        
-        // 绑定回车键事件
-        inputEl.addEventListener("keydown", async (e) => {
-            if (e.key === "Enter") {
-                await handleAddEvent();
-            }
-        });
-        
         // 添加任务列表头部双击事件监听器，用于收缩/展开视图
         taskListHeader.addEventListener("dblclick", () => {
             this.toggleCalendarView();
@@ -459,81 +387,6 @@ export class CalendarView extends ItemView {
         });
         
         const taskList = taskListContainer.createEl("div", {cls: "task-list"});
-    }
-    
-    /**
-     * 构建添加事件输入框
-     */
-    private buildAddEventInput(container: HTMLElement, selectedDate: Date) {
-        // 创建添加事件容器，样式由 styles.css 控制
-        const addEventContainer = container.createEl("div", {cls: "add-event-container"});
-        
-        // 计算当前被选择日期的月份和日期
-        const month = selectedDate.getMonth() + 1;
-        const day = selectedDate.getDate();
-        
-        // 创建输入框，提示文字显示当前被选择的日期
-        const inputEl = addEventContainer.createEl("input", { 
-            cls: "add-event-input", 
-            placeholder: `在 ${month}月${day}日添加事件` 
-        });
-        
-        // 创建添加按钮
-        const addBtn = addEventContainer.createEl("button", {cls: "add-event-button", text: "+"});
-        
-        // 处理添加按钮点击事件
-        const handleAddEvent = async () => {
-            console.log("buildAddEventInput: handleAddEvent called");
-            const inputText = inputEl.value.trim();
-            console.log("buildAddEventInput: Input text:", inputText);
-            
-            if (inputText === "") {
-                // 输入框为空，弹出任务模态窗口
-                console.log("buildAddEventInput: Input is empty, opening modal");
-                const modal = new TaskModal({
-                    plugin: this.plugin,
-                    date: selectedDate || new Date(),
-                    onTaskAdded: async () => {
-                        await this.refreshTaskList();
-                    }
-                });
-                modal.open();
-            } else {
-                // 输入框有内容，直接调用 createTaskInNote，不使用 TaskTextBuilder
-                try {
-                    console.log("buildAddEventInput: Creating task with input:", inputText);
-                    
-                    console.log("buildAddEventInput: Calling createTaskInNote directly");
-                    await createTaskInNote(
-                        this.app,
-                        inputText,
-                        selectedDate || new Date(),
-                        this.plugin.settings,
-                        "daily"
-                    );
-                    
-                    console.log("buildAddEventInput: Task created successfully");
-                    // 清空输入框
-                    inputEl.value = "";
-                    
-                    // 刷新任务列表
-                    await this.refreshTaskList();
-                } catch (error) {
-                    console.error("buildAddEventInput: Failed to create task:", error);
-                    new Notice(`创建任务失败: ${error instanceof Error ? error.message : '未知错误'}`, 4000);
-                }
-            }
-        };
-        
-        // 绑定按钮点击事件
-        addBtn.addEventListener("click", handleAddEvent);
-        
-        // 绑定回车键事件
-        inputEl.addEventListener("keydown", async (e) => {
-            if (e.key === "Enter") {
-                await handleAddEvent();
-            }
-        });
     }
 
     /**

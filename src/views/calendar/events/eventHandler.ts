@@ -1,6 +1,6 @@
 import { MarkdownView, TFile } from 'obsidian';
 import { MyPlugin } from '../../../main';
-import { Task, updateTaskInNote, createTaskInNote } from '../../../services/taskService';
+import { Task, updateTaskInNote } from '../../../services/taskService';
 import { formatDate } from '../../../utils/dateUtils';
 
 export class EventHandler {
@@ -164,23 +164,6 @@ export class EventHandler {
             await onRefreshTaskList();
         } catch (error) {
             console.error('Failed to update task:', error);
-        }
-    }
-
-    /**
-     * 处理添加任务事件
-     */
-    async handleAddTask(taskText: string, date: Date, onRefreshTaskList: () => Promise<void>) {
-        if (taskText.trim()) {
-            try {
-                // 添加任务到笔记
-                await createTaskInNote(this.plugin.app, taskText, date, this.plugin.settings, 'daily');
-                
-                // 重新渲染任务列表
-                await onRefreshTaskList();
-            } catch (error) {
-                console.error('Failed to add task:', error);
-            }
         }
     }
 
