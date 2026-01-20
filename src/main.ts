@@ -6,51 +6,56 @@ import { CalendarDataManager } from './core/CalendarDataManager';
 import { EventEmitter, CalendarEvent } from './core/EventEmitter';
 
 export class MyPlugin extends Plugin {
-    settings: MyPluginSettings;
+    settings: MyPluginSettings = DEFAULT_SETTINGS;
     calendarViewController: CalendarViewController;
     calendarDataManager: CalendarDataManager;
     eventEmitter: EventEmitter;
 
     async onload() {
-        await this.loadSettings();
-        
-        // 初始化事件发射器
-        this.eventEmitter = new EventEmitter();
-        
-        // 初始化日历数据管理器
-        this.calendarDataManager = new CalendarDataManager(this);
-        
-        // 初始化日历视图控制器
-        this.calendarViewController = new CalendarViewController(this);
-        
-        // 暴露插件实例到 window 对象，以便其他模块访问
-        (window as any).jiujiuObsidianCalendarPlugin = {
-            instance: this
-        };
+        try {
+            await this.loadSettings();
+            
+            // 初始化事件发射器
+            this.eventEmitter = new EventEmitter();
+            
+            // 初始化日历数据管理器
+            this.calendarDataManager = new CalendarDataManager(this);
+            
+            // 初始化日历视图控制器
+            this.calendarViewController = new CalendarViewController(this);
+            
+            // 暴露插件实例到 window 对象，以便其他模块访问
+            (window as any).jiujiuObsidianCalendarPlugin = {
+                instance: this
+            };
 
-        // 注册视图
-        this.registerView(
-            "jiujiu-calendar-view",
-            (leaf) => new CalendarView(leaf, this)
-        );
+            // 注册视图
+            this.registerView(
+                "jiujiu-calendar-view",
+                (leaf) => new CalendarView(leaf, this)
+            );
 
-        // 添加侧边栏按钮
-        this.addRibbonIcon('calendar', 'JiuJiu Calendar', (evt: MouseEvent) => {
+            // 添加侧边栏按钮
+            this.addRibbonIcon('calendar', 'JiuJiu Calendar', (evt: MouseEvent) => {
+                this.activateView();
+            });
+
+            // 添加命令来切换视图
+            this.addCommand({
+                id: "open-calendar-view",
+                name: "Open Calendar View",
+                callback: () => this.activateView(),
+            });
+
+            // 加载设置页
+            this.addSettingTab(new SampleSettingTab(this.app, this));
+            
+            // 插件启用时自动打开默认视图
             this.activateView();
-        });
-
-        // 添加命令来切换视图
-        this.addCommand({
-            id: "open-calendar-view",
-            name: "Open Calendar View",
-            callback: () => this.activateView(),
-        });
-
-        // 加载设置页
-        this.addSettingTab(new SampleSettingTab(this.app, this));
-        
-        // 插件启用时自动打开默认视图
-        this.activateView();
+        } catch (error) {
+            console.error("[JiuJiu Calendar] Plugin load error:", error);
+            new Notice(`JiuJiu Calendar plugin failed to load: ${(error as Error).message}`);
+        }
     }
 
     onunload() {
@@ -81,28 +86,39 @@ export class MyPlugin extends Plugin {
     }
 
     async loadSettings() {
-        const savedSettings = await this.loadData() as Partial<MyPluginSettings>;
-        
-        // 深度合并设置，确保嵌套对象也能正确合并
-        this.settings = {
-            ...DEFAULT_SETTINGS,
-            ...savedSettings,
-            // 确保taskSettings包含所有必需的嵌套属性
-            taskSettings: {
-                ...DEFAULT_SETTINGS.taskSettings,
-                ...savedSettings.taskSettings,
-                // 确保captureToSettings包含所有必需的嵌套属性
-                captureToSettings: {
-                    ...DEFAULT_SETTINGS.taskSettings.captureToSettings,
-                    ...savedSettings.taskSettings?.captureToSettings
+        try {
+            const savedSettings = await this.loadData() as Partial<MyPluginSettings>;
+            
+            // 确保savedSettings不是null
+            const safeSavedSettings = savedSettings || {};
+            
+            // 深度合并设置，确保嵌套对象也能正确合并
+            this.settings = {
+                ...DEFAULT_SETTINGS,
+                ...safeSavedSettings,
+                // 确保taskSettings包含所有必需的嵌套属性
+                taskSettings: {
+                    ...DEFAULT_SETTINGS.taskSettings,
+                    ...(safeSavedSettings.taskSettings || {}),
+                    // 确保captureToSettings包含所有必需的嵌套属性
+                    captureToSettings: {
+                        ...DEFAULT_SETTINGS.taskSettings.captureToSettings,
+                        ...safeSavedSettings.taskSettings?.captureToSettings,
+                        // 确保configs始终是数组，即使savedSettings中没有或为undefined
+                        configs: safeSavedSettings.taskSettings?.captureToSettings?.configs || DEFAULT_SETTINGS.taskSettings.captureToSettings.configs
+                    }
+                },
+                // 确保moreLabelSettings包含所有必需的属性
+                moreLabelSettings: {
+                    ...DEFAULT_SETTINGS.moreLabelSettings,
+                    ...(safeSavedSettings.moreLabelSettings || {})
                 }
-            },
-            // 确保moreLabelSettings包含所有必需的属性
-            moreLabelSettings: {
-                ...DEFAULT_SETTINGS.moreLabelSettings,
-                ...savedSettings.moreLabelSettings
-            }
-        };
+            };
+        } catch (error) {
+            console.error("[JiuJiu Calendar] Error loading settings:", error);
+            // 如果加载设置失败，使用默认设置
+            this.settings = DEFAULT_SETTINGS;
+        }
 
         // 设置加载完成后注册快捷键命令
         this.registerCaptureToHotkeys();

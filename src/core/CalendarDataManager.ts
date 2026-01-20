@@ -1,6 +1,6 @@
 import { MyPlugin } from '../main';
 import { extractTasks, Task } from '../services/taskService';
-import { calculateCalendarMonthData } from '../utils/dateUtils';
+import { calculateCalendarMonthData, formatDate } from '../utils/dateUtils';
 
 /**
  * 日历数据管理类，集中管理日历相关数据
@@ -91,7 +91,7 @@ export class CalendarDataManager {
             
             // 检查2: 没有截止日期但在当天笔记中的任务
             const dailySettings = this.plugin.settings.dailyNote;
-            const dailyFileName = this.formatDate(date, dailySettings.fileNameFormat);
+            const dailyFileName = formatDate(date, dailySettings.fileNameFormat);
             const dailyNotePath = `${dailySettings.savePath}/${dailyFileName}.md`;
             
             return task.filePath === dailyNotePath;

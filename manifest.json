@@ -1,9 +1,9 @@
 {
 	"id": "jiujiu-obsidian-calendar",
-	"name": "JiuJiu Calendar",
+	"name": "久久日历",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "A comprehensive calendar plugin with lunar calendar, holidays, and note management features.",
+	"description": "综合性日历插件，支持农历、节假日、事件管理、笔记管理等功能",
 	"author": "JiuJiu",
 	"authorUrl": "",
 	"fundingUrl": "",

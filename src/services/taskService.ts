@@ -505,8 +505,9 @@ export async function createTaskInNote(
                 variables: new Map(),
             };
             
-            // 获取 capture to 设置
-            const captureSettings = settings.taskSettings.captureToSettings;
+            // 获取 capture to 设置，确保taskSettings和captureToSettings存在
+            const taskSettings = settings.taskSettings || { captureToSettings: { enabled: false, configs: [] } };
+            const captureSettings = taskSettings.captureToSettings || { enabled: false, configs: [] };
             
             // 选择配置
             let selectedConfigId: string;
