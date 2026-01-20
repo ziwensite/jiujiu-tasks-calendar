@@ -878,6 +878,22 @@
     overflow: visible;
 }
 
+/* 任务高亮样式（阅读视图） */
+.task-highlighted {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border-radius: 4px;
+    padding: 2px 6px;
+    transition: background-color 0.2s ease;
+    font-weight: bold;
+}
+
+/* 编辑视图中的任务高亮样式 */
+.cm-selectionBackground {
+    background-color: var(--interactive-accent) !important;
+    color: var(--text-on-accent) !important;
+}
+
 /* 任务模态框样式 */
 .task-modal {
     position: flex;
