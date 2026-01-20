@@ -661,8 +661,9 @@ export class SampleSettingTab extends PluginSettingTab {
             this.settingsChanged = true;
         });
 
+        // 渲染更多标签设置
+        this.renderMoreLabelSettings();
 
-        
         // 监听设置页面关闭事件
         this.registerEvents();
     }

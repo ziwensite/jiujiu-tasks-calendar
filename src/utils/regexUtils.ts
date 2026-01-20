@@ -10,6 +10,12 @@ export const taskRegex = /^\s*-\s*\[(.)\]\s*(.+)$/gm;
 // 匹配：@YYYY-MM-DD, #YYYY-MM-DD, 📅 YYYY-MM-DD, 📅YYYY-MM-DD, due: YYYY-MM-DD, due:YYYY-MM-DD
 export const dueDateRegex = /(?:[@#]|due:\s?|📅\s?)(\d{4}-\d{2}-\d{2})/i;
 
+// 匹配创建日期，如：➕ 2026-01-06, + 2026-01-06, created: 2026-01-06, created:2026-01-06
+export const createdAtRegex = /(?:[➕+]\s?|created:\s?|🗓️\s?)(\d{4}-\d{2}-\d{2})/i;
+
+// 匹配开始日期，如：🛫 2021-04-09, 🛫2021-04-09, start: 2021-04-09, start:2021-04-09
+export const startDateRegex = /(?:🛫\s?|start:\s?|🔄\s?)(\d{4}-\d{2}-\d{2})/i;
+
 // 匹配全天标记，如：全天, all day, full day, 🔄
 export const fullDayRegex = /(?:\b|^)(全天|all\s+day|full\s+day|🔄)(?:\b|$)/i;
 

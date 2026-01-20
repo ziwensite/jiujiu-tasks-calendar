@@ -16,12 +16,12 @@ export class CalendarView extends ItemView {
     private plugin: MyPlugin;
 
     private selectedDate: Date | null = null;
-    private viewType: 'month' | 'year' | 'week' | 'day' | 'schedule' | 'tasks' = 'month';
+    private viewType: 'month' | 'year' | 'tasks' = 'month';
     private lastRenderedYear: number = -1;
     private lastRenderedMonth: number = -1;
-    private lastRenderedViewType: 'month' | 'year' | 'week' | 'day' | 'schedule' | 'tasks' = 'month';
+    private lastRenderedViewType: 'month' | 'year' | 'tasks' = 'month';
     private lastRenderedRows: number = -1;
-    private selectionType: 'date' | 'week' | 'month' | 'quarter' | 'year' | 'schedule' | 'tasks' = 'date';
+    private selectionType: 'date' | 'month' | 'quarter' | 'year' | 'tasks' = 'date';
     private selectedWeekRange: { start: Date; end: Date } | null = null;
     private selectedQuarter: number | null = null;
     private lastRenderedNavigationType: 'month' | 'year' = 'month';
@@ -550,9 +550,6 @@ export class CalendarView extends ItemView {
         // 今日和年按钮
         const todayBtn = this.containerEl.querySelector(".calendar-header .calendar-header-label-today");
         const yearBtn = this.containerEl.querySelector(".calendar-header .calendar-header-label-year");
-        const weekBtn = this.containerEl.querySelector(".calendar-header .calendar-header-label-week");
-        const dayBtn = this.containerEl.querySelector(".calendar-header .calendar-header-label-day");
-        const scheduleBtn = this.containerEl.querySelector(".calendar-header .calendar-header-label-schedule");
         
         if (todayBtn) {
             // 今日按钮：根据是否选中今天日期来决定样式
@@ -620,116 +617,21 @@ export class CalendarView extends ItemView {
             });
         }
         
-        if (weekBtn) {
-            // 周按钮：切换到周视图
-            weekBtn.className = `calendar-header-label-week ${this.viewType === 'week' ? 'today-selected' : 'today-unselected'}`;
-            weekBtn.addEventListener("click", async () => {
-                // 切换到周视图
-                this.viewType = 'week';
-                this.selectionType = 'week';
-                // 如果没有选中日期，设置为当前日期
-                if (!this.selectedDate) {
-                    this.selectedDate = new Date();
-                    this.currentDate = new Date();
-                }
-                this.selectedWeekRange = null;
-                this.selectedQuarter = null;
+        // 添加LB1按钮的点击事件监听
+        const lb1Btn = this.containerEl.querySelector(".calendar-header-label-lb1");
+        if (lb1Btn) {
+            lb1Btn.addEventListener("click", async () => {
+                const lb1Settings = this.plugin.settings.moreLabelSettings.lb1;
                 
-                // 先更新选择状态，让用户立即看到日期变化
-                this.updateSelectionState();
-                
-                // 然后刷新视图
-                await this.renderCalendar();
-            });
-        }
-        
-        if (dayBtn) {
-            // 日按钮：切换到日视图
-            dayBtn.className = `calendar-header-label-day ${this.viewType === 'day' ? 'today-selected' : 'today-unselected'}`;
-            dayBtn.addEventListener("click", async () => {
-                // 切换到日视图
-                this.viewType = 'day';
-                this.selectionType = 'date';
-                this.selectedDate = new Date();
-                this.currentDate = new Date();
-                this.selectedWeekRange = null;
-                this.selectedQuarter = null;
-                
-                // 先更新选择状态，让用户立即看到日期变化
-                this.updateSelectionState();
-                
-                // 然后刷新视图
-                this.renderCalendar();
-            });
-        }
-        
-        if (scheduleBtn) {
-            // 日程按钮：切换到日程视图
-            scheduleBtn.className = `calendar-header-label-schedule ${this.viewType === 'schedule' ? 'today-selected' : 'today-unselected'}`;
-            scheduleBtn.addEventListener("click", async () => {
-                // 切换到日程视图
-                this.viewType = 'schedule';
-                this.selectionType = 'schedule';
-                this.selectedDate = new Date();
-                this.currentDate = new Date();
-                this.selectedWeekRange = null;
-                this.selectedQuarter = null;
-                
-                // 先更新选择状态，让用户立即看到日期变化
-                this.updateSelectionState();
-                
-                // 然后刷新视图
-                this.renderCalendar();
-            });
-        }
-        
-        const tasksBtn = this.containerEl.querySelector(".calendar-header-label-tasks");
-        if (tasksBtn) {
-            // 任务按钮：在工作区打开任务视图
-            tasksBtn.className = `calendar-header-label-tasks ${this.viewType === 'tasks' ? 'today-selected' : 'today-unselected'}`;
-            tasksBtn.addEventListener("click", async () => {
-                // 在新标签页打开任务视图
-                const { workspace } = this.app;
-                
-                let leaf: WorkspaceLeaf | null = null;
-                const leaves = workspace.getLeavesOfType("jiujiu-tasks-view");
-                
-                if (leaves.length > 0 && leaves[0]) {
-                    leaf = leaves[0];
-                } else {
-                    // 在新标签页中打开
-                    leaf = workspace.getLeaf('tab');
-                    if (leaf) {
-                        await leaf.setViewState({
-                            type: "jiujiu-tasks-view",
-                            active: true,
-                        });
-                    }
-                }
-                
-                if (leaf) {
-                    workspace.revealLeaf(leaf);
-                }
-            });
-        }
-        
-        const moreBtn = this.containerEl.querySelector(".calendar-header-label-more");
-        if (moreBtn) {
-            moreBtn.addEventListener("click", async () => {
-                const moreSettings = this.plugin.settings.moreLabelSettings;
-                
-                if (!moreSettings.enabled) {
-                    // 如果未启用，默认打开插件设置
-                    (this.app as any).setting.open();
-                    (this.app as any).setting.openTabById(this.plugin.manifest.id);
+                if (!lb1Settings.enabled) {
                     return;
                 }
                 
-                switch (moreSettings.actionType) {
+                switch (lb1Settings.actionType) {
                     case "systemCommand":
-                        if (moreSettings.systemCommand) {
+                        if (lb1Settings.systemCommand) {
                             try {
-                                await (this.app as any).commands.executeCommandById(moreSettings.systemCommand);
+                                await (this.app as any).commands.executeCommandById(lb1Settings.systemCommand);
                             } catch (error) {
                                 console.error('Failed to execute system command:', error);
                                 new Notice(`执行命令失败: ${error}`);
@@ -741,11 +643,59 @@ export class CalendarView extends ItemView {
                         }
                         break;
                     case "openFile":
-                        if (moreSettings.filePath) {
+                        if (lb1Settings.filePath) {
                             try {
-                                const file = this.app.vault.getAbstractFileByPath(moreSettings.filePath);
+                                const file = this.app.vault.getAbstractFileByPath(lb1Settings.filePath);
                                 if (file instanceof TFile) {
-                                    await this.app.workspace.openLinkText(moreSettings.filePath, "", true);
+                                    await this.app.workspace.openLinkText(lb1Settings.filePath, "", true);
+                                } else {
+                                    new Notice('文件不存在，请检查路径');
+                                }
+                            } catch (error) {
+                                console.error('Failed to open file:', error);
+                                new Notice(`打开文件失败: ${error}`);
+                            }
+                        } else {
+                            // 如果没有配置文件路径，打开插件设置
+                            (this.app as any).setting.open();
+                            (this.app as any).setting.openTabById(this.plugin.manifest.id);
+                        }
+                        break;
+                }
+            });
+        }
+        
+        // 添加LB2按钮的点击事件监听
+        const lb2Btn = this.containerEl.querySelector(".calendar-header-label-lb2");
+        if (lb2Btn) {
+            lb2Btn.addEventListener("click", async () => {
+                const lb2Settings = this.plugin.settings.moreLabelSettings.lb2;
+                
+                if (!lb2Settings.enabled) {
+                    return;
+                }
+                
+                switch (lb2Settings.actionType) {
+                    case "systemCommand":
+                        if (lb2Settings.systemCommand) {
+                            try {
+                                await (this.app as any).commands.executeCommandById(lb2Settings.systemCommand);
+                            } catch (error) {
+                                console.error('Failed to execute system command:', error);
+                                new Notice(`执行命令失败: ${error}`);
+                            }
+                        } else {
+                            // 如果没有配置命令，打开插件设置
+                            (this.app as any).setting.open();
+                            (this.app as any).setting.openTabById(this.plugin.manifest.id);
+                        }
+                        break;
+                    case "openFile":
+                        if (lb2Settings.filePath) {
+                            try {
+                                const file = this.app.vault.getAbstractFileByPath(lb2Settings.filePath);
+                                if (file instanceof TFile) {
+                                    await this.app.workspace.openLinkText(lb2Settings.filePath, "", true);
                                 } else {
                                     new Notice('文件不存在，请检查路径');
                                 }

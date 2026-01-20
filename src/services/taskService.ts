@@ -1,5 +1,5 @@
 import { App, MarkdownView, TFile } from 'obsidian';
-import { taskRegex, dueDateRegex, fullDayRegex, timeRangeRegex, singleTimeRegex, escapeRegExp } from '../utils/regexUtils';
+import { taskRegex, dueDateRegex, createdAtRegex, startDateRegex, fullDayRegex, timeRangeRegex, singleTimeRegex, escapeRegExp } from '../utils/regexUtils';
 import { MyPluginSettings } from '../settings';
 import { formatDate } from '../utils/dateUtils';
 import type { IChoiceExecutor } from '../IChoiceExecutor';
@@ -10,6 +10,8 @@ export interface Task {
     completed: boolean;
     filePath: string;
     dueDate?: Date;
+    createdAt?: Date;
+    startDate?: Date;
     rawText: string;
     fullDay?: boolean;
     timeRange?: {
@@ -80,6 +82,20 @@ export async function extractBasicTasks(app: App): Promise<Task[]> {
                         dueDate = new Date(dateMatch[1]);
                     }
                     
+                    // 提取创建日期，但不在任务列表中显示
+                    const createdAtMatch = rawText.match(createdAtRegex);
+                    let createdAt: Date | undefined;
+                    if (createdAtMatch && createdAtMatch[1]) {
+                        createdAt = new Date(createdAtMatch[1]);
+                    }
+                    
+                    // 提取开始日期
+                    const startDateMatch = rawText.match(startDateRegex);
+                    let startDate: Date | undefined;
+                    if (startDateMatch && startDateMatch[1]) {
+                        startDate = new Date(startDateMatch[1]);
+                    }
+                    
                     // 提取全天标记
                     const fullDayMatch = rawText.match(fullDayRegex);
                     const fullDay = !!fullDayMatch;
@@ -118,6 +134,16 @@ export async function extractBasicTasks(app: App): Promise<Task[]> {
                         taskDescription = taskDescription.replace(dueDateRegex, '').trim();
                     }
                     
+                    // 移除创建日期标记，确保它不会出现在任务描述中
+                    if (createdAtMatch) {
+                        taskDescription = taskDescription.replace(createdAtRegex, '').trim();
+                    }
+                    
+                    // 移除开始日期标记
+                    if (startDateMatch) {
+                        taskDescription = taskDescription.replace(startDateRegex, '').trim();
+                    }
+                    
                     // 移除全天标记
                     if (fullDayMatch) {
                         taskDescription = taskDescription.replace(fullDayRegex, '').trim();
@@ -144,6 +170,8 @@ export async function extractBasicTasks(app: App): Promise<Task[]> {
                         completed: completed,
                         filePath: file.path,
                         dueDate: dueDate,
+                        createdAt: createdAt, // 存储创建日期，但不在任务列表中显示
+                        startDate: startDate,
                         rawText: rawText,
                         fullDay: fullDay,
                         timeRange: timeRange

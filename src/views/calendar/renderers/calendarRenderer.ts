@@ -12,17 +12,11 @@ export class CalendarRenderer {
     /**
      * 构建日历结构
      */
-    async buildCalendarStructure(container: HTMLElement, currentDate: Date, selectedDate: Date, viewType: 'month' | 'year' | 'week' | 'day' | 'schedule' | 'tasks', navigationType: 'month' | 'year' = 'month') {
+    async buildCalendarStructure(container: HTMLElement, currentDate: Date, selectedDate: Date, viewType: 'month' | 'year' | 'tasks', navigationType: 'month' | 'year' = 'month') {
         if (viewType === 'month') {
             await this.buildMonthView(container, currentDate, selectedDate, navigationType);
         } else if (viewType === 'year') {
             this.buildYearView(container, currentDate, selectedDate, navigationType);
-        } else if (viewType === 'week') {
-            await this.buildWeekView(container, currentDate, selectedDate, navigationType);
-        } else if (viewType === 'day') {
-            await this.buildDayView(container, currentDate, selectedDate, navigationType);
-        } else if (viewType === 'schedule') {
-            await this.buildScheduleView(container, currentDate, selectedDate, navigationType);
         } else if (viewType === 'tasks') {
             // 任务视图：在工作区打开，不在这里渲染
             // 由CalendarView中的任务按钮点击事件处理
@@ -126,11 +120,23 @@ export class CalendarRenderer {
             cls: "calendar-header-label-today today-unselected"
         });
         
-        // 更多按钮（替换原任务按钮）
-        singleRow.createEl("div", {
-            text: this.plugin.settings.moreLabelSettings.labelText,
-            cls: "calendar-header-label-more today-unselected"
-        });
+        // 渲染自定义标签 LB1
+        const lb1Settings = this.plugin.settings.moreLabelSettings.lb1;
+        if (lb1Settings.enabled) {
+            singleRow.createEl("div", {
+                text: lb1Settings.labelText,
+                cls: "calendar-header-label-lb1 today-unselected"
+            });
+        }
+        
+        // 渲染自定义标签 LB2
+        const lb2Settings = this.plugin.settings.moreLabelSettings.lb2;
+        if (lb2Settings.enabled) {
+            singleRow.createEl("div", {
+                text: lb2Settings.labelText,
+                cls: "calendar-header-label-lb2 today-unselected"
+            });
+        }
     }
 
     /**
@@ -464,92 +470,6 @@ export class CalendarRenderer {
                     }
                 }
             }
-        }
-    }
-
-    /**
-     * 构建周视图
-     */
-    private async buildWeekView(container: HTMLElement, currentDate: Date, selectedDate: Date, navigationType: 'month' | 'year' = 'month') {
-        // 日历头部
-        this.buildCalendarHeader(container, currentDate, navigationType);
-
-        // 日历表格
-        const calendarTable = container.createEl("table", {cls: "calendar-table"});
-
-        // 星期标题行
-        this.buildWeekHeader(calendarTable);
-
-        // 周数据行
-        await this.buildWeekDays(calendarTable, currentDate);
-    }
-
-    /**
-     * 构建日视图
-     */
-    private async buildDayView(container: HTMLElement, currentDate: Date, selectedDate: Date, navigationType: 'month' | 'year' = 'month') {
-        // 日历头部
-        this.buildCalendarHeader(container, currentDate, navigationType);
-
-        // 日视图容器
-        const dayViewContainer = container.createEl("div", {cls: "day-view-container"});
-        
-        // 日期显示
-        dayViewContainer.createEl("div", { 
-            text: `${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月${currentDate.getDate()}日`,
-            cls: "day-view-date"
-        });
-        
-        // 任务列表容器
-        dayViewContainer.createEl("div", {cls: "task-list-container"});
-    }
-
-    /**
-     * 构建日程视图
-     */
-    private async buildScheduleView(container: HTMLElement, currentDate: Date, selectedDate: Date, navigationType: 'month' | 'year' = 'month') {
-        // 日历头部
-        this.buildCalendarHeader(container, currentDate, navigationType);
-
-        // 日程视图容器
-        const scheduleViewContainer = container.createEl("div", {cls: "schedule-view-container"});
-        
-        // 日程标题
-        scheduleViewContainer.createEl("div", { 
-            text: "日程视图",
-            cls: "schedule-view-title"
-        });
-        
-        // 日程列表容器
-        scheduleViewContainer.createEl("div", {cls: "task-list-container"});
-    }
-
-    /**
-     * 构建周日数据行
-     */
-    private async buildWeekDays(table: HTMLElement, currentDate: Date) {
-        const tbody = table.createEl("tbody");
-        const currentYear = currentDate.getFullYear();
-        const currentMonth = currentDate.getMonth();
-        const currentDay = currentDate.getDate();
-
-        // 计算当前周的第一天（周一）
-        const firstDayOfWeek = new Date(currentYear, currentMonth, currentDay);
-        const dayOfWeek = firstDayOfWeek.getDay();
-        const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-        firstDayOfWeek.setDate(currentDay - daysToMonday);
-
-        // 构建周行
-        const weekRow = tbody.createEl("tr");
-        
-        // 周数单元格
-        this.buildWeekNumberCell(weekRow, 0, currentYear, currentMonth, 0, firstDayOfWeek);
-
-        // 日期单元格
-        for (let i = 0; i < 7; i++) {
-            const currentDateInWeek = new Date(firstDayOfWeek);
-            currentDateInWeek.setDate(firstDayOfWeek.getDate() + i);
-            await this.buildDayCell(weekRow, 0, i, currentYear, currentMonth, 31, 0, currentDateInWeek);
         }
     }
 
