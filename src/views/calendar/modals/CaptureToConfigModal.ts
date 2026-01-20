@@ -1,7 +1,7 @@
 import { Modal, App, Notice, Setting, TextComponent, ToggleComponent } from 'obsidian';
 import { MyPlugin } from '../../../main';
 import { CaptureToConfig } from '../../../settings';
-import { PathAutocomplete } from '../../../components';
+import { FileSelectModal } from '../../../modals/FileSelectModal';
 
 interface CaptureToConfigModalOptions {
     plugin: MyPlugin;
@@ -86,28 +86,30 @@ export class CaptureToConfigModal extends Modal {
 
         if (!this.config.captureToActiveFile) {
             // Default capture path
+            let defaultCapturePathInputEl: HTMLInputElement | null = null;
             new Setting(container)
                 .setName('默认插入文件路径')
                 .setDesc('选择文件或使用格式化路径（例如：{{date}}-notes.md）')
                 .addText(text => {
-                    // 创建自定义路径自动完成组件
-                    const containerEl = text.inputEl.parentElement;
-                    if (containerEl) {
-                        // 移除默认的input
-                        text.inputEl.remove();
-                        
-                        // 创建路径自动完成组件
-                        new PathAutocomplete(
-                            this.app,
-                            containerEl,
-                            this.config.defaultCapturePath,
-                            (value: string) => {
-                                this.config.defaultCapturePath = value;
+                    defaultCapturePathInputEl = text.inputEl;
+                    text
+                        .setValue(this.config.defaultCapturePath)
+                        .setPlaceholder('例如：{{日记}}')
+                        .onChange(value => {
+                            this.config.defaultCapturePath = value;
+                        });
+                })
+                .addButton(button => button
+                    .setButtonText('选择')
+                    .onClick(() => {
+                        new FileSelectModal(this.app, (file) => {
+                            this.config.defaultCapturePath = file.path;
+                            // 更新输入框值
+                            if (defaultCapturePathInputEl) {
+                                defaultCapturePathInputEl.value = file.path;
                             }
-                        );
-                    }
-                });
-
+                        }).open();
+                    }));
             // Create file if it doesn't exist
             new Setting(container)
                 .setName('如果文件不存在则创建')
@@ -134,27 +136,30 @@ export class CaptureToConfigModal extends Modal {
 
                 if (this.config.createFileIfItDoesntExist.createWithTemplate) {
                     // Template path
+                    let templatePathInputEl: HTMLInputElement | null = null;
                     new Setting(container)
                         .setName('模板路径')
                         .setDesc('选择要使用的模板文件')
                         .addText(text => {
-                            // 创建自定义路径自动完成组件
-                            const containerEl = text.inputEl.parentElement;
-                            if (containerEl) {
-                                // 移除默认的input
-                                text.inputEl.remove();
-                                
-                                // 创建路径自动完成组件
-                                new PathAutocomplete(
-                                    this.app,
-                                    containerEl,
-                                    this.config.createFileIfItDoesntExist.template,
-                                    (value: string) => {
-                                        this.config.createFileIfItDoesntExist.template = value;
+                            templatePathInputEl = text.inputEl;
+                            text
+                                .setValue(this.config.createFileIfItDoesntExist.template)
+                                .setPlaceholder('例如：模板/日记模板')
+                                .onChange(value => {
+                                    this.config.createFileIfItDoesntExist.template = value;
+                                });
+                        })
+                        .addButton(button => button
+                            .setButtonText('选择')
+                            .onClick(() => {
+                                new FileSelectModal(this.app, (file) => {
+                                    this.config.createFileIfItDoesntExist.template = file.path;
+                                    // 更新输入框值
+                                    if (templatePathInputEl) {
+                                        templatePathInputEl.value = file.path;
                                     }
-                                );
-                            }
-                        });
+                                }).open();
+                            }));
                 }
             }
         }

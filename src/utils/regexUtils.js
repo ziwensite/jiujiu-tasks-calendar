@@ -1,0 +1,20 @@
+// 辅助函数：转义正则表达式中的特殊字符
+export function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
+// 支持tasks插件的多种任务格式
+export const taskRegex = /^\s*-\s*\[(.)\]\s*(.+)$/gm;
+// 支持多种日期格式，包括tasks插件的格式
+// 匹配：@YYYY-MM-DD, #YYYY-MM-DD, 📅 YYYY-MM-DD, 📅YYYY-MM-DD, due: YYYY-MM-DD, due:YYYY-MM-DD
+export const dueDateRegex = /(?:[@#]|due:\s?|📅\s?)(\d{4}-\d{2}-\d{2})/i;
+// 匹配创建日期，如：➕ 2026-01-06, + 2026-01-06, created: 2026-01-06, created:2026-01-06
+export const createdAtRegex = /(?:[➕+]\s?|created:\s?|🗓️\s?)(\d{4}-\d{2}-\d{2})/i;
+// 匹配开始日期，如：🛫 2021-04-09, 🛫2021-04-09, start: 2021-04-09, start:2021-04-09
+export const startDateRegex = /(?:🛫\s?|start:\s?|🔄\s?)(\d{4}-\d{2}-\d{2})/i;
+// 匹配全天标记，如：全天, all day, full day, 🔄
+export const fullDayRegex = /(?:\b|^)(全天|all\s+day|full\s+day|🔄)(?:\b|$)/i;
+// 匹配时间范围，如：10:00-12:00, 10:00 ~ 12:00, 10:00 - 12:00
+export const timeRangeRegex = /(\d{1,2}:\d{2})\s*(?:-|~|——)\s*(\d{1,2}:\d{2})/;
+// 匹配单个时间点，如：10:00, 10:00 AM, 10:00 PM
+export const singleTimeRegex = /\b(\d{1,2}:\d{2})(?:\s*(?:AM|PM))?\b/i;
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoicmVnZXhVdGlscy5qcyIsInNvdXJjZVJvb3QiOiIiLCJzb3VyY2VzIjpbInJlZ2V4VXRpbHMudHMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBQUEscUJBQXFCO0FBQ3JCLE1BQU0sVUFBVSxZQUFZLENBQUMsTUFBYztJQUN2QyxPQUFPLE1BQU0sQ0FBQyxPQUFPLENBQUMscUJBQXFCLEVBQUUsTUFBTSxDQUFDLENBQUMsQ0FBQyxvQ0FBb0M7QUFDOUYsQ0FBQztBQUVELG1CQUFtQjtBQUNuQixNQUFNLENBQUMsTUFBTSxTQUFTLEdBQUcsMkJBQTJCLENBQUM7QUFFckQsd0JBQXdCO0FBQ3hCLDRGQUE0RjtBQUM1RixNQUFNLENBQUMsTUFBTSxZQUFZLEdBQUcsNENBQTRDLENBQUM7QUFFekUsK0VBQStFO0FBQy9FLE1BQU0sQ0FBQyxNQUFNLGNBQWMsR0FBRyxvREFBb0QsQ0FBQztBQUVuRiw0RUFBNEU7QUFDNUUsTUFBTSxDQUFDLE1BQU0sY0FBYyxHQUFHLCtDQUErQyxDQUFDO0FBRTlFLHFDQUFxQztBQUNyQyxNQUFNLENBQUMsTUFBTSxZQUFZLEdBQUcsK0NBQStDLENBQUM7QUFFNUUscURBQXFEO0FBQ3JELE1BQU0sQ0FBQyxNQUFNLGNBQWMsR0FBRyxnREFBZ0QsQ0FBQztBQUUvRSxzQ0FBc0M7QUFDdEMsTUFBTSxDQUFDLE1BQU0sZUFBZSxHQUFHLHVDQUF1QyxDQUFDIiwic291cmNlc0NvbnRlbnQiOlsiLy8g6L6F5Yqp5Ye95pWw77ya6L2s5LmJ5q2j5YiZ6KGo6L6+5byP5Lit55qE54m55q6K5a2X56ymXHJcbmV4cG9ydCBmdW5jdGlvbiBlc2NhcGVSZWdFeHAoc3RyaW5nOiBzdHJpbmcpIHtcclxuICAgIHJldHVybiBzdHJpbmcucmVwbGFjZSgvWy4qKz9eJHt9KCl8W1xcXVxcXFxdL2csICdcXFxcJCYnKTsgLy8gJCYgbWVhbnMgdGhlIHdob2xlIG1hdGNoZWQgc3RyaW5nXHJcbn1cclxuXHJcbi8vIOaUr+aMgXRhc2tz5o+S5Lu255qE5aSa56eN5Lu75Yqh5qC85byPXHJcbmV4cG9ydCBjb25zdCB0YXNrUmVnZXggPSAvXlxccyotXFxzKlxcWyguKVxcXVxccyooLispJC9nbTtcclxuXHJcbi8vIOaUr+aMgeWkmuenjeaXpeacn+agvOW8j++8jOWMheaLrHRhc2tz5o+S5Lu255qE5qC85byPXHJcbi8vIOWMuemFje+8mkBZWVlZLU1NLURELCAjWVlZWS1NTS1ERCwg8J+ThSBZWVlZLU1NLURELCDwn5OFWVlZWS1NTS1ERCwgZHVlOiBZWVlZLU1NLURELCBkdWU6WVlZWS1NTS1ERFxyXG5leHBvcnQgY29uc3QgZHVlRGF0ZVJlZ2V4ID0gLyg/OltAI118ZHVlOlxccz988J+ThVxccz8pKFxcZHs0fS1cXGR7Mn0tXFxkezJ9KS9pO1xyXG5cclxuLy8g5Yy56YWN5Yib5bu65pel5pyf77yM5aaC77ya4p6VIDIwMjYtMDEtMDYsICsgMjAyNi0wMS0wNiwgY3JlYXRlZDogMjAyNi0wMS0wNiwgY3JlYXRlZDoyMDI2LTAxLTA2XHJcbmV4cG9ydCBjb25zdCBjcmVhdGVkQXRSZWdleCA9IC8oPzpb4p6VK11cXHM/fGNyZWF0ZWQ6XFxzP3zwn5eT77iPXFxzPykoXFxkezR9LVxcZHsyfS1cXGR7Mn0pL2k7XHJcblxyXG4vLyDljLnphY3lvIDlp4vml6XmnJ/vvIzlpoLvvJrwn5urIDIwMjEtMDQtMDksIPCfm6syMDIxLTA0LTA5LCBzdGFydDogMjAyMS0wNC0wOSwgc3RhcnQ6MjAyMS0wNC0wOVxyXG5leHBvcnQgY29uc3Qgc3RhcnREYXRlUmVnZXggPSAvKD868J+bq1xccz98c3RhcnQ6XFxzP3zwn5SEXFxzPykoXFxkezR9LVxcZHsyfS1cXGR7Mn0pL2k7XHJcblxyXG4vLyDljLnphY3lhajlpKnmoIforrDvvIzlpoLvvJrlhajlpKksIGFsbCBkYXksIGZ1bGwgZGF5LCDwn5SEXHJcbmV4cG9ydCBjb25zdCBmdWxsRGF5UmVnZXggPSAvKD86XFxifF4pKOWFqOWkqXxhbGxcXHMrZGF5fGZ1bGxcXHMrZGF5fPCflIQpKD86XFxifCQpL2k7XHJcblxyXG4vLyDljLnphY3ml7bpl7TojIPlm7TvvIzlpoLvvJoxMDowMC0xMjowMCwgMTA6MDAgfiAxMjowMCwgMTA6MDAgLSAxMjowMFxyXG5leHBvcnQgY29uc3QgdGltZVJhbmdlUmVnZXggPSAvKFxcZHsxLDJ9OlxcZHsyfSlcXHMqKD86LXx+fOKAlOKAlClcXHMqKFxcZHsxLDJ9OlxcZHsyfSkvO1xyXG5cclxuLy8g5Yy56YWN5Y2V5Liq5pe26Ze054K577yM5aaC77yaMTA6MDAsIDEwOjAwIEFNLCAxMDowMCBQTVxyXG5leHBvcnQgY29uc3Qgc2luZ2xlVGltZVJlZ2V4ID0gL1xcYihcXGR7MSwyfTpcXGR7Mn0pKD86XFxzKig/OkFNfFBNKSk/XFxiL2k7Il19

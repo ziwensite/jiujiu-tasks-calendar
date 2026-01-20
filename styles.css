@@ -871,6 +871,12 @@
     border-radius: 0.3em;
 }
 
+/* 任务项展开效果 */
+.task-item.expanded .task-text {
+    -webkit-line-clamp: unset;
+    max-height: none;
+    overflow: visible;
+}
 
 /* 任务模态框样式 */
 .task-modal {

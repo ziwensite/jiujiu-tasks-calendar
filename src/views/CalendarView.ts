@@ -21,7 +21,7 @@ export class CalendarView extends ItemView {
     private lastRenderedMonth: number = -1;
     private lastRenderedViewType: 'month' | 'year' | 'tasks' = 'month';
     private lastRenderedRows: number = -1;
-    private selectionType: 'date' | 'month' | 'quarter' | 'year' | 'tasks' = 'date';
+    private selectionType: 'date' | 'month' | 'quarter' | 'year' | 'tasks' | 'week' = 'date';
     private selectedWeekRange: { start: Date; end: Date } | null = null;
     private selectedQuarter: number | null = null;
     private lastRenderedNavigationType: 'month' | 'year' = 'month';
@@ -1172,9 +1172,6 @@ export class CalendarView extends ItemView {
                 const fullYear = this.currentDate.getFullYear();
                 container.textContent = `${fullYear}年`;
                 break;
-            case 'schedule':
-                container.textContent = '日程视图';
-                break;
             default:
                 container.textContent = '未选择';
                 break;
@@ -1252,8 +1249,8 @@ export class CalendarView extends ItemView {
                         return true;
                     }
                 }
-            } else if (this.viewType === 'week') {
-                // 周视图：检查任务是否在周报中
+            } else if (this.selectionType === 'week') {
+                // 周选择：检查任务是否在周报中
                 const weeklySettings = this.plugin.settings.weeklyNote;
                 const weeklyFileName = formatDate(startDate, weeklySettings.fileNameFormat);
                 const weeklyNotePath = `${weeklySettings.savePath}/${weeklyFileName}.md`;
@@ -1975,25 +1972,6 @@ export class CalendarView extends ItemView {
                             rows[0].style.display = '';
                         }
                     }
-                }
-            }
-        } else if (this.viewType === 'week') {
-            // 周视图的收缩/展开逻辑
-            const calendarTable = this.containerEl.querySelector('.calendar-table') as HTMLElement;
-            if (calendarTable) {
-                if (calendarTable.style.maxHeight) {
-                    // 展开视图
-                    calendarTable.style.maxHeight = "30em";
-                    calendarTable.style.overflow = "hidden";
-                    
-                    setTimeout(() => {
-                        calendarTable.style.maxHeight = "";
-                        calendarTable.style.overflow = "";
-                    }, 300);
-                } else {
-                    // 收缩视图
-                    calendarTable.style.maxHeight = "8em";
-                    calendarTable.style.overflow = "hidden";
                 }
             }
         } else if (this.viewType === 'year') {

@@ -1,10 +1,11 @@
 import {App, PluginSettingTab, Setting, Notice, TextComponent} from "obsidian";
 import MyPlugin from "./main";
 import { formatDate } from "./utils/dateUtils";
-import { PathAutocomplete, AddCaptureToConfigBox } from "./components";
+import { AddCaptureToConfigBox } from "./components";
+import { FileSelectModal } from "./modals/FileSelectModal";
+import { FolderSelectModal } from "./modals/FolderSelectModal";
 import { CaptureToConfigModal } from "./views/calendar/modals/CaptureToConfigModal";
 import { CommandSelectModal } from "./modals/CommandSelectModal";
-import { FileSelectModal } from "./modals/FileSelectModal";
 
 export interface NoteTemplateSettings {
     savePath: string;
@@ -1885,57 +1886,71 @@ export class SampleSettingTab extends PluginSettingTab {
                 }));
 
         // 保存路径设置
+        let savePathInputEl: HTMLInputElement | null = null;
         const savePathSetting = new Setting(section)
             .setName("保存路径")
-            .addTextArea(textArea => {
-                // 创建自定义路径自动完成组件
-                const container = textArea.inputEl.parentElement;
-                if (container) {
-                    // 移除默认的textarea
-                    textArea.inputEl.remove();
-                    
-                    // 创建路径自动完成组件
-                    new PathAutocomplete(
-                        this.app,
-                        container,
-                        settings.savePath,
-                        (value) => {
-                            const newSettings = { ...settings, savePath: value };
-                            currentSettings = newSettings;
-                            onChange(newSettings);
-                            this.settingsChanged = true;
-                            // 更新预览
-                            updatePreview();
+            .addText(text => {
+                savePathInputEl = text.inputEl;
+                text
+                    .setValue(settings.savePath)
+                    .setPlaceholder("例如：日记")
+                    .onChange((value) => {
+                        const newSettings = { ...settings, savePath: value };
+                        currentSettings = newSettings;
+                        onChange(newSettings);
+                        this.settingsChanged = true;
+                        // 更新预览
+                        updatePreview();
+                    });
+            })
+            .addButton(button => button
+                .setButtonText("选择")
+                .onClick(() => {
+                    new FolderSelectModal(this.app, (folder) => {
+                        const newSettings = { ...settings, savePath: folder.path };
+                        currentSettings = newSettings;
+                        onChange(newSettings);
+                        this.settingsChanged = true;
+                        // 更新输入框的值
+                        if (savePathInputEl) {
+                            savePathInputEl.value = folder.path;
                         }
-                    );
-                }
-            });
+                        // 更新预览
+                        updatePreview();
+                    }).open();
+                }));
 
         // 模板路径设置
+        let templatePathInputEl: HTMLInputElement | null = null;
         new Setting(section)
             .setName("模板路径")
             .setDesc("模板文件的路径")
-            .addTextArea(textArea => {
-                // 创建自定义路径自动完成组件
-                const container = textArea.inputEl.parentElement;
-                if (container) {
-                    // 移除默认的textarea
-                    textArea.inputEl.remove();
-                    
-                    // 创建路径自动完成组件
-                    new PathAutocomplete(
-                        this.app,
-                        container,
-                        settings.templatePath,
-                        (value) => {
-                            const newSettings = { ...settings, templatePath: value };
-                            currentSettings = newSettings;
-                            onChange(newSettings);
-                            this.settingsChanged = true;
+            .addText(text => {
+                templatePathInputEl = text.inputEl;
+                text
+                    .setValue(settings.templatePath)
+                    .setPlaceholder("例如：模板/日记模板")
+                    .onChange((value) => {
+                        const newSettings = { ...settings, templatePath: value };
+                        currentSettings = newSettings;
+                        onChange(newSettings);
+                        this.settingsChanged = true;
+                    });
+            })
+            .addButton(button => button
+                .setButtonText("选择")
+                .onClick(() => {
+                    new FileSelectModal(this.app, (file) => {
+                        const newSettings = { ...settings, templatePath: file.path };
+                        currentSettings = newSettings;
+                        onChange(newSettings);
+                        this.settingsChanged = true;
+                        // 更新输入框的值
+                        if (templatePathInputEl) {
+                            templatePathInputEl.value = file.path;
                         }
-                    );
-                }
-            });
+                    }).open();
+                }));
 
         // 添加完整路径预览
         const fullPathPreviewContainer = savePathSetting.descEl.createEl("div", { 

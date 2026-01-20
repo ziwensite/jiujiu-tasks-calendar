@@ -1,4 +1,4 @@
-import {App, Plugin, WorkspaceLeaf} from 'obsidian';
+import {App, Plugin, WorkspaceLeaf, Notice} from 'obsidian';
 import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
 import {CalendarView} from "./views/CalendarView";
 import { CalendarViewController } from './core/CalendarViewController';
@@ -114,10 +114,17 @@ export class MyPlugin extends Plugin {
                     ...(safeSavedSettings.moreLabelSettings || {})
                 }
             };
+            
+            // 如果是第一次加载插件（没有savedSettings），自动保存默认设置到data.json文件
+            if (!savedSettings) {
+                await this.saveSettings();
+            }
         } catch (error) {
             console.error("[JiuJiu Calendar] Error loading settings:", error);
             // 如果加载设置失败，使用默认设置
             this.settings = DEFAULT_SETTINGS;
+            // 保存默认设置到data.json文件
+            await this.saveSettings();
         }
 
         // 设置加载完成后注册快捷键命令

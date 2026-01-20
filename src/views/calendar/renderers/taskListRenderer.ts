@@ -101,20 +101,34 @@ export class TaskListRenderer {
             }
         }
         
-        // 为任务项添加点击事件监听器，实现选中功能
+        // 为任务项添加点击事件监听器，实现选中/取消选中和展开/折叠功能
         taskItem.addEventListener("click", (e) => {
             // 如果点击的是复选框，不处理选中逻辑
             if ((e.target as HTMLElement).closest(".task-checkbox")) {
                 return;
             }
             
+            // 检查当前任务项是否已经被选中
+            const isSelected = taskItem.hasClass("selected");
+            
             // 移除所有任务项的选中状态
             container.querySelectorAll(".task-item").forEach((item) => {
                 item.removeClass("selected");
             });
             
-            // 为当前任务项添加选中状态
-            taskItem.addClass("selected");
+            if (isSelected) {
+                // 如果已经被选中，取消选中
+                taskItem.removeClass("selected");
+                taskItem.removeClass("expanded");
+            } else {
+                // 如果未被选中，添加选中状态
+                taskItem.addClass("selected");
+                
+                // 检查任务文本是否超过2行，如果是则展开
+                if (taskText.offsetHeight > 36) { // 假设每行高度为18px
+                    taskItem.addClass("expanded");
+                }
+            }
         });
         
         // 为任务项添加双击事件监听器
