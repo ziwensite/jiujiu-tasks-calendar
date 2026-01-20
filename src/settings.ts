@@ -1,8 +1,10 @@
-import {App, PluginSettingTab, Setting, Notice} from "obsidian";
+import {App, PluginSettingTab, Setting, Notice, TextComponent} from "obsidian";
 import MyPlugin from "./main";
 import { formatDate } from "./utils/dateUtils";
 import { PathAutocomplete, AddCaptureToConfigBox } from "./components";
 import { CaptureToConfigModal } from "./views/calendar/modals/CaptureToConfigModal";
+import { CommandSelectModal } from "./modals/CommandSelectModal";
+import { FileSelectModal } from "./modals/FileSelectModal";
 
 export interface NoteTemplateSettings {
     savePath: string;
@@ -114,10 +116,9 @@ export interface TaskFilterSettings {
 // 更多标签设置
 export interface MoreLabelSettings {
     enabled: boolean;
-    actionType: "systemCommand" | "dataview" | "dataviewjs";
+    actionType: "systemCommand" | "openFile";
     systemCommand: string;
-    dataviewCode: string;
-    dataviewJsCode: string;
+    filePath: string;
 }
 
 
@@ -586,8 +587,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
         enabled: false,
         actionType: "systemCommand",
         systemCommand: "",
-        dataviewCode: "",
-        dataviewJsCode: ""
+        filePath: ""
     }
 }
 
@@ -675,11 +675,10 @@ export class SampleSettingTab extends PluginSettingTab {
             .setDesc("选择点击更多标签后执行的操作类型")
             .addDropdown(dropdown => dropdown
                 .addOption("systemCommand", "系统命令")
-                .addOption("dataview", "Dataview代码")
-                .addOption("dataviewjs", "DataviewJS代码")
+                .addOption("openFile", "打开文件")
                 .setValue(moreSettings.actionType)
                 .onChange(value => {
-                    this.plugin.settings.moreLabelSettings.actionType = value as "systemCommand" | "dataview" | "dataviewjs";
+                    this.plugin.settings.moreLabelSettings.actionType = value as "systemCommand" | "openFile";
                     this.settingsChanged = true;
                     // 重新渲染设置页面，以更新显示的输入框
                     this.display();
@@ -688,42 +687,70 @@ export class SampleSettingTab extends PluginSettingTab {
         // 根据操作类型显示相应的输入框
         if (moreSettings.actionType === "systemCommand") {
             // 系统命令输入框
-            new Setting(section)
+            let commandInputTextComponent: TextComponent | null = null;
+            const commandInput = new Setting(section)
                 .setName("系统命令")
                 .setDesc("输入要执行的Obsidian系统命令ID")
-                .addText(text => text
-                    .setPlaceholder("例如：app:open-vault")
-                    .setValue(moreSettings.systemCommand)
-                    .onChange(value => {
+                .addText(text => {
+                    commandInputTextComponent = text;
+                    text.setPlaceholder("例如：app:open-vault")
+                    text.setValue(moreSettings.systemCommand)
+                    text.onChange(value => {
                         this.plugin.settings.moreLabelSettings.systemCommand = value;
                         this.settingsChanged = true;
-                    }));
-        } else if (moreSettings.actionType === "dataview") {
-            // Dataview代码输入框
-            new Setting(section)
-                .setName("Dataview代码")
-                .setDesc("输入要执行的Dataview查询代码")
-                .addTextArea(textArea => textArea
-                    .setPlaceholder("例如：LIST FROM '' WHERE file.mtime >= date(today) - dur(7 days)")
-                    .setValue(moreSettings.dataviewCode)
-                    .onChange(value => {
-                        this.plugin.settings.moreLabelSettings.dataviewCode = value;
+                    });
+                });
+            
+            // 添加命令选择按钮
+            const selectButton = commandInput.controlEl.createEl('button', {
+                cls: 'command-select-button',
+                text: '选择命令'
+            });
+            selectButton.addEventListener('click', () => {
+                new CommandSelectModal({
+                    app: this.app,
+                    onCommandSelected: (commandId: string) => {
+                        // 将选中的命令ID填入输入框
+                        if (commandInputTextComponent) {
+                            commandInputTextComponent.setValue(commandId);
+                        }
+                        // 触发onChange事件以保存设置
+                        this.plugin.settings.moreLabelSettings.systemCommand = commandId;
                         this.settingsChanged = true;
-                    })
-                    .inputEl.setAttr("rows", 5));
-        } else if (moreSettings.actionType === "dataviewjs") {
-            // DataviewJS代码输入框
-            new Setting(section)
-                .setName("DataviewJS代码")
-                .setDesc("输入要执行的DataviewJS查询代码")
-                .addTextArea(textArea => textArea
-                    .setPlaceholder("例如：dv.list(dv.pages().where(p => p.file.mtime >= dv.date('today') - dv.duration('7 days')).file.name)")
-                    .setValue(moreSettings.dataviewJsCode)
-                    .onChange(value => {
-                        this.plugin.settings.moreLabelSettings.dataviewJsCode = value;
+                    }
+                }).open();
+            });
+        } else if (moreSettings.actionType === "openFile") {
+            // 文件路径输入框
+            let filePathTextComponent: TextComponent | null = null;
+            const filePathInput = new Setting(section)
+                .setName("文件路径")
+                .setDesc("输入要打开的文件路径")
+                .addText(text => {
+                    filePathTextComponent = text;
+                    text.setPlaceholder("例如：日记/2024-01-01.md")
+                    text.setValue(moreSettings.filePath)
+                    text.onChange(value => {
+                        this.plugin.settings.moreLabelSettings.filePath = value;
                         this.settingsChanged = true;
-                    })
-                    .inputEl.setAttr("rows", 5));
+                    });
+                });
+            
+            // 添加文件选择按钮
+            const selectFileButton = filePathInput.controlEl.createEl('button', {
+                cls: 'command-select-button',
+                text: '选择文件'
+            });
+            selectFileButton.addEventListener('click', () => {
+                new FileSelectModal(this.app, (file) => {
+                    const filePath = file.path;
+                    if (filePathTextComponent) {
+                        filePathTextComponent.setValue(filePath);
+                    }
+                    this.plugin.settings.moreLabelSettings.filePath = filePath;
+                    this.settingsChanged = true;
+                }).open();
+            });
         }
     }
 

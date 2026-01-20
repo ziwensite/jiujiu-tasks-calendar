@@ -141,6 +141,7 @@
     text-align: center;
     min-width: 8em;
     border-radius: 4px;
+    cursor: pointer;
     order: 1;
 }
 
@@ -172,6 +173,7 @@
 /* 更多按钮 */
 .calendar-header-label-more {
     order: 7;
+    cursor: pointer;
 }
 
 /* 统一调整年、周、日、日程、今日、任务、更多按钮的宽度为两个字符 */
@@ -2179,4 +2181,23 @@
 
 .prompt-modal-btn-submit:hover {
     background-color: #0052cc;
+}
+
+/* 命令选择按钮 */
+.command-select-button {
+    padding: 0.3em 0.8em;
+    margin-left: 0.5em;
+    border: 1px solid var(--interactive-accent);
+    border-radius: 4px;
+    background-color: var(--interactive-accent);
+    color: white;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+}
+
+.command-select-button:hover {
+    background-color: var(--interactive-accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 102, 204, 0.2);
 }

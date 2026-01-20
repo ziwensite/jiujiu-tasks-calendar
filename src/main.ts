@@ -212,7 +212,11 @@ export class MyPlugin extends Plugin {
                 openFile: config.openFile,
                 fileOpening: config.fileOpening,
                 inputMethod: config.inputMethod,
-                _targetDate: config._targetDate || new Date() // 传递目标日期，默认为当前日期
+                autoAddCreatedDate: config.autoAddCreatedDate,
+                autoAddDueDate: config.autoAddDueDate,
+                dueDateOption: config.dueDateOption,
+                customDueDays: config.customDueDays,
+                _targetDate: config._targetDate || new Date()
             };
             
             console.log('[executeCaptureToConfig] Converted to captureChoice:', captureChoice);

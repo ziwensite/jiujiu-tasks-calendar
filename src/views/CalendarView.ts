@@ -7,6 +7,7 @@ import { noteExists } from '../services/noteService';
 import { extractTasks, filterTasks, updateTaskInNote, Task, parseCustomFilter, evaluateExpression } from '../services/taskService';
 import { CalendarRenderer, TaskListRenderer, IndicatorRenderer, EventHandler } from './calendar';
 import { CalendarEvent } from '../core/EventEmitter';
+import { CommandSelectModal } from '../modals/CommandSelectModal';
 
 const VIEW_TYPE_CALENDAR = "jiujiu-calendar-view";
 
@@ -708,6 +709,56 @@ export class CalendarView extends ItemView {
                 
                 if (leaf) {
                     workspace.revealLeaf(leaf);
+                }
+            });
+        }
+        
+        const moreBtn = this.containerEl.querySelector(".calendar-header-label-more");
+        if (moreBtn) {
+            moreBtn.addEventListener("click", async () => {
+                const moreSettings = this.plugin.settings.moreLabelSettings;
+                
+                if (!moreSettings.enabled) {
+                    // 如果未启用，默认打开插件设置
+                    (this.app as any).setting.open();
+                    (this.app as any).setting.openTabById(this.plugin.manifest.id);
+                    return;
+                }
+                
+                switch (moreSettings.actionType) {
+                    case "systemCommand":
+                        if (moreSettings.systemCommand) {
+                            try {
+                                await (this.app as any).commands.executeCommandById(moreSettings.systemCommand);
+                            } catch (error) {
+                                console.error('Failed to execute system command:', error);
+                                new Notice(`执行命令失败: ${error}`);
+                            }
+                        } else {
+                            // 如果没有配置命令，打开插件设置
+                            (this.app as any).setting.open();
+                            (this.app as any).setting.openTabById(this.plugin.manifest.id);
+                        }
+                        break;
+                    case "openFile":
+                        if (moreSettings.filePath) {
+                            try {
+                                const file = this.app.vault.getAbstractFileByPath(moreSettings.filePath);
+                                if (file instanceof TFile) {
+                                    await this.app.workspace.openLinkText(moreSettings.filePath, "", true);
+                                } else {
+                                    new Notice('文件不存在，请检查路径');
+                                }
+                            } catch (error) {
+                                console.error('Failed to open file:', error);
+                                new Notice(`打开文件失败: ${error}`);
+                            }
+                        } else {
+                            // 如果没有配置文件路径，打开插件设置
+                            (this.app as any).setting.open();
+                            (this.app as any).setting.openTabById(this.plugin.manifest.id);
+                        }
+                        break;
                 }
             });
         }
