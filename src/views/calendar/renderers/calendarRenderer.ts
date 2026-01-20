@@ -127,8 +127,8 @@ export class CalendarRenderer {
         });
         
         // 更多按钮（替换原任务按钮）
-        singleRow.createEl("div", { 
-            text: "⋮",
+        singleRow.createEl("div", {
+            text: this.plugin.settings.moreLabelSettings.labelText,
             cls: "calendar-header-label-more today-unselected"
         });
     }

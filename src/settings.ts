@@ -114,11 +114,17 @@ export interface TaskFilterSettings {
 }
 
 // 更多标签设置
-export interface MoreLabelSettings {
+export interface CustomLabel {
     enabled: boolean;
+    labelText: string;
     actionType: "systemCommand" | "openFile";
     systemCommand: string;
     filePath: string;
+}
+
+export interface MoreLabelSettings {
+    lb1: CustomLabel;
+    lb2: CustomLabel;
 }
 
 
@@ -584,10 +590,20 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
         }
     },
     moreLabelSettings: {
-        enabled: false,
-        actionType: "systemCommand",
-        systemCommand: "",
-        filePath: ""
+        lb1: {
+            enabled: false,
+            labelText: "LB1",
+            actionType: "systemCommand",
+            systemCommand: "",
+            filePath: ""
+        },
+        lb2: {
+            enabled: false,
+            labelText: "LB2",
+            actionType: "systemCommand",
+            systemCommand: "",
+            filePath: ""
+        }
     }
 }
 
@@ -645,8 +661,7 @@ export class SampleSettingTab extends PluginSettingTab {
             this.settingsChanged = true;
         });
 
-        // 渲染更多标签设置
-        this.renderMoreLabelSettings();
+
         
         // 监听设置页面关闭事件
         this.registerEvents();
@@ -654,54 +669,69 @@ export class SampleSettingTab extends PluginSettingTab {
 
     private renderMoreLabelSettings(): void {
         const section = this.containerEl.createEl("div", {cls: "setting-section"});
-        section.createEl("h4", {text: "更多标签设置"});
+        section.createEl("h4", {text: "自定义标签设置"});
 
         const moreSettings = this.plugin.settings.moreLabelSettings;
 
-        // 启用/禁用开关
-        new Setting(section)
-            .setName("启用更多标签")
-            .setDesc("启用或禁用日历右上角的更多标签功能")
+        this.renderCustomLabelSettings(section, "LB1", moreSettings.lb1);
+        this.renderCustomLabelSettings(section, "LB2", moreSettings.lb2);
+    }
+
+
+
+    private renderCustomLabelSettings(section: HTMLElement, labelName: string, labelSettings: CustomLabel): void {
+        const labelSection = section.createEl("div", {cls: "setting-section"});
+        labelSection.createEl("h5", {text: `${labelName}设置`});
+
+        new Setting(labelSection)
+            .setName(`启用${labelName}`)
+            .setDesc(`启用或禁用日历右上角的${labelName}标签`)
             .addToggle(toggle => toggle
-                .setValue(moreSettings.enabled)
+                .setValue(labelSettings.enabled)
                 .onChange(value => {
-                    this.plugin.settings.moreLabelSettings.enabled = value;
+                    labelSettings.enabled = value;
                     this.settingsChanged = true;
                 }));
 
-        // 操作类型选择
-        new Setting(section)
+        new Setting(labelSection)
+            .setName(`${labelName}名称`)
+            .setDesc(`自定义${labelName}显示的文本`)
+            .addText(text => text
+                .setPlaceholder(`例如：${labelName}`)
+                .setValue(labelSettings.labelText)
+                .onChange(value => {
+                    labelSettings.labelText = value;
+                    this.settingsChanged = true;
+                }));
+
+        new Setting(labelSection)
             .setName("操作类型")
-            .setDesc("选择点击更多标签后执行的操作类型")
+            .setDesc(`选择点击${labelName}后执行的操作类型`)
             .addDropdown(dropdown => dropdown
                 .addOption("systemCommand", "系统命令")
                 .addOption("openFile", "打开文件")
-                .setValue(moreSettings.actionType)
+                .setValue(labelSettings.actionType)
                 .onChange(value => {
-                    this.plugin.settings.moreLabelSettings.actionType = value as "systemCommand" | "openFile";
+                    labelSettings.actionType = value as "systemCommand" | "openFile";
                     this.settingsChanged = true;
-                    // 重新渲染设置页面，以更新显示的输入框
                     this.display();
                 }));
 
-        // 根据操作类型显示相应的输入框
-        if (moreSettings.actionType === "systemCommand") {
-            // 系统命令输入框
+        if (labelSettings.actionType === "systemCommand") {
             let commandInputTextComponent: TextComponent | null = null;
-            const commandInput = new Setting(section)
+            const commandInput = new Setting(labelSection)
                 .setName("系统命令")
                 .setDesc("输入要执行的Obsidian系统命令ID")
                 .addText(text => {
                     commandInputTextComponent = text;
                     text.setPlaceholder("例如：app:open-vault")
-                    text.setValue(moreSettings.systemCommand)
-                    text.onChange(value => {
-                        this.plugin.settings.moreLabelSettings.systemCommand = value;
+                    text.setValue(labelSettings.systemCommand)
+                    .onChange(value => {
+                        labelSettings.systemCommand = value;
                         this.settingsChanged = true;
                     });
                 });
             
-            // 添加命令选择按钮
             const selectButton = commandInput.controlEl.createEl('button', {
                 cls: 'command-select-button',
                 text: '选择命令'
@@ -710,33 +740,29 @@ export class SampleSettingTab extends PluginSettingTab {
                 new CommandSelectModal({
                     app: this.app,
                     onCommandSelected: (commandId: string) => {
-                        // 将选中的命令ID填入输入框
                         if (commandInputTextComponent) {
                             commandInputTextComponent.setValue(commandId);
                         }
-                        // 触发onChange事件以保存设置
-                        this.plugin.settings.moreLabelSettings.systemCommand = commandId;
+                        labelSettings.systemCommand = commandId;
                         this.settingsChanged = true;
                     }
                 }).open();
             });
-        } else if (moreSettings.actionType === "openFile") {
-            // 文件路径输入框
+        } else if (labelSettings.actionType === "openFile") {
             let filePathTextComponent: TextComponent | null = null;
-            const filePathInput = new Setting(section)
+            const filePathInput = new Setting(labelSection)
                 .setName("文件路径")
                 .setDesc("输入要打开的文件路径")
                 .addText(text => {
                     filePathTextComponent = text;
                     text.setPlaceholder("例如：日记/2024-01-01.md")
-                    text.setValue(moreSettings.filePath)
-                    text.onChange(value => {
-                        this.plugin.settings.moreLabelSettings.filePath = value;
+                    text.setValue(labelSettings.filePath)
+                    .onChange(value => {
+                        labelSettings.filePath = value;
                         this.settingsChanged = true;
                     });
                 });
             
-            // 添加文件选择按钮
             const selectFileButton = filePathInput.controlEl.createEl('button', {
                 cls: 'command-select-button',
                 text: '选择文件'
@@ -747,7 +773,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     if (filePathTextComponent) {
                         filePathTextComponent.setValue(filePath);
                     }
-                    this.plugin.settings.moreLabelSettings.filePath = filePath;
+                    labelSettings.filePath = filePath;
                     this.settingsChanged = true;
                 }).open();
             });
