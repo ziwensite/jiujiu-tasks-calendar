@@ -46,8 +46,8 @@ export class TaskListRenderer {
             taskText.addClass("completed");
         }
         
-        // 显示日期信息（截止日期和开始日期）在同一行
-        if (task.dueDate || task.startDate) {
+        // 显示日期和时间信息在同一行
+        if (task.dueDate || task.startDate || task.timeRange) {
             const datesContainer = taskContent.createEl("div", { 
                 cls: "task-dates-container" 
             });
@@ -63,10 +63,32 @@ export class TaskListRenderer {
                 }
             }
             
-            // 显示开始日期（如果有），排列在截止日期的后面，中间添加空格
-            if (task.startDate) {
+            // 显示时间范围（如果有），排列在截止日期和开始日期的中间
+            if (task.timeRange) {
+                // 如果前面有截止日期，添加一个空格
                 if (task.dueDate) {
-                    // 如果同时有截止日期和开始日期，在它们之间添加一个空格
+                    datesContainer.createEl("span", { text: " " });
+                }
+                
+                // 格式化时间范围
+                let timeText = `${task.timeRange.startTime}`;
+                if (task.timeRange.endTime) {
+                    timeText += ` - ${task.timeRange.endTime}`;
+                }
+                
+                const timeRangeEl = datesContainer.createEl("span", { 
+                    text: `${timeText}`,
+                    cls: "task-time-range" 
+                });
+                if (task.completed) {
+                    timeRangeEl.addClass("completed");
+                }
+            }
+            
+            // 显示开始日期（如果有），排列在时间范围的后面
+            if (task.startDate) {
+                // 如果前面有截止日期或时间范围，添加一个空格
+                if (task.dueDate || task.timeRange) {
                     datesContainer.createEl("span", { text: " " });
                 }
                 const startDateEl = datesContainer.createEl("span", { 

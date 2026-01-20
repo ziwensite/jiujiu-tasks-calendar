@@ -398,7 +398,7 @@
 .calendar-table th {
     padding: 0;
     text-align: center;
-    font-weight: bold;
+    font-weight: 400;
     color: var(--text-normal);
     font-size: calc((6px + 0.3 * var(--font-text-size)));
     height: 1.5em;
@@ -429,14 +429,13 @@
 
 /* 确保表头行高度固定且较小 */
 .calendar-table thead tr {
-    height: 1.5em;
+    height: 1.2em;
 }
 
 /* 单元格通用样式 */
 .week-number-cell,
 .day-cell {
     width: calc(100% / 8);
-    height: 3em;
     padding: 0; /* 由内部元素控制间距 */
     box-sizing: border-box;
     
@@ -488,8 +487,7 @@
 }
 
 /* 日期数字 */
-.day-number,
-.week-number.day-number {
+.day-number {
     font-size: calc((6px + 0.4 * var(--font-text-size)));
     font-weight: 500;
     color: var(--text-normal);
@@ -507,6 +505,15 @@
 /* 工作日日期 */
 .day-number.workday-date {
     color: #4a90e2;
+}
+
+/* 周数文本样式，比日期数字小 */
+.week-number-text {
+    font-size: calc((6px + 0.4 * var(--font-text-size)));
+    font-weight: 400;
+    color: var(--text-muted);
+    text-align: center;
+    display: block;
 }
 
 /* 节假日状态 */

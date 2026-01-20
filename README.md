@@ -1,90 +1,148 @@
-# Obsidian Sample Plugin
+# JiuJiu Obsidian Calendar 插件
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+一个功能全面的日历插件，支持农历、节假日、任务管理和笔记管理功能。
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## 功能特点
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+### 🌙 农历与节假日
+- 支持显示农历日期和节气
+- 显示法定节假日和调休信息
+- 支持节假日标记（休/班）
 
-## First time developing plugins?
+### 📅 日历视图
+- 支持月视图和年视图切换
+- 显示周数和星期标题
+- 支持导航到上一月/下一月/上一年/下一年
+- 快速返回今天的功能
 
-Quick starting guide for new plugin devs:
+### ✅ 任务管理
+- 支持从笔记中提取任务
+- 显示任务的截止日期和开始日期
+- 支持任务完成状态切换
+- 支持任务选中和双击操作
+- 支持闪念和记录功能
+- 支持与 tasks 插件格式兼容
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+### 🎯 自定义标签
+- 支持 LB1 和 LB2 两个自定义标签
+- 可配置标签文本和操作类型
+- 支持系统命令和打开文件两种操作
 
-## Releasing new releases
+### 📝 笔记管理
+- 支持日记自动识别
+- 支持周报和任务状态指示
+- 支持与 Obsidian 笔记系统集成
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+## 安装方法（暂时未上架）
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+1. 打开 Obsidian 设置
+2. 点击 "社区插件"
+3. 关闭 "安全模式"
+4. 点击 "浏览"
+5. 搜索 "JiuJiu Calendar"
+6. 点击 "安装"
+7. 安装完成后点击 "启用"
 
-## Adding your plugin to the community plugin list
+## 使用说明
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+### 日历操作
+- **点击日期**：选择日期，显示该日期的任务
+- **双击日期**：创建或打开该日期的日记
+- **点击周数**：选择整周，显示该周的任务
+- **双击周数**：创建或打开该周的周报
+- **点击月份**：切换到月视图
+- **点击年份**：切换到年视图
 
-## How to use
+### 任务操作
+- **点击任务**：选中任务
+- **双击任务**：打开任务所在的笔记
+- **点击复选框**：切换任务完成状态
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+### 标签操作
+- **点击 LB1/LB2**：执行配置的操作（系统命令或打开文件）
+- **设置标签**：在插件设置中配置标签的文本和操作类型
 
-## Manually installing the plugin
+## 支持的任务格式
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+插件支持多种任务格式，包括 tasks 插件的格式：
 
-## Improve code quality with eslint
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+### 基本任务格式
+```
+- [ ] 任务内容
+- [x] 已完成任务
 ```
 
-If you have multiple URLs, you can also do:
+### 日期格式
+- 截止日期：`@YYYY-MM-DD`, `#YYYY-MM-DD`, `📅 YYYY-MM-DD`, `due: YYYY-MM-DD`
+- 开始日期：`🛫 YYYY-MM-DD`, `start: YYYY-MM-DD`, `🔄 YYYY-MM-DD`
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
+### 全天标记
+```
+- [ ] 全天任务 全天
+- [ ] all day task all day
+- [ ] full day task full day
+- [ ] recurring task 🔄
 ```
 
-## API Documentation
+### 时间范围
+```
+- [ ] 任务内容 10:00-12:00
+- [ ] 任务内容 10:00 ~ 12:00
+- [ ] 任务内容 10:00 - 12:00
+```
 
-See https://docs.obsidian.md
+### 单个时间点
+```
+- [ ] 任务内容 10:00
+- [ ] 任务内容 10:00 AM
+- [ ] 任务内容 10:00 PM
+```
+
+## 自定义标签设置
+
+在插件设置中，您可以配置 LB1 和 LB2 两个自定义标签：
+
+1. **启用/禁用标签**：控制标签是否显示在日历头部
+2. **自定义标签文本**：设置标签显示的文字
+3. **操作类型**：
+   - **系统命令**：执行 Obsidian 系统命令
+   - **打开文件**：打开指定的笔记文件
+
+## 开发和构建
+
+### 开发环境
+- Node.js
+- npm 或 yarn
+
+### 构建命令
+```bash
+# 安装依赖
+npm install
+
+# 开发模式
+npm run dev
+
+# 生产构建
+npm run build
+```
+
+## 许可证
+
+0-BSD
+
+## 更新日志
+
+### v1.0.0
+- 初始版本发布
+- 支持月视图和年视图
+- 支持农历和节假日
+- 支持任务管理
+- 支持自定义标签
+
+## 反馈和贡献
+
+如果您在使用过程中遇到问题或有改进建议，欢迎提交 issue 或 pull request。
+
+---
+
+享受 JiuJiu Calendar 插件带来的便利吧！ 🎉
