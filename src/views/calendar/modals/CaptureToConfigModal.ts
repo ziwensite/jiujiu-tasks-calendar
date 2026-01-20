@@ -58,9 +58,6 @@ export class CaptureToConfigModal extends Modal {
         // Behavior Section
         content.createEl('h4', { text: '行为' });
         this.addBehaviorSettings(content);
-        // Hotkey Section
-        this.addHotkeySettings(content);
-        
 
     }
 
@@ -525,59 +522,7 @@ export class CaptureToConfigModal extends Modal {
         }
     }
 
-    private addHotkeySettings(container: HTMLElement) {
-        // Hotkey
-        new Setting(container)
-            .setName('快捷键')
-            .setDesc('设置触发此配置的快捷键（例如：Ctrl+Alt+K），留空则禁用')
-            .addText(text => {
-                // 显示当前快捷键
-                let currentHotkey = '';
-                if (this.config.hotkey) {
-                    const modifiers = this.config.hotkey.modifiers.map(mod => {
-                        if (mod === 'Mod') return 'Ctrl';
-                        return mod;
-                    }).join('+');
-                    currentHotkey = modifiers ? `${modifiers}+${this.config.hotkey.key}` : this.config.hotkey.key;
-                }
-                text
-                    .setValue(currentHotkey)
-                    .onChange(value => {
-                        if (!value.trim()) {
-                            this.config.hotkey = null;
-                            return;
-                        }
 
-                        // 解析快捷键
-                        const parts = value.split('+');
-                        if (parts.length === 0) {
-                            this.config.hotkey = null;
-                            return;
-                        }
-                        const lastPart = parts[parts.length - 1];
-                        if (!lastPart) {
-                            this.config.hotkey = null;
-                            return;
-                        }
-                        const key = lastPart.trim();
-                        if (!key) {
-                            this.config.hotkey = null;
-                            return;
-                        }
-                        const modifiers = parts.slice(0, -1).map(mod => {
-                            mod = mod.trim();
-                            if (mod === 'Ctrl') return 'Mod';
-                            if (mod === 'Cmd') return 'Mod';
-                            return mod;
-                        }).filter(Boolean);
-
-                        this.config.hotkey = {
-                            modifiers,
-                            key
-                        };
-                    });
-            });
-    }
 
     private addInputMethodSettings(container: HTMLElement) {
         // Input Method
