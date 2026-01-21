@@ -396,7 +396,7 @@
     text-align: center;
     font-weight: 500;
     color: var(--text-normal);
-    font-size: 0.8em;
+    font-size: 0.7em;
     height: 1.5em;
     line-height: 1.5em;
     user-select: none;
@@ -432,14 +432,12 @@
 .week-number-cell,
 .day-cell {
     width: calc(100% / 8);
-    padding: 0; /* 由内部元素控制间距 */
     box-sizing: border-box;
-    
+    padding: 0.2em 0;
     cursor: pointer;
     background-color: transparent;
     transition: background-color 0.2s ease;
     overflow: hidden;
-    
     text-align: center; /* 虽然 flex 通常不需要，但对纯文本子元素仍有用 */
     vertical-align: top;
 }
@@ -476,7 +474,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 0.2em;
     position: relative;
     width: 100%;
     min-height: 1.2em;
@@ -484,7 +481,7 @@
 
 /* 日期数字 */
 .day-number {
-    font-size: 1em;
+    font-size: 0.9em;
     font-weight: 500;
     color: var(--text-normal);
     display: inline-block;
