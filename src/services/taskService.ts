@@ -19,6 +19,18 @@ export interface Task {
         endTime: string;
     };
     location?: string;
+    line?: number;
+    lineCount?: number;
+    position?: {
+        start: {
+            line: number;
+            col: number;
+        };
+        end: {
+            line: number;
+            col: number;
+        };
+    };
 }
 
 // 文件修改时间缓存
@@ -74,6 +86,25 @@ export async function extractBasicTasks(app: App): Promise<Task[]> {
                 if (match[1] && match[2]) {
                     const completed = match[1].toLowerCase() === 'x';
                     const rawText = match[2].trim();
+                    
+                    // 计算任务位置信息
+                    const matchStart = match.index;
+                    const matchEnd = match.index + match[0].length;
+                    
+                    // 计算起始行号和列号
+                    const beforeMatch = content.substring(0, matchStart);
+                    const lines = beforeMatch.split('\n');
+                    const startLine = lines.length - 1;
+                    const startCol = lines[startLine]?.length || 0;
+                    
+                    // 计算结束行号和列号
+                    const afterMatch = content.substring(0, matchEnd);
+                    const endLines = afterMatch.split('\n');
+                    const endLine = endLines.length - 1;
+                    const endCol = endLines[endLine]?.length || 0;
+                    
+                    // 计算任务跨越的行数
+                    const lineCount = endLine - startLine + 1;
                     
                     // 提取截止日期
                     const dateMatch = rawText.match(dueDateRegex);
@@ -174,7 +205,19 @@ export async function extractBasicTasks(app: App): Promise<Task[]> {
                         startDate: startDate,
                         rawText: rawText,
                         fullDay: fullDay,
-                        timeRange: timeRange
+                        timeRange: timeRange,
+                        line: startLine,
+                        lineCount: lineCount,
+                        position: {
+                            start: {
+                                line: startLine,
+                                col: startCol
+                            },
+                            end: {
+                                line: endLine,
+                                col: endCol
+                            }
+                        }
                     });
                 }
             }

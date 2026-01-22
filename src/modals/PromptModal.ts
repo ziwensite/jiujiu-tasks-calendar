@@ -47,7 +47,7 @@ export class InputSuggest {
         inputEl.addEventListener('input', (e) => this.handleInput(e));
         
         // 添加键盘事件监听
-        inputEl.addEventListener('keydown', (e) => this.handleKeydown(e));
+        inputEl.addEventListener('keydown', (e) => this.handleKeydown(e as KeyboardEvent));
         
         // 添加点击外部关闭事件
         document.addEventListener('mousedown', (e) => this.handleClickOutside(e));
@@ -61,7 +61,7 @@ export class InputSuggest {
     unbind() {
         if (this.inputEl) {
             this.inputEl.removeEventListener('input', (e) => this.handleInput(e));
-            this.inputEl.removeEventListener('keydown', (e) => this.handleKeydown(e));
+            this.inputEl.removeEventListener('keydown', (e) => this.handleKeydown(e as KeyboardEvent));
             this.inputEl.removeAttribute('aria-autocomplete');
             this.inputEl.removeAttribute('aria-expanded');
         }
@@ -605,7 +605,7 @@ export class PromptModal extends Modal {
         if (this.inputEl) {
             this.inputEl.addEventListener('keydown', (event: KeyboardEvent) => {
                 // 检查是否有标签建议显示，如果有，则不触发提交
-                if (this.inputSuggest['suggestions'] && this.inputSuggest['suggestions'] !== null) {
+                if (this.inputSuggest['completionItems'] && this.inputSuggest['completionItems'].length > 0) {
                     return;
                 }
                 
