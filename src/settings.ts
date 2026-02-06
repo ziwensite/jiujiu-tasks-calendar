@@ -593,6 +593,9 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     }
                 }
             ]
+        },
+        recurrenceSettings: {
+            newTaskPosition: "below"
         }
     },
     moreLabelSettings: {

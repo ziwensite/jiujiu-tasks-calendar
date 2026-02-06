@@ -753,7 +753,7 @@ export class TaskEditModal extends Modal {
                 return { isValid: false, parsedRecurrence: '无效的重复规则' };
             }
 
-            const isolatedRuleText = match[1].trim();
+            const isolatedRuleText = match[1]?.trim() || '';
             const baseOnToday = match[2] !== undefined;
 
             // 更完整的重复规则验证

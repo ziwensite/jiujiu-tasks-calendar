@@ -668,7 +668,7 @@ export async function updateTaskInNote(app: App, task: Task, completed: boolean,
                 
                 // 保持原始的缩进
                 const originalLine = lines[task.line];
-                const indentMatch = originalLine.match(/^(\s*)/);
+                const indentMatch = originalLine?.match(/^(\s*)/);
                 const indent = indentMatch ? indentMatch[1] : '';
 
                 
