@@ -108,6 +108,11 @@ export interface CaptureToSettings {
 export interface TaskSettings {
     // 捕获插入设置
     captureToSettings: CaptureToSettings;
+    // 重复任务设置
+    recurrenceSettings: {
+        // 新任务添加位置：above 或 below
+        newTaskPosition: "above" | "below";
+    };
 }
 
 export interface TaskFilterSettings {
@@ -845,6 +850,28 @@ export class SampleSettingTab extends PluginSettingTab {
                 textArea.inputEl.style.resize = "vertical";
                 textArea.inputEl.style.maxHeight = "100px";
             });
+        
+        // 重复任务设置
+        new Setting(section)
+            .setName("重复任务新任务位置")
+            .setDesc("设置重复任务完成后，新任务的添加位置")
+            .addDropdown(dropdown => {
+                dropdown
+                    .addOption("below", "当前任务下方")
+                    .addOption("above", "当前任务上方")
+                    .setValue(this.plugin.settings.taskSettings?.recurrenceSettings?.newTaskPosition || "below")
+                    .onChange((value) => {
+                        // 确保 recurrenceSettings 对象存在
+                        if (!this.plugin.settings.taskSettings) {
+                            this.plugin.settings.taskSettings = { captureToSettings: { enabled: false, fleetingNoteConfigId: "", recordConfigId: "", taskConfigId: "", configs: [] }, recurrenceSettings: { newTaskPosition: "below" } };
+                        }
+                        if (!this.plugin.settings.taskSettings.recurrenceSettings) {
+                            this.plugin.settings.taskSettings.recurrenceSettings = { newTaskPosition: "below" };
+                        }
+                        this.plugin.settings.taskSettings.recurrenceSettings.newTaskPosition = value as "above" | "below";
+                        this.settingsChanged = true;
+                    });
+            });
     }
 
     private renderTaskSettings(): void {
@@ -852,12 +879,10 @@ export class SampleSettingTab extends PluginSettingTab {
     }
 
     private renderCaptureToSettings(): void {
-        console.log("renderCaptureToSettings called");
         const section = this.containerEl.createEl("div", {cls: "setting-section"});
         section.createEl("h4", {text: "捕获插入设置"});
 
         const captureSettings = this.plugin.settings.taskSettings.captureToSettings;
-        console.log("captureSettings:", captureSettings);
 
         // 启用/禁用设置
         new Setting(section)

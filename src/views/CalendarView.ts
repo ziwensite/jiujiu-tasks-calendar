@@ -347,11 +347,9 @@ export class CalendarView extends ItemView {
         flashButton.addEventListener("click", async () => {
             // 获取闪念配置
             const flashConfigId = this.plugin.settings.taskSettings.captureToSettings.fleetingNoteConfigId;
-            console.log('闪念配置ID:', flashConfigId);
             const flashConfig = this.plugin.settings.taskSettings.captureToSettings.configs.find(
                 config => config.id === flashConfigId
             );
-            console.log('闪念配置:', flashConfig);
             if (flashConfig) {
                 await this.plugin.executeCaptureToConfig(flashConfig);
             }
@@ -365,11 +363,9 @@ export class CalendarView extends ItemView {
         recordButton.addEventListener("click", async () => {
             // 获取记录配置
             const recordConfigId = this.plugin.settings.taskSettings.captureToSettings.recordConfigId;
-            console.log('记录配置ID:', recordConfigId);
             const recordConfig = this.plugin.settings.taskSettings.captureToSettings.configs.find(
                 config => config.id === recordConfigId
             );
-            console.log('记录配置:', recordConfig);
             if (recordConfig) {
                 await this.plugin.executeCaptureToConfig(recordConfig);
             }
@@ -383,11 +379,9 @@ export class CalendarView extends ItemView {
         taskButton.addEventListener("click", async () => {
             // 获取任务配置
             const taskConfigId = this.plugin.settings.taskSettings.captureToSettings.taskConfigId;
-            console.log('任务配置ID:', taskConfigId);
             const taskConfig = this.plugin.settings.taskSettings.captureToSettings.configs.find(
                 config => config.id === taskConfigId
             );
-            console.log('任务配置:', taskConfig);
             if (taskConfig) {
                 await this.plugin.executeCaptureToConfig(taskConfig);
             }
@@ -996,10 +990,9 @@ export class CalendarView extends ItemView {
                 
                 // 使用taskListRenderer更新任务列表
                 this.taskListRenderer.renderTaskList(taskListContainer, filteredTasks, 
-                    async (index, completed) => {
-                        const task = filteredTasks[index];
-                        if (task) {
-                            await this.eventHandler.handleTaskToggle(task, completed, async () => {
+                    async (index, updatedTask) => {
+                        if (updatedTask) {
+                            await this.eventHandler.handleTaskToggle(updatedTask, updatedTask.completed, async () => {
                                 // 任务状态变更后刷新数据缓存
                                 await this.plugin.calendarDataManager.refreshTasks();
                                 await this.refreshTaskList();
@@ -1305,10 +1298,9 @@ export class CalendarView extends ItemView {
         
         // 使用taskListRenderer更新任务列表
         this.taskListRenderer.renderTaskList(taskListContainer, finalFilteredTasks, 
-            async (index, completed) => {
-                const task = finalFilteredTasks[index];
-                if (task) {
-                    await this.eventHandler.handleTaskToggle(task, completed, async () => {
+            async (index, updatedTask) => {
+                if (updatedTask) {
+                    await this.eventHandler.handleTaskToggle(updatedTask, updatedTask.completed, async () => {
                         await this.refreshTaskList();
                     });
                 }

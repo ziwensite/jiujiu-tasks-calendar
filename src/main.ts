@@ -197,12 +197,11 @@ export class MyPlugin extends Plugin {
      */
     public async executeCaptureToConfig(config: any) {
         try {
-            console.log('[executeCaptureToConfig] Starting execution:', config.name);
-            console.log('[executeCaptureToConfig] Config:', config);
+            
             
             // 检查配置是否有效
             if (!config || !config.id) {
-                console.error('[executeCaptureToConfig] Invalid config provided:', config);
+    
                 new (require('obsidian').Notice)('Error executing capture: Invalid config');
                 return;
             }
@@ -242,34 +241,26 @@ export class MyPlugin extends Plugin {
                 _targetDate: config._targetDate || new Date()
             };
             
-            console.log('[executeCaptureToConfig] Converted to captureChoice:', captureChoice);
+
 
             // 创建 CaptureChoiceEngine 实例并执行捕获操作
             let CaptureChoiceEngine;
             try {
-                console.log('[executeCaptureToConfig] Importing CaptureChoiceEngine...');
                 const module = await import('./engine/CaptureChoiceEngine');
                 CaptureChoiceEngine = module.CaptureChoiceEngine;
-                console.log('[executeCaptureToConfig] CaptureChoiceEngine imported successfully');
             } catch (importError) {
-                console.error('[executeCaptureToConfig] Failed to import CaptureChoiceEngine:', importError);
                 new (require('obsidian').Notice)('Error executing capture: Failed to load CaptureChoiceEngine');
                 return;
             }
             
             if (!CaptureChoiceEngine) {
-                console.error('[executeCaptureToConfig] CaptureChoiceEngine is undefined');
                 new (require('obsidian').Notice)('Error executing capture: CaptureChoiceEngine not found');
                 return;
             }
             
-            console.log('[executeCaptureToConfig] Creating CaptureChoiceEngine instance...');
             const engine = new CaptureChoiceEngine(this.app, this, captureChoice, choiceExecutor);
-            console.log('[executeCaptureToConfig] Running engine...');
             await engine.run();
-            console.log('[executeCaptureToConfig] Execution completed successfully');
         } catch (error) {
-            console.error(`[executeCaptureToConfig] Error executing capture to config "${config.name}":`, error);
             new (require('obsidian').Notice)(`Error executing capture: ${(error as Error).message}`);
         }
     }

@@ -316,25 +316,20 @@ export class CaptureChoiceEngine {
 				try {
 					// 先格式化模板路径，替换其中的变量
 					templatePath = await this.formatter.formatFileName(templatePath, this.choice.name);
-					console.log(`Formatted template path: ${templatePath}`);
 					
 					// 确保模板路径有 .md 扩展名
 					if (!templatePath.endsWith('.md')) {
 						templatePath += '.md';
-						console.log(`Added .md extension to template path: ${templatePath}`);
 					}
 					
 					// 尝试读取模板文件内容
 					const templateFile = this.plugin.app.vault.getAbstractFileByPath(templatePath);
 					if (templateFile && templateFile instanceof TFile) {
 						fileContent = await this.plugin.app.vault.read(templateFile);
-						console.log(`Template file read successfully: ${templatePath}`);
 					} else {
-						console.warn(`Template file not found: ${templatePath}`);
 						fileContent = "";
 					}
 				} catch (error) {
-					console.error(`Error reading template file: ${templatePath}`, error);
 					fileContent = "";
 				}
 			}

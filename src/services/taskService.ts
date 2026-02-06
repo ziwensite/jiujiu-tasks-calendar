@@ -1,17 +1,88 @@
 import { App, MarkdownView, TFile } from 'obsidian';
-import { taskRegex, dueDateRegex, createdAtRegex, startDateRegex, fullDayRegex, timeRangeRegex, singleTimeRegex, escapeRegExp } from '../utils/regexUtils';
+import { taskRegex, dueDateRegex, createdAtRegex, startDateRegex, cancelledDateRegex, completedDateRegex, plannedDateRegex, fullDayRegex, timeRangeRegex, singleTimeRegex, priorityRegex, recurrenceRegex, escapeRegExp } from '../utils/regexUtils';
 import { MyPluginSettings } from '../settings';
 import { formatDate } from '../utils/dateUtils';
+import { generateTaskDateMarkers, generateTaskCompletionMarker } from '../utils/taskUtils';
 import type { IChoiceExecutor } from '../IChoiceExecutor';
 import { ChoiceType } from '../types/choices/choiceType';
+
+/**
+ * 解析重复规则并计算下一个任务的日期
+ * @param recurrenceRule 重复规则
+ * @param currentDate 当前任务的日期
+ * @returns 下一个任务的日期
+ */
+function calculateNextRecurrenceDate(recurrenceRule: string, currentDate: Date): Date {
+    const nextDate = new Date(currentDate);
+    
+    // 更全面的重复规则解析
+    const ruleLower = recurrenceRule.toLowerCase();
+    
+    // 处理每天重复
+    if (ruleLower.includes('every day') || ruleLower.includes('daily')) {
+        nextDate.setDate(nextDate.getDate() + 1);
+    }
+    // 处理每周重复
+    else if (ruleLower.includes('every week') || ruleLower.includes('weekly')) {
+        nextDate.setDate(nextDate.getDate() + 7);
+    }
+    // 处理每月重复
+    else if (ruleLower.includes('every month') || ruleLower.includes('monthly')) {
+        nextDate.setMonth(nextDate.getMonth() + 1);
+    }
+    // 处理每年重复
+    else if (ruleLower.includes('every year') || ruleLower.includes('yearly')) {
+        nextDate.setFullYear(nextDate.getFullYear() + 1);
+    }
+    // 处理每两天重复
+    else if (ruleLower.includes('every 2 days')) {
+        nextDate.setDate(nextDate.getDate() + 2);
+    }
+    // 处理每三天重复
+    else if (ruleLower.includes('every 3 days')) {
+        nextDate.setDate(nextDate.getDate() + 3);
+    }
+    // 处理每两周重复
+    else if (ruleLower.includes('every 2 weeks')) {
+        nextDate.setDate(nextDate.getDate() + 14);
+    }
+    // 处理每两周重复（简写）
+    else if (ruleLower.includes('biweekly')) {
+        nextDate.setDate(nextDate.getDate() + 14);
+    }
+    // 处理每两个月重复
+    else if (ruleLower.includes('every 2 months')) {
+        nextDate.setMonth(nextDate.getMonth() + 2);
+    }
+    // 处理每季度重复
+    else if (ruleLower.includes('every quarter') || ruleLower.includes('quarterly')) {
+        nextDate.setMonth(nextDate.getMonth() + 3);
+    }
+    // 处理每半年重复
+    else if (ruleLower.includes('every 6 months') || ruleLower.includes('semiannual')) {
+        nextDate.setMonth(nextDate.getMonth() + 6);
+    }
+    // 默认情况：如果没有匹配的重复规则，默认每天重复
+    else {
+        nextDate.setDate(nextDate.getDate() + 1);
+    }
+    
+    return nextDate;
+}
 
 export interface Task {
     text: string;
     completed: boolean;
+    status?: string;
+    priority?: string;
+    recurrenceRule?: string;
     filePath: string;
     dueDate?: Date;
     createdAt?: Date;
     startDate?: Date;
+    plannedDate?: Date;
+    cancelledDate?: Date;
+    completedDate?: Date;
     rawText: string;
     fullDay?: boolean;
     timeRange?: {
@@ -84,7 +155,8 @@ export async function extractBasicTasks(app: App): Promise<Task[]> {
             
             while ((match = taskRegex.exec(content)) !== null) {
                 if (match[1] && match[2]) {
-                    const completed = match[1].toLowerCase() === 'x';
+                    const status = match[1];
+                    const completed = status.toLowerCase() === 'x';
                     const rawText = match[2].trim();
                     
                     // 计算任务位置信息
@@ -125,6 +197,58 @@ export async function extractBasicTasks(app: App): Promise<Task[]> {
                     let startDate: Date | undefined;
                     if (startDateMatch && startDateMatch[1]) {
                         startDate = new Date(startDateMatch[1]);
+                    }
+                    
+                    // 提取计划日期
+                    const plannedDateMatch = rawText.match(plannedDateRegex);
+                    let plannedDate: Date | undefined;
+                    if (plannedDateMatch && plannedDateMatch[1]) {
+                        plannedDate = new Date(plannedDateMatch[1]);
+                    }
+                    
+                    // 提取取消日期
+                    const cancelledDateMatch = rawText.match(cancelledDateRegex);
+                    let cancelledDate: Date | undefined;
+                    if (cancelledDateMatch && cancelledDateMatch[1]) {
+                        cancelledDate = new Date(cancelledDateMatch[1]);
+                    }
+                    
+                    // 提取完成日期
+                    const completedDateMatch = rawText.match(completedDateRegex);
+                    let completedDate: Date | undefined;
+                    if (completedDateMatch && completedDateMatch[1]) {
+                        completedDate = new Date(completedDateMatch[1]);
+                    }
+                    
+                    // 提取优先级
+                    const priorityMatch = rawText.match(priorityRegex);
+                    let priority: string | undefined;
+                    if (priorityMatch && priorityMatch[1]) {
+                        switch (priorityMatch[1]) {
+                            case '🔺':
+                                priority = 'highest';
+                                break;
+                            case '⏫':
+                                priority = 'high';
+                                break;
+                            case '🔼':
+                                priority = 'medium';
+                                break;
+                            case '🔽':
+                                priority = 'low';
+                                break;
+                            case '⏬️':
+                                priority = 'lowest';
+                                break;
+                        }
+                    }
+                    
+                    // 提取重复规则
+                    const recurrenceMatch = rawText.match(recurrenceRegex);
+                    let recurrenceRule: string | undefined;
+                    if (recurrenceMatch && recurrenceMatch[1]) {
+                        // 提取 🔁 后面的重复规则内容
+                        recurrenceRule = recurrenceMatch[1].trim();
                     }
                     
                     // 提取全天标记
@@ -175,6 +299,31 @@ export async function extractBasicTasks(app: App): Promise<Task[]> {
                         taskDescription = taskDescription.replace(startDateRegex, '').trim();
                     }
                     
+                    // 移除计划日期标记
+                    if (plannedDateMatch) {
+                        taskDescription = taskDescription.replace(plannedDateRegex, '').trim();
+                    }
+                    
+                    // 移除取消日期标记
+                    if (cancelledDateMatch) {
+                        taskDescription = taskDescription.replace(cancelledDateRegex, '').trim();
+                    }
+                    
+                    // 移除完成日期标记
+                    if (completedDateMatch) {
+                        taskDescription = taskDescription.replace(completedDateRegex, '').trim();
+                    }
+                    
+                    // 移除优先级标记
+                    if (priorityMatch) {
+                        taskDescription = taskDescription.replace(priorityRegex, '').trim();
+                    }
+                    
+                    // 移除重复规则
+                    if (recurrenceMatch) {
+                        taskDescription = taskDescription.replace(recurrenceRegex, '').trim();
+                    }
+                    
                     // 移除全天标记
                     if (fullDayMatch) {
                         taskDescription = taskDescription.replace(fullDayRegex, '').trim();
@@ -199,10 +348,16 @@ export async function extractBasicTasks(app: App): Promise<Task[]> {
                     fileTasks.push({
                         text: taskDescription, // 只显示任务描述，不包含日期和时间
                         completed: completed,
+                        status: status,
+                        priority: priority,
+                        recurrenceRule: recurrenceRule,
                         filePath: file.path,
                         dueDate: dueDate,
                         createdAt: createdAt, // 存储创建日期，但不在任务列表中显示
                         startDate: startDate,
+                        plannedDate: plannedDate,
+                        cancelledDate: cancelledDate,
+                        completedDate: completedDate,
                         rawText: rawText,
                         fullDay: fullDay,
                         timeRange: timeRange,
@@ -477,52 +632,206 @@ export function filterTasks(tasks: Task[], settings: MyPluginSettings, filterDat
 }
 
 // 更新笔记中的任务状态
-export async function updateTaskInNote(app: App, task: Task, completed: boolean): Promise<void> {
+export async function updateTaskInNote(app: App, task: Task, completed: boolean, settings?: any): Promise<void> {
     try {
+
         // 读取笔记内容
         const file = app.vault.getAbstractFileByPath(task.filePath);
         if (file instanceof TFile) {
+
             const content = await app.vault.read(file);
+
             
-            // 构建任务的正则表达式，匹配原始任务行
-            const taskRegex = new RegExp(`^\s*-\s*\[(.)\]\s*(${escapeRegExp(task.rawText)})`, 'm');
+            // 按行分割内容
+            const lines = content.split('\n');
+
             
-            // 替换任务状态和完成日期
-            const newContent = content.replace(taskRegex, (match, status, taskText) => {
-                const checkbox = completed ? '[x]' : '[ ]';
-                let updatedTaskText = taskText;
+            // 检查任务是否有行号信息
+            if (task.line !== undefined && task.line >= 0 && task.line < lines.length) {
+
                 
-                // 根据Tasks插件格式，处理完成日期
+                // 构建更新后的任务行
+                let checkbox;
                 if (completed) {
-                    // 如果任务已完成，添加完成日期标记 ✅ YYYY-MM-DD
-                    const today = new Date().toISOString().split('T')[0];
-                    const doneDateRegex = /\s*✅\s*\d{4}-\d{2}-\d{2}/;
-                    
-                    if (doneDateRegex.test(updatedTaskText)) {
-                        // 如果已经有完成日期，更新它
-                        updatedTaskText = updatedTaskText.replace(doneDateRegex, ` ✅ ${today}`);
-                    } else {
-                        // 如果没有完成日期，添加它
-                        updatedTaskText += ` ✅ ${today}`;
-                    }
+                    checkbox = '[x]';
+                } else if (task.status === '-') {
+                    checkbox = '[-]';
+                } else if (task.status === '/') {
+                    checkbox = '[/]';
                 } else {
-                    // 如果任务未完成，移除完成日期标记
-                    const doneDateRegex = /\s*✅\s*\d{4}-\d{2}-\d{2}/;
-                    updatedTaskText = updatedTaskText.replace(doneDateRegex, '').trim();
+                    checkbox = '[ ]';
                 }
+                let updatedTaskText = task.text;
+                
+                // 添加日期标记（包括完成日期和取消日期）
+                updatedTaskText += generateTaskDateMarkers(task);
                 
                 // 保持原始的缩进
-                const indentMatch = match.match(/^(\s*)/);
+                const originalLine = lines[task.line];
+                const indentMatch = originalLine.match(/^(\s*)/);
                 const indent = indentMatch ? indentMatch[1] : '';
+
                 
-                return `${indent}- ${checkbox} ${updatedTaskText}`;
-            });
-            
-            // 保存修改后的内容
-            await app.vault.modify(file, newContent);
+                const updatedLine = `${indent}- ${checkbox} ${updatedTaskText}`;
+
+                
+                // 替换任务行
+                lines[task.line] = updatedLine;
+                const newContent = lines.join('\n');
+                
+                // 检查内容是否有变化
+                if (content !== newContent) {
+                    // 保存修改后的内容
+                    await app.vault.modify(file, newContent);
+                } else {
+    
+                }
+                
+                // 处理重复任务
+                if (completed && task.recurrenceRule) {
+                    // 计算下一个任务的日期
+                    // 使用原任务的 dueDate 作为基准，如果原任务没有 dueDate，则使用当前日期
+                    const currentDate = task.dueDate || new Date();
+                    
+                    // 对于所有重复规则，使用 calculateNextRecurrenceDate 函数计算
+                    const nextDate = calculateNextRecurrenceDate(task.recurrenceRule, currentDate);
+                    
+                    // 当前系统日期，用于新任务的创建日期
+                    const currentSystemDate = new Date();
+                    
+                    // 创建新的任务对象
+                    // 计算计划日期和开始日期的下一个值
+                    let nextStartDate: Date | undefined;
+                    if (task.startDate) {
+                        nextStartDate = calculateNextRecurrenceDate(task.recurrenceRule, task.startDate);
+                    }
+                    
+                    let nextPlannedDate: Date | undefined;
+                    if (task.plannedDate) {
+                        nextPlannedDate = calculateNextRecurrenceDate(task.recurrenceRule, task.plannedDate);
+                    }
+                    
+                    const newTask: Task = {
+                        text: task.text,
+                        completed: false,
+                        status: ' ',
+                        priority: task.priority,
+                        recurrenceRule: task.recurrenceRule, // 确保重复规则正确传递给新任务
+                        filePath: task.filePath,
+                        dueDate: nextDate,
+                        createdAt: currentSystemDate, // 设置为当前日期，作为新任务的创建日期
+                        startDate: nextStartDate,
+                        plannedDate: nextPlannedDate,
+                        cancelledDate: undefined,
+                        completedDate: undefined,
+                        rawText: task.text,
+                        fullDay: task.fullDay,
+                        timeRange: task.timeRange,
+                        line: task.line + 1, // 新任务添加到当前任务的下一行
+                        lineCount: 1
+                    };
+                    
+                    // 生成新任务的文本
+                    let newTaskText = newTask.text;
+                    newTaskText += generateTaskDateMarkers(newTask);
+                    
+                    // 保持与原任务相同的缩进
+                    const newTaskLine = `${indent}- [ ] ${newTaskText}`;
+                    
+                    // 将新任务添加到文件中
+                    // 重新读取文件内容以获取最新状态
+                    const updatedContent = await app.vault.read(file);
+                    const updatedLines = updatedContent.split('\n');
+                    
+                    // 根据设置决定新任务的添加位置
+                    let insertPosition = task.line + 1; // 默认在当前任务的下一行
+                    
+                    // 根据插件设置来调整插入位置
+                    if (settings && settings.taskSettings && settings.taskSettings.recurrenceSettings) {
+                        const positionSetting = settings.taskSettings.recurrenceSettings.newTaskPosition;
+                        if (positionSetting === 'above') {
+                            insertPosition = task.line; // 在当前任务的上一行插入
+                        }
+                    }
+                    
+                    // 在决定的位置插入新任务
+                    updatedLines.splice(insertPosition, 0, newTaskLine);
+                    const finalContent = updatedLines.join('\n');
+                    
+                    // 保存带有新任务的内容
+                    await app.vault.modify(file, finalContent);
+
+                }
+            } else {
+                // 如果没有行号信息，尝试使用正则表达式匹配
+                const taskRegex = new RegExp(`^\s*-\s*\[(.)\]\s*(${escapeRegExp(task.rawText)})`, 'm');
+                
+                // 检查是否匹配到任务
+                const match = content.match(taskRegex);
+                
+                if (match) {
+                    // 替换任务状态和完成日期
+                    const newContent = content.replace(taskRegex, (match, status, taskText) => {
+
+                        let checkbox;
+                        if (completed) {
+                            checkbox = '[x]';
+                        } else if (task.status === '-') {
+                            checkbox = '[-]';
+                        } else if (task.status === '/') {
+                            checkbox = '[/]';
+                        } else {
+                            checkbox = '[ ]';
+                        }
+                        let updatedTaskText = task.text;
+                        
+                        // 添加日期标记
+                        updatedTaskText += generateTaskDateMarkers(task);
+                        
+                        // 根据Tasks插件格式，处理完成日期和取消日期
+                        if (completed) {
+                            // 如果任务已完成，添加完成日期标记 ✅ YYYY-MM-DD
+                            const today = new Date().toISOString().split('T')[0];
+                            updatedTaskText += ` ✅ ${today}`;
+                            // 移除取消日期标记
+                            updatedTaskText = updatedTaskText.replace(/\s*❌\s*\d{4}-\d{2}-\d{2}/g, '').trim();
+                        } else if (task.cancelledDate) {
+                            // 移除重复的取消日期标记
+                            updatedTaskText = updatedTaskText.replace(/\s*❌\s*\d{4}-\d{2}-\d{2}/g, '').trim();
+                            // 移除完成日期标记
+                            updatedTaskText = updatedTaskText.replace(/\s*✅\s*\d{4}-\d{2}-\d{2}/g, '').trim();
+                            // 添加取消日期标记
+                            const cancelledDateStr = task.cancelledDate.toISOString().split('T')[0];
+                            updatedTaskText += ` ❌ ${cancelledDateStr}`;
+                        } else {
+                            // 如果任务未完成也未取消，确保移除完成日期和取消日期标记
+                            updatedTaskText = updatedTaskText.replace(/\s*✅\s*\d{4}-\d{2}-\d{2}/g, '').trim();
+                            updatedTaskText = updatedTaskText.replace(/\s*❌\s*\d{4}-\d{2}-\d{2}/g, '').trim();
+                        }
+                        
+                        // 保持原始的缩进
+                        const indentMatch = match.match(/^(\s*)/);
+                        const indent = indentMatch ? indentMatch[1] : '';
+                        const result = `${indent}- ${checkbox} ${updatedTaskText}`;
+                        return result;
+                    });
+                    
+                    // 检查内容是否有变化
+                    if (content !== newContent) {
+                        // 保存修改后的内容
+                        await app.vault.modify(file, newContent);
+                    } else {
+
+                    }
+                } else {
+
+                }
+            }
+        } else {
+
         }
     } catch (error) {
-        console.error(`Failed to update task in note: ${task.filePath}`, error);
+        console.error('[TaskService] Failed to update task in note:', error);
         throw error;
     }
 }

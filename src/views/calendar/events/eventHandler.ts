@@ -36,21 +36,19 @@ export class EventHandler {
      * 处理任务双击事件：打开文件并高亮选中任务
      */
     async handleTaskDoubleClick(task: Task) {
-        console.log('[TaskDoubleClick] Task clicked:', task);
-        console.log('[TaskDoubleClick] Task filePath:', task.filePath);
-        console.log('[TaskDoubleClick] Task text:', task.text);
+
         
         // 检查任务是否有位置信息
         if (!task.line || !task.position) {
-            console.warn('[TaskDoubleClick] Task position information is missing');
+
             return;
         }
         
         const file = this.plugin.app.vault.getAbstractFileByPath(task.filePath);
-        console.log('[TaskDoubleClick] File found:', file);
+        
         
         if (!file || !('stat' in file)) {
-            console.warn('[TaskDoubleClick] File not found or invalid');
+
             return;
         }
 
@@ -72,7 +70,7 @@ export class EventHandler {
                 },
             };
 
-            console.log('[TaskDoubleClick] Selection state:', selectionState);
+
 
             // 使用 workspace.openLinkText API 打开文件并设置编辑器状态
             await this.plugin.app.workspace.openLinkText(
@@ -82,7 +80,7 @@ export class EventHandler {
                 selectionState as any // 编辑器状态（包含光标位置）
             );
 
-            console.log('[TaskDoubleClick] File opened and task selected');
+
         } catch (error) {
             console.warn('Failed to open and select task:', error);
         }
@@ -104,13 +102,15 @@ export class EventHandler {
      */
     async handleTaskToggle(task: Task, completed: boolean, onRefreshTaskList: () => Promise<void>) {
         try {
+
             // 更新笔记中的任务状态
-            await updateTaskInNote(this.plugin.app, task, completed);
+            await updateTaskInNote(this.plugin.app, task, completed, this.plugin.settings);
+
             
             // 重新渲染任务列表，显示最新状态
             await onRefreshTaskList();
         } catch (error) {
-            console.error('Failed to update task:', error);
+            console.error('[EventHandler] Failed to update task:', error);
         }
     }
 
