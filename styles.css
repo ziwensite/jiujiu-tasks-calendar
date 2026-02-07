@@ -755,6 +755,12 @@
     margin-right: 0.5em !important;
     cursor: pointer;
     margin-top: 0.4em !important;
+    font-size: 1em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.2em;
+    height: 1.2em;
 }
 
 /* 任务内容 */
@@ -801,8 +807,15 @@
     margin-top: 0.1em;
 }
 
-/* 任务开始日期 */
-.task-start-date {
+/* 任务完成日期 */
+.task-completed-date {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    margin-top: 0.1em;
+}
+
+/* 任务取消日期 */
+.task-cancelled-date {
     font-size: 0.8em;
     color: var(--text-muted);
     margin-top: 0.1em;
@@ -842,6 +855,24 @@
 
 /* 已完成的任务开始日期 */
 .task-start-date.completed {
+    text-decoration: line-through;
+    color: var(--text-muted);
+}
+
+/* 已完成的任务计划日期 */
+.task-planned-date.completed {
+    text-decoration: line-through;
+    color: var(--text-muted);
+}
+
+/* 已完成的任务完成日期 */
+.task-completed-date.completed {
+    text-decoration: line-through;
+    color: var(--text-muted);
+}
+
+/* 已完成的任务取消日期 */
+.task-cancelled-date.completed {
     text-decoration: line-through;
     color: var(--text-muted);
 }

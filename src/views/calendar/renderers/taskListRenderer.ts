@@ -31,17 +31,28 @@ export class TaskListRenderer {
     private renderTaskItem(container: HTMLElement, task: Task, index: number, onTaskToggle: (index: number, updatedTask: Task) => void, onTaskDoubleClick: (task: Task) => void) {
         const taskItem = container.createEl("div", { cls: "task-item" });
         
-        const checkbox = taskItem.createEl("input", { type: "checkbox" });
-        checkbox.className = "task-checkbox";
-        checkbox.checked = task.completed;
+        // 创建自定义复选框元素，根据任务状态显示不同图标
+        const checkbox = taskItem.createEl("div", { cls: "task-checkbox" });
+        
+        // 根据任务状态设置不同的图标
+        let statusIcon = "🕒"; // 默认是待办
+        if (task.status === "x") {
+            statusIcon = "✅"; // 已完成
+        } else if (task.status === "-") {
+            statusIcon = "❌"; // 已取消
+        } else if (task.status === "/") {
+            statusIcon = "🚧"; // 进行中
+        }
+        
+        checkbox.textContent = statusIcon;
         checkbox.addEventListener("click", (e) => {
+            e.preventDefault(); // 阻止默认行为
             e.stopPropagation(); // 阻止事件冒泡，避免触发任务项的点击事件
             // 打开任务编辑模态框
             const modal = new TaskEditModal({
                 app: this.plugin.app,
                 task: task,
                 onSubmit: (updatedTask) => {
-
                     // 更新任务状态和其他属性
                     onTaskToggle(index, updatedTask);
                 }
@@ -59,33 +70,22 @@ export class TaskListRenderer {
         }
         
         // 显示日期和时间信息在同一行
-        if (task.dueDate || task.startDate || task.timeRange) {
+        if (task.dueDate || task.completedDate || task.cancelledDate || task.timeRange) {
             const datesContainer = taskContent.createEl("div", { 
                 cls: "task-dates-container" 
             });
             
-            // 显示截止日期（如果有）
-            if (task.dueDate) {
-                const dueDateEl = datesContainer.createEl("span", { 
-                    text: `截止: ${task.dueDate.toLocaleDateString('zh-CN')}`,
-                    cls: "task-due-date" 
-                });
-                if (task.completed) {
-                    dueDateEl.addClass("completed");
-                }
-            }
+            // 格式化日期为 YYYY-MM-DD 格式的辅助函数
+            const formatDate = (date: Date) => {
+                return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            };
             
-            // 显示时间范围（如果有），排列在截止日期和开始日期的中间
+            // 显示时间范围（如果有）- 调整到最前面
             if (task.timeRange) {
-                // 如果前面有截止日期，添加一个空格
-                if (task.dueDate) {
-                    datesContainer.createEl("span", { text: " " });
-                }
-                
                 // 格式化时间范围
                 let timeText = `${task.timeRange.startTime}`;
                 if (task.timeRange.endTime) {
-                    timeText += ` - ${task.timeRange.endTime}`;
+                    timeText += `-${task.timeRange.endTime}`;
                 }
                 
                 const timeRangeEl = datesContainer.createEl("span", { 
@@ -97,18 +97,48 @@ export class TaskListRenderer {
                 }
             }
             
-            // 显示开始日期（如果有），排列在时间范围的后面
-            if (task.startDate) {
-                // 如果前面有截止日期或时间范围，添加一个空格
-                if (task.dueDate || task.timeRange) {
+            // 显示截止日期（如果有）- 使用 📅 对应 Tasks 格式
+            if (task.dueDate) {
+                // 如果前面有内容，添加一个空格
+                if (task.timeRange) {
                     datesContainer.createEl("span", { text: " " });
                 }
-                const startDateEl = datesContainer.createEl("span", { 
-                    text: `开始: ${task.startDate.toLocaleDateString('zh-CN')}`,
-                    cls: "task-start-date" 
+                const dueDateStr = formatDate(task.dueDate);
+                const dueDateEl = datesContainer.createEl("span", { 
+                    text: `📅 ${dueDateStr}`,
+                    cls: "task-due-date" 
                 });
                 if (task.completed) {
-                    startDateEl.addClass("completed");
+                    dueDateEl.addClass("completed");
+                }
+            }
+            
+            // 如果前面有内容且后面还有内容，添加一个空格
+            if ((task.dueDate || task.timeRange) && (task.completedDate || task.cancelledDate)) {
+                datesContainer.createEl("span", { text: " " });
+            }
+            
+            // 显示完成日期（如果有）- 使用 ✅ 对应 Tasks 格式
+            if (task.completedDate) {
+                const completedDateStr = formatDate(task.completedDate);
+                const completedDateEl = datesContainer.createEl("span", { 
+                    text: `✅ ${completedDateStr}`,
+                    cls: "task-completed-date" 
+                });
+                if (task.completed) {
+                    completedDateEl.addClass("completed");
+                }
+            }
+            
+            // 显示取消日期（如果有）- 使用 ❌ 对应 Tasks 格式
+            if (task.cancelledDate) {
+                const cancelledDateStr = formatDate(task.cancelledDate);
+                const cancelledDateEl = datesContainer.createEl("span", { 
+                    text: `❌ ${cancelledDateStr}`,
+                    cls: "task-cancelled-date" 
+                });
+                if (task.completed) {
+                    cancelledDateEl.addClass("completed");
                 }
             }
         }
