@@ -779,7 +779,7 @@
 
 /* 任务文本 */
 .task-text {
-    font-size: 1.0em;
+    font-size: 0.9em;
     color: var(--text-normal);
     line-height: 1.5;
     display: -webkit-box;
