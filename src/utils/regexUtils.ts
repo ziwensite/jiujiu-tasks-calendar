@@ -28,11 +28,11 @@ export const completedDateRegex = /(?:✅\s?|done:\s?|completed:\s?)(\d{4}-\d{2}
 // 匹配全天标记，如：全天, all day, full day, 🔄
 export const fullDayRegex = /(?:\b|^)(全天|all\s+day|full\s+day|🔄)(?:\b|$)/i;
 
-// 匹配时间范围，如：10:00-12:00, 10:00 ~ 12:00, 10:00 - 12:00
-export const timeRangeRegex = /(\d{1,2}:\d{2})\s*(?:-|~|——)\s*(\d{1,2}:\d{2})/;
+// 匹配时间范围，如：10:00-12:00, 10:00 ~ 12:00, 10:00 - 12:00, 9:00至10:00, 9:00到10:00
+export const timeRangeRegex = /(\d{1,2}:\d{2})\s*(?:-|~|——|至|到)\s*(\d{1,2}:\d{2})/;
 
-// 匹配单个时间点，如：10:00, 10:00 AM, 10:00 PM
-export const singleTimeRegex = /\b(\d{1,2}:\d{2})(?:\s*(?:AM|PM))?\b/i;
+// 匹配单个时间点，如：10:00, 10:00 AM, 10:00 PM, 9点钟, 9点
+export const singleTimeRegex = /\b(?:(\d{1,2}:\d{2})(?:\s*(?:AM|PM))?|(\d{1,2})[点](?:钟)?)\b/i;
 
 // 匹配优先级标记，如：🔺 最高, ⏫ 高, 🔼 中, 🔽 低, ⏬️ 最低
 export const priorityRegex = /(🔺|⏫|🔼|🔽|⏬️)/;

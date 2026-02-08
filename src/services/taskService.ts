@@ -273,11 +273,23 @@ export async function extractBasicTasks(app: App): Promise<Task[]> {
                     // 如果没有完整的时间范围，尝试匹配单独的时间点
                     else {
                         singleTimeMatch = rawText.match(singleTimeRegex);
-                        if (singleTimeMatch && singleTimeMatch[1]) {
-                            timeRange = {
-                                startTime: singleTimeMatch[1],
-                                endTime: ''
-                            };
+                        if (singleTimeMatch) {
+                            // 处理两种捕获组：HH:MM 格式或 H点/点钟格式
+                            let startTime = '';
+                            if (singleTimeMatch[1]) {
+                                // HH:MM 格式
+                                startTime = singleTimeMatch[1];
+                            } else if (singleTimeMatch[2]) {
+                                // H点/点钟格式，转换为 HH:00
+                                startTime = `${singleTimeMatch[2]}:00`;
+                            }
+                            
+                            if (startTime) {
+                                timeRange = {
+                                    startTime: startTime,
+                                    endTime: ''
+                                };
+                            }
                         }
                     }
                     

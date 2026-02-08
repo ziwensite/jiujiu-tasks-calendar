@@ -420,7 +420,7 @@
 
 /* 确保日历行高度完全固定，避免切换时闪烁 */
 .calendar-table tr {
-    height: 3.2em;
+    height: 3.0em;
 }
 
 /* 确保表头行高度固定且较小 */
@@ -512,8 +512,8 @@
 /* 节假日状态 */
 .holiday-status {
     /* 尺寸与布局 */
-    min-width: 1.3em;
-    min-height: 1.3em;
+    min-width: 1.0em;
+    min-height: 1.0em;
     padding: 0.1em;
     border-radius: 1em; /* 圆角足够形成圆形 */
     
@@ -523,7 +523,7 @@
     justify-content: center;
     
     /* 文字 */
-    font-size: 0.7em;
+    font-size: 0.5em;
     font-weight: bold;
     line-height: 1;
     white-space: nowrap;
