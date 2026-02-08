@@ -56,6 +56,14 @@ export function getLunarDate(date: Date): LunarDateResult {
     const day = String(date.getDate()).padStart(2, '0');
     const dateStr = `${year}-${month}-${day}`;
     
+    // 特殊处理元旦节
+    if (month === '01' && day === '01') {
+        return {
+            text: '元旦节',
+            type: 'festival'
+        };
+    }
+    
     const holiday = HolidayUtil.getHoliday(dateStr);
     if (holiday) {
         const holidayName = holiday.getName();
@@ -271,7 +279,7 @@ export function getCellDate(rowIndex: number, dayIndex: number, currentDate: Dat
     
     if (totalCells < prevMonthDaysToShow) {
         // 上个月的日期
-        const prevMonth = currentMonth - 1;
+        const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
         const prevMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
         const prevMonthDays = getDaysInMonth(new Date(prevMonthYear, prevMonth));
         const day = prevMonthDays - prevMonthDaysToShow + totalCells + 1;
@@ -283,7 +291,7 @@ export function getCellDate(rowIndex: number, dayIndex: number, currentDate: Dat
         date = new Date(currentYear, currentMonth, day);
     } else {
         // 下个月的日期
-        const nextMonth = currentMonth + 1;
+        const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
         const nextMonthYear = currentMonth === 11 ? currentYear + 1 : currentYear;
         const day = totalCells - prevMonthDaysToShow - daysInMonth + 1;
         date = new Date(nextMonthYear, nextMonth, day);
@@ -483,7 +491,7 @@ export function calculateCellDate(rowIndex: number, colIndex: number, currentYea
 
     if (totalCells < prevMonthDaysToShow) {
         // 上个月的日期
-        const prevMonth = currentMonth - 1;
+        const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
         const prevMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
         const prevMonthDays = getDaysInMonth(new Date(prevMonthYear, prevMonth));
         const day = prevMonthDays - prevMonthDaysToShow + totalCells + 1;
@@ -495,7 +503,7 @@ export function calculateCellDate(rowIndex: number, colIndex: number, currentYea
         date = new Date(currentYear, currentMonth, day);
     } else {
         // 下个月的日期
-        const nextMonth = currentMonth + 1;
+        const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
         const nextMonthYear = currentMonth === 11 ? currentYear + 1 : currentYear;
         const day = totalCells - prevMonthDaysToShow - daysInMonth + 1;
         date = new Date(nextMonthYear, nextMonth, day);

@@ -826,34 +826,33 @@ export class CalendarView extends ItemView {
                     isOtherMonth = true;
                 }
                 
-                // 只处理当前月份的日期
+                // 检查是否有日记和任务，添加指示器
+                const indicatorsContainer = cell.querySelector(".day-indicators");
+                if (indicatorsContainer) {
+                    await this.addDayIndicators(indicatorsContainer as HTMLElement, date);
+                }
+                
+                // 检查是否是选中的日期
+                if (this.selectedDate) {
+                    const isSelected = this.selectedDate.getFullYear() === date.getFullYear() &&
+                                      this.selectedDate.getMonth() === date.getMonth() &&
+                                      this.selectedDate.getDate() === date.getDate();
+                    if (isSelected) {
+                        cell.addClass("selected-day");
+                    }
+                }
+                
+                // 双击事件 - 只在当前月份的日期上添加
                 if (!isOtherMonth) {
-                    // 检查是否有日记和任务，添加指示器
-                    const indicatorsContainer = cell.querySelector(".day-indicators");
-                    if (indicatorsContainer) {
-                        await this.addDayIndicators(indicatorsContainer as HTMLElement, date);
-                    }
-                    
-                    // 检查是否是选中的日期
-                    if (this.selectedDate) {
-                        const isSelected = this.selectedDate.getFullYear() === date.getFullYear() &&
-                                          this.selectedDate.getMonth() === date.getMonth() &&
-                                          this.selectedDate.getDate() === date.getDate();
-                        if (isSelected) {
-                            cell.addClass("selected-day");
-                        }
-                    }
-                    
-                    // 双击事件
                     cell.addEventListener("dblclick", async () => {
                         await this.eventHandler.handleDayDoubleClick(date);
                     });
-                    
-                    // 单击事件
-                    cell.addEventListener("click", () => {
-                        this.onDayClick(date);
-                    });
                 }
+                
+                // 单击事件 - 所有日期都添加
+                cell.addEventListener("click", () => {
+                    this.onDayClick(date);
+                });
                 
                 cellIndex++;
             }
@@ -1022,18 +1021,18 @@ export class CalendarView extends ItemView {
     private async onDayClick(date: Date) {
         this.selectedDate = date;
         this.currentDate = date; // 使当前月切换到选中日期的月份
-        
+
         // 重置选择类型为日期
         this.selectionType = 'date';
         this.selectedWeekRange = null;
         this.selectedQuarter = null;
-        
-        // 更新日期单元格的选中状态
-        this.updateDaySelection();
-        
+
+        // 重新渲染日历视图，确保切换到选中日期的月份
+        await this.renderCalendar();
+
         // 更新选择状态并刷新日期显示
         await this.updateSelectionState();
-        
+
         // 只更新任务列表
         await this.refreshTaskList();
     }

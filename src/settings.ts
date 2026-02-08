@@ -160,7 +160,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
     weeklyNote: {
         savePath: "周报",
         templatePath: "模板/周报模板",
-        fileNameFormat: "GGGG-WW"
+        fileNameFormat: "GGGG-[w]WW"
     },
     monthlyNote: {
         savePath: "月报",

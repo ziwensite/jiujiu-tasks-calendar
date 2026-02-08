@@ -1,5 +1,5 @@
 import { MyPlugin } from '../../../main';
-import { getLunarDate, formatDate } from '../../../utils/dateUtils';
+import { getLunarDate, formatDate, getWeekInfo } from '../../../utils/dateUtils';
 import { noteExists } from '../../../services/noteService';
 import { Task } from '../../../services/taskService';
 
@@ -116,147 +116,212 @@ export class IndicatorRenderer {
     }
 
     /**
-     * 更新所有日期的指示器
-     */
-    async updateAllDayIndicators(container: any, currentDate: Date) {
-        const dayCells = Array.from(container.querySelectorAll('.day-cell:not(.other-month)'));
-        
-        // 批量收集所有日期的数据
-        const indicatorData = new Map<string, { hasNote: boolean; hasTask: boolean }>();
-        
-        // 先提取所有任务，避免重复提取
-        let allTasks: Task[] = [];
-        try {
-            allTasks = await this.plugin.calendarDataManager.getTasks();
-        } catch (error) {
-            console.error('Failed to extract tasks for day indicators:', error);
-        }
-        
-        for (const cell of dayCells) {
-            const cellEl = cell as any;
-            const dayNumberEl = cellEl.querySelector('.day-number');
-            if (!dayNumberEl) continue;
-            
-            const dayNumber = parseInt(dayNumberEl.textContent || '0');
-            if (isNaN(dayNumber)) continue;
-            
-            // 获取当前视图的年月
-            const year = currentDate.getFullYear();
-            const month = currentDate.getMonth();
-            const date = new Date(year, month, dayNumber);
-            
-            // 检查是否有日记
-            const dailySettings = this.plugin.settings.dailyNote;
-            const dailyFileName = formatDate(date, dailySettings.fileNameFormat);
-            const dailyNotePath = `${dailySettings.savePath}/${dailyFileName}.md`;
-            
-            let hasNote = false;
-            let hasTask = false;
-            
-            if (await noteExists(this.plugin.app, dailyNotePath)) {
-                hasNote = true;
-                
-                // 检查当天日记中没有截止日期的任务
-                try {
-                    const dailyFile = this.plugin.app.vault.getAbstractFileByPath(dailyNotePath);
-                    if (dailyFile && 'stat' in dailyFile) {
-                        const content = await this.plugin.app.vault.read(dailyFile as any);
-                        
-                        // 使用 taskRegex 匹配所有任务
-                        const taskRegex = /^\s*(-|\*|\d+\.)\s*\[(.)\]\s*(.+)$/gm;
-                        let match;
-                        while ((match = taskRegex.exec(content)) !== null) {
-                            // 提取任务状态和文本
-                            const status = match[2] || '';
-                            const taskText = match[3] || '';
-                            
-                            // 检查是否是未完成的任务
-                            if (status.toLowerCase() !== 'x') {
-                                // 检查任务文本中是否包含截止日期
-                                const dueDateRegex = /(?:[@#]|due:\s?|📅\s?)(\d{4}-\d{2}-\d{2})/;
-                                const hasDueDate = dueDateRegex.test(taskText);
-                                
-                                // 如果没有截止日期，或者截止日期是当天，都算作当天的任务
-                                if (!hasDueDate) {
-                                    hasTask = true;
-                                    break; // 只要有一个符合条件的任务，就可以退出循环
-                                } else {
-                                    // 有截止日期，检查是否是当天
-                                    const dueDateMatch = taskText.match(dueDateRegex);
-                                    if (dueDateMatch && dueDateMatch[1]) {
-                                        const dueDateStr = dueDateMatch[1];
-                                        const dueDate = new Date(dueDateStr);
-                                        
-                                        // 创建当天的开始和结束时间
-                                        const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
-                                        const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-                                        
-                                        if (dueDate >= dayStart && dueDate <= dayEnd) {
-                                            hasTask = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error('Failed to check daily note tasks:', error);
-                }
-            }
-            
-            // 检查所有文件中截止日期在当天的任务（其他文件中的任务）
-            if (allTasks.length > 0) {
-                // 创建当天的开始和结束时间（本地时间）
-                const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
-                const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-                
-                for (const task of allTasks) {
-                    // 只检查其他文件中的任务，避免重复检查
-                    if (task.filePath !== dailyNotePath && task.dueDate) {
-                        // 创建任务截止日期的本地时间版本（去除时区影响）
-                        const taskDueDate = new Date(
-                            task.dueDate.getFullYear(),
-                            task.dueDate.getMonth(),
-                            task.dueDate.getDate(),
-                            task.dueDate.getHours(),
-                            task.dueDate.getMinutes(),
-                            task.dueDate.getSeconds(),
-                            task.dueDate.getMilliseconds()
-                        );
-                        
-                        if (taskDueDate >= dayStart && taskDueDate <= dayEnd) {
-                            hasTask = true;
-                            break;
-                        }
-                    }
-                }
-            }
-            
-            // 存储数据，使用日期字符串作为键
-            indicatorData.set(`${year}-${month}-${dayNumber}`, { hasNote, hasTask });
-        }
-        
-        // 一次性应用所有更新
-        for (const cell of dayCells) {
-            const cellEl = cell as any;
-            const dayNumberEl = cellEl.querySelector('.day-number');
-            if (!dayNumberEl) continue;
-            
-            const dayNumber = parseInt(dayNumberEl.textContent || '0');
-            if (isNaN(dayNumber)) continue;
-            
-            // 获取当前视图的年月
-            const year = currentDate.getFullYear();
-            const month = currentDate.getMonth();
-            const dataKey = `${year}-${month}-${dayNumber}`;
-            
-            const data = indicatorData.get(dataKey);
-            if (data) {
-                this.updateDayIndicators(cellEl, data.hasNote, data.hasTask);
-            }
-        }
-    }
+        * 更新所有日期的指示器
+        */
+       async updateAllDayIndicators(container: any, currentDate: Date) {
+           const dayCells = Array.from(container.querySelectorAll('.day-cell'));
+           
+           // 批量收集所有日期的数据
+           const indicatorData = new Map<string, { hasNote: boolean; hasTask: boolean }>();
+           
+           // 先提取所有任务，避免重复提取
+           let allTasks: Task[] = [];
+           try {
+               allTasks = await this.plugin.calendarDataManager.getTasks();
+           } catch (error) {
+               console.error('Failed to extract tasks for day indicators:', error);
+           }
+           
+           // 计算当前月份的日历数据
+           const currentYear = currentDate.getFullYear();
+           const currentMonth = currentDate.getMonth();
+           
+           const firstDay = new Date(currentYear, currentMonth, 1);
+           let startDay = firstDay.getDay();
+           const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+           
+           // 周一为第一天：如果第一天是周日，需要显示6天上个月的日期，否则显示startDay-1天
+           const prevMonthDaysToShow = startDay === 0 ? 6 : startDay - 1;
+           
+           // 计算上个月的最后一天
+           const lastDayOfPrevMonth = new Date(currentYear, currentMonth, 0);
+           const prevMonthDays = lastDayOfPrevMonth.getDate();
+           const prevMonth = lastDayOfPrevMonth.getMonth();
+           const prevMonthYear = lastDayOfPrevMonth.getFullYear();
+           
+           // 计算下个月的第一天
+           const firstDayOfNextMonth = new Date(currentYear, currentMonth + 1, 1);
+           const nextMonth = firstDayOfNextMonth.getMonth();
+           const nextMonthYear = firstDayOfNextMonth.getFullYear();
+           
+           // 处理上个月的剩余天数
+           let prevMonthDay = prevMonthDays - prevMonthDaysToShow + 1;
+           
+           // 处理下个月的起始天数
+           let nextMonthDay = 1;
+           
+           let currentDay = 1;
+           
+           // 遍历所有行，更新内容
+           for (let i = 0; i < dayCells.length; i++) {
+               const cell = dayCells[i];
+               const cellEl = cell as any;
+               const dayNumberEl = cellEl.querySelector('.day-number');
+               if (!dayNumberEl) continue;
+               
+               const dayNumber = parseInt(dayNumberEl.textContent || '0');
+               if (isNaN(dayNumber)) continue;
+               
+               let date: Date;
+               let isOtherMonth = cellEl.hasClass('other-month');
+               
+               // 根据单元格位置计算正确的日期
+               if (i < prevMonthDaysToShow) {
+                   // 上个月的日期
+                   date = new Date(prevMonthYear, prevMonth, prevMonthDay);
+                   prevMonthDay++;
+               } else if (i < prevMonthDaysToShow + daysInMonth) {
+                   // 当前月的日期
+                   date = new Date(currentYear, currentMonth, currentDay);
+                   currentDay++;
+               } else {
+                   // 下个月的日期
+                   date = new Date(nextMonthYear, nextMonth, nextMonthDay);
+                   nextMonthDay++;
+               }
+               
+               // 检查是否有日记
+               const dailySettings = this.plugin.settings.dailyNote;
+               const dailyFileName = formatDate(date, dailySettings.fileNameFormat);
+               const dailyNotePath = `${dailySettings.savePath}/${dailyFileName}.md`;
+               
+               let hasNote = false;
+               let hasTask = false;
+               
+               if (await noteExists(this.plugin.app, dailyNotePath)) {
+                   hasNote = true;
+                   
+                   // 检查当天日记中没有截止日期的任务
+                   try {
+                       const dailyFile = this.plugin.app.vault.getAbstractFileByPath(dailyNotePath);
+                       if (dailyFile && 'stat' in dailyFile) {
+                           const content = await this.plugin.app.vault.read(dailyFile as any);
+                           
+                           // 使用 taskRegex 匹配所有任务
+                           const taskRegex = /^\s*(-|\*|\d+\.)\s*\[(.)\]\s*(.+)$/gm;
+                           let match;
+                           while ((match = taskRegex.exec(content)) !== null) {
+                               // 提取任务状态和文本
+                               const status = match[2] || '';
+                               const taskText = match[3] || '';
+                               
+                               // 检查是否是未完成的任务
+                               if (status.toLowerCase() !== 'x') {
+                                   // 检查任务文本中是否包含截止日期
+                                   const dueDateRegex = /(?:[@#]|due:\s?|📅\s?)(\d{4}-\d{2}-\d{2})/;
+                                   const hasDueDate = dueDateRegex.test(taskText);
+                                   
+                                   // 如果没有截止日期，或者截止日期是当天，都算作当天的任务
+                                   if (!hasDueDate) {
+                                       hasTask = true;
+                                       break; // 只要有一个符合条件的任务，就可以退出循环
+                                   } else {
+                                       // 有截止日期，检查是否是当天
+                                       const dueDateMatch = taskText.match(dueDateRegex);
+                                       if (dueDateMatch && dueDateMatch[1]) {
+                                           const dueDateStr = dueDateMatch[1];
+                                           const dueDate = new Date(dueDateStr);
+                                           
+                                           // 创建当天的开始和结束时间
+                                           const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+                                           const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+                                           
+                                           if (dueDate >= dayStart && dueDate <= dayEnd) {
+                                               hasTask = true;
+                                               break;
+                                           }
+                                       }
+                                   }
+                               }
+                           }
+                       }
+                   } catch (error) {
+                       console.error('Failed to check daily note tasks:', error);
+                   }
+               }
+               
+               // 检查所有文件中截止日期在当天的任务（其他文件中的任务）
+               if (allTasks.length > 0) {
+                   // 创建当天的开始和结束时间（本地时间）
+                   const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+                   const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+                   
+                   for (const task of allTasks) {
+                       // 只检查其他文件中的任务，避免重复检查
+                       if (task.filePath !== dailyNotePath && task.dueDate) {
+                           // 创建任务截止日期的本地时间版本（去除时区影响）
+                           const taskDueDate = new Date(
+                               task.dueDate.getFullYear(),
+                               task.dueDate.getMonth(),
+                               task.dueDate.getDate(),
+                               task.dueDate.getHours(),
+                               task.dueDate.getMinutes(),
+                               task.dueDate.getSeconds(),
+                               task.dueDate.getMilliseconds()
+                           );
+                           
+                           if (taskDueDate >= dayStart && taskDueDate <= dayEnd) {
+                               hasTask = true;
+                               break;
+                           }
+                       }
+                   }
+               }
+               
+               // 存储数据，使用日期字符串作为键
+               const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+               indicatorData.set(dateKey, { hasNote, hasTask });
+           }
+           
+           // 重置计数器，重新计算日期以应用更新
+           prevMonthDay = prevMonthDays - prevMonthDaysToShow + 1;
+           nextMonthDay = 1;
+           currentDay = 1;
+           
+           // 一次性应用所有更新
+           for (let i = 0; i < dayCells.length; i++) {
+               const cell = dayCells[i];
+               const cellEl = cell as any;
+               const dayNumberEl = cellEl.querySelector('.day-number');
+               if (!dayNumberEl) continue;
+               
+               const dayNumber = parseInt(dayNumberEl.textContent || '0');
+               if (isNaN(dayNumber)) continue;
+               
+               let date: Date;
+               
+               // 根据单元格位置计算正确的日期
+               if (i < prevMonthDaysToShow) {
+                   // 上个月的日期
+                   date = new Date(prevMonthYear, prevMonth, prevMonthDay);
+                   prevMonthDay++;
+               } else if (i < prevMonthDaysToShow + daysInMonth) {
+                   // 当前月的日期
+                   date = new Date(currentYear, currentMonth, currentDay);
+                   currentDay++;
+               } else {
+                   // 下个月的日期
+                   date = new Date(nextMonthYear, nextMonth, nextMonthDay);
+                   nextMonthDay++;
+               }
+               
+               const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+               const data = indicatorData.get(dateKey);
+               if (data) {
+                   this.updateDayIndicators(cellEl, data.hasNote, data.hasTask);
+               }
+           }
+       }
 
     /**
      * 更新周数指示器
@@ -283,13 +348,26 @@ export class IndicatorRenderer {
             const weekNumber = parseInt(weekNumberEl.textContent || '0');
             if (isNaN(weekNumber)) continue;
             
-            // 计算当前周的起始日期
+            // 直接计算当前周的起始日期
+            // 1. 计算当月第一天
             const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-            const startDayOfWeek = firstDayOfMonth.getDay();
-            const prevMonthDaysToShow = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
             
-            const weekStartDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-            weekStartDate.setDate(weekStartDate.getDate() - prevMonthDaysToShow + (weekNumber - 1) * 7);
+            // 2. 计算当月第一天所在的周数
+            const firstDayWeekInfo = getWeekInfo(firstDayOfMonth);
+            const firstDayWeekNumber = firstDayWeekInfo.week;
+            
+            // 3. 计算当前周与当月第一周的差值
+            const weekDiff = weekNumber - firstDayWeekNumber;
+            
+            // 4. 计算当月第一周的起始日期（周一）
+            let firstWeekStartDate = new Date(firstDayOfMonth);
+            const firstDayOfWeek = firstDayOfMonth.getDay();
+            const daysToFirstMonday = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+            firstWeekStartDate.setDate(firstWeekStartDate.getDate() - daysToFirstMonday);
+            
+            // 5. 计算当前周的起始日期
+            const weekStartDate = new Date(firstWeekStartDate);
+            weekStartDate.setDate(weekStartDate.getDate() + weekDiff * 7);
             
             // 计算周结束日期
             const weekEndDate = new Date(weekStartDate);
