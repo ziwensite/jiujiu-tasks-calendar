@@ -1013,8 +1013,32 @@ export class CalendarView extends ItemView {
         // 强制刷新任务数据缓存
         await this.plugin.calendarDataManager.refreshTasks();
         
-        // 立即更新任务列表和指示器
-        await this.refreshTaskList();
+        // 根据当前选择类型更新任务列表
+        if (this.selectionType === 'date') {
+            await this.refreshTaskList();
+        } else if (this.selectionType === 'week' && this.selectedWeekRange) {
+            await this.renderTaskListByDateRange(this.selectedWeekRange.start, this.selectedWeekRange.end);
+        } else if (this.selectionType === 'month') {
+            const year = this.currentDate.getFullYear();
+            const month = this.currentDate.getMonth();
+            const startDate = new Date(year, month, 1);
+            const endDate = new Date(year, month + 1, 0);
+            await this.renderTaskListByDateRange(startDate, endDate);
+        } else if (this.selectionType === 'quarter' && this.selectedQuarter !== null) {
+            const year = this.currentDate.getFullYear();
+            const quarterStartMonth = (this.selectedQuarter - 1) * 3;
+            const quarterEndMonth = quarterStartMonth + 2;
+            const startDate = new Date(year, quarterStartMonth, 1);
+            const endDate = new Date(year, quarterEndMonth + 1, 0);
+            await this.renderTaskListByDateRange(startDate, endDate);
+        } else if (this.selectionType === 'year') {
+            const year = this.currentDate.getFullYear();
+            const startDate = new Date(year, 0, 1);
+            const endDate = new Date(year, 11, 31);
+            await this.renderTaskListByDateRange(startDate, endDate);
+        }
+        
+        // 更新指示器
         await this.updateIndicators();
     }
 
