@@ -759,8 +759,56 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.2em;
-    height: 1.2em;
+    width: 1.0em;
+    height: 1.0em;
+    border-radius: 30%;
+    border: 1px solid var(--text-muted);
+    transition: all 0.2s ease;
+}
+
+/* 待办状态 - 空圆圈 */
+.task-checkbox.todo {
+    background-color: transparent;
+    border-color: var(--text-muted);
+}
+
+/* 已完成状态 - 绿色圆圈带对勾 */
+.task-checkbox.completed {
+    background-color: #22c55e;
+    border-color: #22c55e;
+    color: white;
+}
+
+.task-checkbox.completed::after {
+    content: "✓";
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+/* 已取消状态 - 灰色圆圈带叉号 */
+.task-checkbox.cancelled {
+    background-color: #9ca3af;
+    border-color: #9ca3af;
+    color: white;
+}
+
+.task-checkbox.cancelled::after {
+    content: "一";
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+/* 进行中状态 - 黄色圆圈带横线 */
+.task-checkbox.in-progress {
+    background-color: #eab308;
+    border-color: #eab308;
+    color: white;
+}
+
+.task-checkbox.in-progress::after {
+    content: "/";
+    font-size: 0.8em;
+    font-weight: bold;
 }
 
 /* 任务内容 */

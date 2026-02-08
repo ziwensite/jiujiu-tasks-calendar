@@ -34,17 +34,20 @@ export class TaskListRenderer {
         // 创建自定义复选框元素，根据任务状态显示不同图标
         const checkbox = taskItem.createEl("div", { cls: "task-checkbox" });
         
-        // 根据任务状态设置不同的图标
-        let statusIcon = "🕒"; // 默认是待办
+        // 根据任务状态设置不同的CSS类
+        checkbox.addClass("todo"); // 默认是待办
         if (task.status === "x") {
-            statusIcon = "✅"; // 已完成
+            checkbox.removeClass("todo");
+            checkbox.addClass("completed"); // 已完成
         } else if (task.status === "-") {
-            statusIcon = "❌"; // 已取消
+            checkbox.removeClass("todo");
+            checkbox.addClass("cancelled"); // 已取消
         } else if (task.status === "/") {
-            statusIcon = "🚧"; // 进行中
+            checkbox.removeClass("todo");
+            checkbox.addClass("in-progress"); // 进行中
         }
         
-        checkbox.textContent = statusIcon;
+        checkbox.textContent = "";
         checkbox.addEventListener("click", (e) => {
             e.preventDefault(); // 阻止默认行为
             e.stopPropagation(); // 阻止事件冒泡，避免触发任务项的点击事件
