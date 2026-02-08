@@ -348,8 +348,8 @@ export async function extractBasicTasks(app: App): Promise<Task[]> {
                         taskDescription = taskDescription.replace(singleTimeRegex, '').trim();
                     }
                     
-                    // 移除标签（以#开头的标签）
-                    taskDescription = taskDescription.replace(/#\S+/g, '').trim();
+                    // 移除标签（以#开头的标签），但不移除双链中的#部分
+                    taskDescription = taskDescription.replace(/(?<!\[\[.*)#\S+(?!.*\]\])/g, '').trim();
                     
                     // 移除emoji标签（如 🔁）
                     taskDescription = taskDescription.replace(/[🔁📅⏳🔼📅✅⏸️🔁🔄]/g, '').trim();

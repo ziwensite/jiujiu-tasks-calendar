@@ -62,12 +62,15 @@ export class TaskListRenderer {
         
         const taskContent = taskItem.createEl("div", { cls: "task-content" });
         
-        const taskText = taskContent.createEl("span", { text: task.text });
-        taskText.className = "task-text";
-        taskText.dataset.text = task.text;
+        // 处理任务文本，支持 Obsidian 双链语法
+        const taskTextContainer = taskContent.createEl("span", { cls: "task-text" });
+        taskTextContainer.dataset.text = task.text;
         if (task.completed) {
-            taskText.addClass("completed");
+            taskTextContainer.addClass("completed");
         }
+        
+        // 解析并渲染任务文本中的双链
+        this.renderTaskTextWithLinks(taskTextContainer, task.text);
         
         // 显示日期和时间信息在同一行
         if (task.dueDate || task.completedDate || task.cancelledDate || task.timeRange) {
@@ -167,7 +170,7 @@ export class TaskListRenderer {
                 taskItem.addClass("selected");
                 
                 // 检查任务文本是否超过2行，如果是则展开
-                if (taskText.offsetHeight > 36) { // 假设每行高度为18px
+                if (taskTextContainer.offsetHeight > 36) { // 假设每行高度为18px
                     taskItem.addClass("expanded");
                 }
             }
@@ -178,6 +181,66 @@ export class TaskListRenderer {
             onTaskDoubleClick(task);
         });
         
+    }
+
+    /**
+     * 解析并渲染任务文本中的双链语法
+     */
+    private renderTaskTextWithLinks(container: HTMLElement, text: string) {
+        // 匹配 Obsidian 双链语法：[[链接文本]] 或 [[链接路径|显示文本]]
+        const linkRegex = /\[\[(.*?)\]\]/g;
+        let match;
+        let lastIndex = 0;
+        
+        while ((match = linkRegex.exec(text)) !== null) {
+            // 添加匹配前的普通文本
+            if (match.index > lastIndex) {
+                const plainText = text.substring(lastIndex, match.index);
+                const textNode = document.createTextNode(plainText);
+                container.appendChild(textNode);
+            }
+            
+            // 处理链接
+            const linkContent = match[1];
+            if (!linkContent) continue;
+            
+            let linkPath: string;
+            let displayText: string;
+            
+            // 检查是否有显示文本：[[链接路径|显示文本]]
+            const pipeIndex = linkContent.indexOf('|');
+            if (pipeIndex !== -1) {
+                linkPath = linkContent.substring(0, pipeIndex).trim();
+                displayText = linkContent.substring(pipeIndex + 1).trim();
+            } else {
+                linkPath = linkContent;
+                displayText = linkContent;
+            }
+            
+            // 创建链接元素
+            const linkElement = container.createEl('a', {
+                text: displayText,
+                cls: 'internal-link'
+            });
+            
+            // 添加点击事件，打开链接
+            linkElement.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // 使用 Obsidian 的方法打开链接
+                this.plugin.app.workspace.openLinkText(linkPath, '', false);
+            });
+            
+            lastIndex = match.index + match[0].length;
+        }
+        
+        // 添加剩余的普通文本
+        if (lastIndex < text.length) {
+            const remainingText = text.substring(lastIndex);
+            const textNode = document.createTextNode(remainingText);
+            container.appendChild(textNode);
+        }
     }
 }
 
