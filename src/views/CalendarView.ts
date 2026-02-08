@@ -1175,8 +1175,8 @@ export class CalendarView extends ItemView {
         const taskListContainer = this.containerEl.querySelector(".task-list-container") as HTMLElement;
         if (!taskListContainer) return;
 
-        // 从笔记中提取任务
-        const allTasks = await extractTasks(this.app, this.plugin.settings);
+        // 从数据管理器获取任务（带缓存）
+        const allTasks = await this.plugin.calendarDataManager.getTasks();
         
         // 过滤任务：截止日期在 startDate 和 endDate 之间，或者无截止日期但属于当前周期的任务
         const filteredByDateRange = allTasks.filter(task => {
@@ -1300,7 +1300,14 @@ export class CalendarView extends ItemView {
             async (index, updatedTask) => {
                 if (updatedTask) {
                     await this.eventHandler.handleTaskToggle(updatedTask, updatedTask.completed, async () => {
-                        await this.refreshTaskList();
+                        // 任务状态变更后刷新数据缓存
+                        await this.plugin.calendarDataManager.refreshTasks();
+                        // 根据当前选择类型重新渲染任务列表
+                        if (this.selectionType === 'date') {
+                            await this.refreshTaskList();
+                        } else {
+                            await this.renderTaskListByDateRange(startDate, endDate);
+                        }
                     });
                 }
             },
