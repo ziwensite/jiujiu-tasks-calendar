@@ -1,7 +1,7 @@
 {
-	"name": "jiujiu-obsidian-calendar",
-	"version": "1.0.0",
-	"description": "A comprehensive calendar plugin with lunar calendar, holidays, and note management features.",
+	"name": "jiujiu-tasks-calendar",
+	"version": "1.0.1",
+	"description": "A comprehensive calendar plugin with lunar calendar, holidays, tasks management, and note management features.",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {
