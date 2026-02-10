@@ -607,18 +607,18 @@
 
 /* 实心指示器点 */
 .indicator-dot.solid-dot {
-    background-color: var(--interactive-accent);
+    background-color: #0066ff;
 }
 
 /* 空心指示器点 - 红色边框 */
 .indicator-dot.hollow-dot {
     background-color: transparent;
-    border: 1px solid #0066ff; /* 蓝色边框 */
+    border: 1px solid #4f42fa; /* 紫色边框 */
 }
 
 /* 已完成任务红色实心圆指示器 */
 .indicator-dot.check-dot {
-    background-color: #0066ff; /* 蓝色 */
+    background-color: #4f42fa; /* 紫色 */
     border: none;
     border-radius: 50%; /* 圆形 */
     width: 0.35em;
