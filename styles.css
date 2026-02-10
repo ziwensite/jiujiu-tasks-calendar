@@ -616,7 +616,7 @@
 /* 空心指示器点 - 紫色系（重要笔记） */
 .indicator-dot.hollow-dot {
     background-color: transparent;
-    border: 1px solid #8b5cf6;
+    border: 1.5px solid #8b5cf6;
 }
 
 /* 已完成任务指示器 - 绿色系（已完成事项） */
