@@ -2,6 +2,7 @@ import { TFile } from 'obsidian';
 import { MyPlugin } from '../../../main';
 import { Task, updateTaskInNote } from '../../../services/taskService';
 import { formatDate } from '../../../utils/dateUtils';
+import { noteExists } from '../../../services/noteService';
 
 export class EventHandler {
     private plugin: MyPlugin;
@@ -40,15 +41,12 @@ export class EventHandler {
         
         // 检查任务是否有位置信息
         if (!task.line || !task.position) {
-
             return;
         }
         
-        const file = this.plugin.app.vault.getAbstractFileByPath(task.filePath);
-        
+        const file = this.plugin.app.vault.getAbstractFileByPath(task.filePath) as TFile;
         
         if (!file || !('stat' in file)) {
-
             return;
         }
 
@@ -70,16 +68,40 @@ export class EventHandler {
                 },
             };
 
+            // 检查文件是否已经打开
+            const leaves = this.plugin.app.workspace.getLeavesOfType('markdown');
+            let existingLeaf = null;
+            
+            for (const leaf of leaves) {
+                const view = leaf.view as any;
+                if (view && view.file && view.file.path === file.path) {
+                    existingLeaf = leaf;
+                    break;
+                }
+            }
 
-
-            // 使用 workspace.openLinkText API 打开文件并设置编辑器状态
-            await this.plugin.app.workspace.openLinkText(
-                (file as TFile).basename, // 使用文件名作为链接文本
-                task.filePath, // 源文件路径
-                false, // 不在新标签页打开
-                selectionState as any // 编辑器状态（包含光标位置）
-            );
-
+            if (existingLeaf) {
+                // 文件已打开，切换到该标签页并设置光标位置
+                await this.plugin.app.workspace.setActiveLeaf(existingLeaf, { focus: true });
+                
+                // 设置光标位置
+                const vs = existingLeaf.getViewState();
+                await existingLeaf.setViewState({
+                    ...vs,
+                    state: {
+                        ...(vs.state ?? {}),
+                        ...selectionState.eState
+                    }
+                });
+            } else {
+                // 文件未打开，在新标签页打开
+                await this.plugin.app.workspace.openLinkText(
+                    file.basename, // 使用文件名作为链接文本
+                    task.filePath, // 源文件路径
+                    true, // 在新标签页打开
+                    selectionState as any // 编辑器状态（包含光标位置）
+                );
+            }
 
         } catch (error) {
             console.warn('Failed to open and select task:', error);
@@ -194,8 +216,44 @@ export class EventHandler {
      * 处理日期双击事件
      */
     async handleDayDoubleClick(date: Date) {
-        // 只使用 captureTo 配置创建笔记
-        await this.executeCaptureToConfig(date, 'daily');
+        try {
+            // 使用现有的 dailySettings 配置和函数
+            const dailySettings = this.plugin.settings.dailyNote;
+            const dailyFileName = formatDate(date, dailySettings.fileNameFormat);
+            const dailyNotePath = `${dailySettings.savePath}/${dailyFileName}.md`;
+            
+            // 检查每日笔记是否存在
+            if (await noteExists(this.plugin.app, dailyNotePath)) {
+                // 检查笔记是否已经在某个标签页打开
+                const leaves = this.plugin.app.workspace.getLeavesOfType('markdown');
+                let existingLeaf = null;
+                
+                for (const leaf of leaves) {
+                    const view = leaf.view as any;
+                    if (view && view.file && view.file.path === dailyNotePath) {
+                        existingLeaf = leaf;
+                        break;
+                    }
+                }
+                
+                if (existingLeaf) {
+                    // 笔记已打开，切换到该标签页
+                    await this.plugin.app.workspace.setActiveLeaf(existingLeaf, { focus: true });
+                } else {
+                    // 笔记存在但未打开，在新标签页打开
+                    await this.plugin.app.workspace.openLinkText(
+                        dailyFileName,
+                        dailyNotePath,
+                        true // 在新标签页打开
+                    );
+                }
+            } else {
+                // 笔记不存在，调用 captureTo 配置创建笔记
+                await this.executeCaptureToConfig(date, 'daily');
+            }
+        } catch (error) {
+            console.error('Failed to handle day double click:', error);
+        }
     }
 
     /**

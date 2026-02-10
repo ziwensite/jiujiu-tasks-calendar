@@ -512,8 +512,8 @@
 /* 节假日状态 */
 .holiday-status {
     /* 尺寸与布局 */
-    min-width: 1.8em;
-    min-height: 1.8em;
+    min-width: 1.5em;
+    min-height: 1.5em;
     padding: 0.1em;
     border-radius: 1em; /* 圆角足够形成圆形 */
     
@@ -1076,8 +1076,8 @@ li.task-highlighted {
     /* 简化节假日标记 */
     .holiday-status {
         font-size: 0.6em;
-        min-width: 1.8em;
-        min-height: 1.8em;
+        min-width: 1.5em;
+        min-height: 1.5em;
     }
     
     /* 调整任务列表布局 */
