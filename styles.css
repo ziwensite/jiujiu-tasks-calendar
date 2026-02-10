@@ -597,33 +597,32 @@
     gap: 0.15em;
 }
 
-/* 指示器点 */
+/* 指示器点 - 基础样式 */
 .indicator-dot {
     width: 0.35em;
     height: 0.35em;
     border-radius: 50%;
     background-color: var(--interactive-accent);
+    transition: all 0.2s ease;
 }
 
-/* 实心指示器点 */
+/* ===== 笔记指示器颜色方案 ===== */
+
+/* 实心指示器点 - 蓝色系（一般性笔记） */
 .indicator-dot.solid-dot {
-    background-color: #0066ff;
+    background-color: #3b82f6;
 }
 
-/* 空心指示器点 - 红色边框 */
+/* 空心指示器点 - 紫色系（重要笔记） */
 .indicator-dot.hollow-dot {
     background-color: transparent;
-    border: 1px solid #4f42fa; /* 紫色边框 */
+    border: 1px solid #8b5cf6;
 }
 
-/* 已完成任务红色实心圆指示器 */
+/* 已完成任务指示器 - 绿色系（已完成事项） */
 .indicator-dot.check-dot {
-    background-color: #4f42fa; /* 紫色 */
+    background-color: #10b981;
     border: none;
-    border-radius: 50%; /* 圆形 */
-    width: 0.35em;
-    height: 0.35em;
-    /* 移除三角形相关样式 */
     margin-bottom: 0;
 }
 
@@ -811,8 +810,8 @@
 
 /* 进行中状态 - 黄色圆圈带横线 */
 .task-checkbox.in-progress {
-    background-color: #eab308;
-    border-color: #eab308;
+    background-color: #3b82f6;
+    border-color: #3b82f6;
     color: white;
 }
 

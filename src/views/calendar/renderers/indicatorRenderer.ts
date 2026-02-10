@@ -340,7 +340,7 @@ export class IndicatorRenderer {
         const weekCells = Array.from(container.querySelectorAll('.week-number-cell'));
         
         // 批量收集所有周的数据
-        const indicatorData = new Map<number, { hasNote: boolean; hasTask: boolean }>();
+        const indicatorData = new Map<number, { hasNote: boolean; hasIncompleteTask: boolean; hasCompletedTask: boolean }>();
         
         // 先提取所有任务，避免重复提取
         let allTasks: Task[] = [];
@@ -384,7 +384,8 @@ export class IndicatorRenderer {
             weekEndDate.setDate(weekEndDate.getDate() + 6);
             
             let hasWeeklyNote = false;
-            let hasWeeklyTask = false;
+            let hasWeeklyIncompleteTask = false;
+            let hasWeeklyCompletedTask = false;
             
             // 获取周报设置
             const weeklySettings = this.plugin.settings.weeklyNote;
@@ -410,14 +411,23 @@ export class IndicatorRenderer {
             if (allTasks.length > 0) {
                 for (const task of allTasks) {
                     if (task.dueDate && task.dueDate >= weekStartDate && task.dueDate <= weekEndDate) {
-                        hasWeeklyTask = true;
-                        break;
+                        if (task.status === "x" || task.status === "-") {
+                            // 已完成或已取消的任务
+                            hasWeeklyCompletedTask = true;
+                        } else {
+                            // 未完成的任务（待办或进行中）
+                            hasWeeklyIncompleteTask = true;
+                        }
                     }
                 }
             }
             
             // 存储数据，使用周数作为键
-            indicatorData.set(weekNumber, { hasNote: hasWeeklyNote, hasTask: hasWeeklyTask });
+            indicatorData.set(weekNumber, { 
+                hasNote: hasWeeklyNote, 
+                hasIncompleteTask: hasWeeklyIncompleteTask, 
+                hasCompletedTask: hasWeeklyCompletedTask 
+            });
         }
         
         // 一次性应用所有更新
@@ -441,9 +451,14 @@ export class IndicatorRenderer {
                         indicators.createEl('div', {cls: 'indicator-dot solid-dot'});
                     }
                     
-                    // 添加空心小圆点表示任务
-                    if (data.hasTask) {
+                    // 添加空心小圆点表示未完成任务
+                    if (data.hasIncompleteTask) {
                         indicators.createEl('div', {cls: 'indicator-dot hollow-dot'});
+                    }
+                    
+                    // 添加绿色实心小圆点表示已完成任务
+                    if (data.hasCompletedTask) {
+                        indicators.createEl('div', {cls: 'indicator-dot check-dot'});
                     }
                 }
             }

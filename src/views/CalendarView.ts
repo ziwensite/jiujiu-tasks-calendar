@@ -1501,7 +1501,8 @@ export class CalendarView extends ItemView {
         quarterEndDate.setHours(23, 59, 59, 999);
         
         let hasQuarterlyNote = false;
-        let hasQuarterlyTask = false;
+        let hasQuarterlyIncompleteTask = false;
+        let hasQuarterlyCompletedTask = false;
         
         // 获取季度设置
         const quarterlySettings = this.plugin.settings.quarterlyNote;
@@ -1527,8 +1528,13 @@ export class CalendarView extends ItemView {
         const allTasks = await extractTasks(this.app, this.plugin.settings);
         for (const task of allTasks) {
             if (task.dueDate && task.dueDate >= quarterStartDate && task.dueDate <= quarterEndDate) {
-                hasQuarterlyTask = true;
-                break;
+                if (task.status === "x" || task.status === "-") {
+                    // 已完成或已取消的任务
+                    hasQuarterlyCompletedTask = true;
+                } else {
+                    // 未完成的任务（待办或进行中）
+                    hasQuarterlyIncompleteTask = true;
+                }
             }
         }
         
@@ -1540,9 +1546,14 @@ export class CalendarView extends ItemView {
             indicators.createEl("div", { cls: "indicator-dot solid-dot" });
         }
         
-        // 添加空心小圆点表示任务
-        if (hasQuarterlyTask) {
+        // 添加空心小圆点表示未完成任务
+        if (hasQuarterlyIncompleteTask) {
             indicators.createEl("div", { cls: "indicator-dot hollow-dot" });
+        }
+        
+        // 添加绿色实心小圆点表示已完成任务
+        if (hasQuarterlyCompletedTask) {
+            indicators.createEl("div", { cls: "indicator-dot check-dot" });
         }
     }
 
@@ -1554,7 +1565,8 @@ export class CalendarView extends ItemView {
         monthEndDate.setHours(23, 59, 59, 999);
         
         let hasMonthlyNote = false;
-        let hasMonthlyTask = false;
+        let hasMonthlyIncompleteTask = false;
+        let hasMonthlyCompletedTask = false;
         
         // 获取月份设置
         const monthlySettings = this.plugin.settings.monthlyNote;
@@ -1579,8 +1591,13 @@ export class CalendarView extends ItemView {
         const allTasks = await extractTasks(this.app, this.plugin.settings);
         for (const task of allTasks) {
             if (task.dueDate && task.dueDate >= monthStartDate && task.dueDate <= monthEndDate) {
-                hasMonthlyTask = true;
-                break;
+                if (task.status === "x" || task.status === "-") {
+                    // 已完成或已取消的任务
+                    hasMonthlyCompletedTask = true;
+                } else {
+                    // 未完成的任务（待办或进行中）
+                    hasMonthlyIncompleteTask = true;
+                }
             }
         }
         
@@ -1592,9 +1609,14 @@ export class CalendarView extends ItemView {
             indicators.createEl("div", { cls: "indicator-dot solid-dot" });
         }
         
-        // 添加空心小圆点表示任务
-        if (hasMonthlyTask) {
+        // 添加空心小圆点表示未完成任务
+        if (hasMonthlyIncompleteTask) {
             indicators.createEl("div", { cls: "indicator-dot hollow-dot" });
+        }
+        
+        // 添加绿色实心小圆点表示已完成任务
+        if (hasMonthlyCompletedTask) {
+            indicators.createEl("div", { cls: "indicator-dot check-dot" });
         }
     }
 
