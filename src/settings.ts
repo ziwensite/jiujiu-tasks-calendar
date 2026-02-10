@@ -203,7 +203,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     },
                     format: {
                         enabled: true,
-                        format: "- ==📝{{DATE:yyyy-MM-DD HH:mm}}==  {{TASK_TEXT}}  \n"
+                        format: "- ==📝{{DATE:YYYY-MM-DD HH:mm}}==  {{TASK_TEXT}}  \n"
                     },
                     prepend: false,
                     appendLink: false,
@@ -213,18 +213,18 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     dueDateOption: "today",
                     customDueDays: 1,
                     insertAfter: {
-                        enabled: false,
-                        after: "",
+                        enabled: true,
+                        after: "## 闪念",
                         insertAtEnd: false,
                         considerSubsections: false,
-                        createIfNotFound: false,
+                        createIfNotFound: true,
                         createIfNotFoundLocation: "bottom" as "top" | "bottom"
                     },
                     newLineCapture: {
                         enabled: false,
                         direction: "below"
                     },
-                    openFile: true,
+                    openFile: false,
                     fileOpening: {
                         location: "tab",
                         direction: "vertical",
@@ -629,10 +629,7 @@ export class SampleSettingTab extends PluginSettingTab {
         const {containerEl} = this;
 
         containerEl.empty();
-        const header = containerEl.createEl("div", {cls: "setting-section"});
-        header.style.textAlign = "center";
-        header.style.marginBottom = "20px";
-        header.createEl("h2", {text: "99日历设置"});
+        // Removed the "99日历设置" title as requested
 
         // 渲染任务显示筛选设置
         this.renderTaskFilterSettings();
@@ -1430,7 +1427,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     },
                     format: {
                         enabled: true,
-                        format: "- ==📝{{DATE:yyyy-MM-DD HH:mm}}==  {{TASK_TEXT}}  \n"
+                        format: "- ==📝{{DATE:YYYY-MM-DD HH:mm}}==  {{TASK_TEXT}}  \n"
                     },
                     prepend: false,
                     appendLink: false,
@@ -1440,18 +1437,18 @@ export class SampleSettingTab extends PluginSettingTab {
                     dueDateOption: "today",
                     customDueDays: 1,
                     insertAfter: {
-                        enabled: false,
-                        after: "",
+                        enabled: true,
+                        after: "## 闪念",
                         insertAtEnd: false,
                         considerSubsections: false,
-                        createIfNotFound: false,
+                        createIfNotFound: true,
                         createIfNotFoundLocation: "bottom"
                     },
                     newLineCapture: {
                         enabled: false,
                         direction: "below"
                     },
-                    openFile: true,
+                    openFile: false,
                     fileOpening: {
                         location: "tab",
                         direction: "vertical",

@@ -76,6 +76,27 @@ export class CaptureChoiceFormatter {
 			formatted = formatted.replace(/\{\{TITLE\}\}/g, this.title);
 		}
 		
+		// Replace {{DATE}} with target date
+		// Support both {{DATE}} and {{DATE:format}} formats
+		const targetDate = (this.choice as any)?._targetDate || new Date();
+		const dateRegex = /\{\{DATE(?::([^}]+))?\}\}/gi;
+		if (dateRegex.test(formatted)) {
+			formatted = formatted.replace(dateRegex, (match, format) => {
+				if (format) {
+					// Handle custom format
+					try {
+						return formatDate(targetDate, format);
+					} catch (error) {
+						// Fallback to ISO date if format is invalid
+						return targetDate.toISOString().split('T')[0];
+					}
+				} else {
+					// Default format: YYYY-MM-DD
+					return targetDate.toISOString().split('T')[0];
+				}
+			});
+		}
+		
 		// 自动添加创建日期和截止日期
 		if (this.choice && taskText) {
 			let dateString = "";
@@ -376,13 +397,9 @@ export class CaptureChoiceFormatter {
 		if (this.choice.insertAfter?.insertAtEnd) {
 			targetPosition = this.findEndOfSection(fileContentLines, targetPosition);
 		} else {
-			const blankLineMode = this.choice.insertAfter?.blankLineAfterMatchMode ?? "auto";
-			targetPosition = this.findInsertAfterPositionWithBlankLines(
-				fileContentLines,
-				targetPosition,
-				this.fileContent,
-				blankLineMode,
-			);
+			// When not inserting at end, insert immediately after the heading, ignoring blank lines
+			// This fixes the issue where content was being inserted after blank lines instead of right after the heading
+			targetPosition = targetPosition; // Insert right after the heading line
 		}
 
 		return this.insertTextAfterPositionInBody(

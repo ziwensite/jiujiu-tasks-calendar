@@ -116,7 +116,8 @@ export class CaptureChoiceEngine {
 				action === "newLineBelow";
 
 			// Handle capture to active file with special actions
-			if (isEditorInsertionAction) {
+			// If the file was just created, we should use vault.modify instead of editor insertion
+			if (isEditorInsertionAction && fileAlreadyExists) {
 				// Parse Templater syntax in the capture content
 				const content = await templaterParseTemplate(
 					this.plugin.app,
