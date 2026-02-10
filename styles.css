@@ -621,9 +621,8 @@
 
 /* 已完成任务指示器 - 绿色系（已完成事项） */
 .indicator-dot.check-dot {
-    background-color: #10b981;
-    border: none;
-    margin-bottom: 0;
+    background-color: transparent;
+    border: 1.5px solid #10b981;
 }
 
 
