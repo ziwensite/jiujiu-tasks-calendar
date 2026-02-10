@@ -32,6 +32,9 @@ export class CalendarView extends ItemView {
     private taskListRenderer: TaskListRenderer;
     private indicatorRenderer: IndicatorRenderer;
     private eventHandler: EventHandler;
+    
+    // 时间监听器，用于检测日期变化
+    private timeListenerId: number | null = null;
 
     constructor(leaf: WorkspaceLeaf, plugin: MyPlugin) {
         super(leaf);
@@ -114,10 +117,59 @@ export class CalendarView extends ItemView {
             // 选择日期变化时，刷新任务列表
             await this.refreshTaskList();
         });
+        
+        // 初始化时间监听器，每秒检查一次日期变化
+        this.timeListenerId = window.setInterval(async () => {
+            await this.checkDateChange();
+        }, 1000);
+    }
+    
+    /**
+     * 检查日期是否变化，实现自然跨天自动更新
+     */
+    private async checkDateChange() {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        // 比较当前日期和选中日期是否在同一天
+        if (this.selectedDate) {
+            const selectedDateOnly = new Date(this.selectedDate.getFullYear(), this.selectedDate.getMonth(), this.selectedDate.getDate());
+            
+            // 如果当前日期和选中日期不在同一天，且选中的是之前的日期
+            if (today.getTime() > selectedDateOnly.getTime()) {
+                // 如果选中的是昨天，自动切换到今天
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+                
+                if (selectedDateOnly.getTime() === yesterdayOnly.getTime()) {
+                    // 更新选中日期为今天
+                    this.selectedDate = today;
+                    this.currentDate = today;
+                    
+                    // 刷新日历视图
+                    await this.renderCalendar();
+                    
+                    // 显示通知
+                    new Notice("已自动切换到今天");
+                }
+            }
+        } else {
+            // 如果没有选中日期，将当前日期设置为今天
+            this.currentDate = today;
+            await this.renderCalendar();
+        }
+        
+        // 更新视图中的"今日"高亮状态
+        await this.updateDaySelection();
     }
 
     async onClose() {
         // 清理资源
+        if (this.timeListenerId !== null) {
+            window.clearInterval(this.timeListenerId);
+            this.timeListenerId = null;
+        }
     }
 
     public async renderCalendar() {
