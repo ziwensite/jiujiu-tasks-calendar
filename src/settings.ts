@@ -203,7 +203,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     },
                     format: {
                         enabled: true,
-                        format: "{{TASK_TEXT}}\n"
+                        format: "- ==📝{{DATE:yyyy-MM-DD HH:mm}}==  {{TASK_TEXT}}  \n"
                     },
                     prepend: false,
                     appendLink: false,
@@ -248,7 +248,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     },
                     format: {
                         enabled: true,
-                        format: "{{TASK_TEXT}}\n"
+                        format: "- 📝  {{TASK_TEXT}}  \n"
                     },
                     prepend: false,
                     appendLink: false,
@@ -293,7 +293,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     },
                     format: {
                         enabled: true,
-                        format: "{{TASK_TEXT}}\n"
+                        format: "⏰  {{TASK_TEXT}}  \n"
                     },
                     prepend: false,
                     appendLink: false,
@@ -1430,7 +1430,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     },
                     format: {
                         enabled: true,
-                        format: "{{TASK_TEXT}}\n"
+                        format: "- ==📝{{DATE:yyyy-MM-DD HH:mm}}==  {{TASK_TEXT}}  \n"
                     },
                     prepend: false,
                     appendLink: false,
@@ -1475,7 +1475,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     },
                     format: {
                         enabled: true,
-                        format: "{{TASK_TEXT}}\n"
+                        format: "- 📝  {{TASK_TEXT}}  \n"
                     },
                     prepend: false,
                     appendLink: false,
@@ -1520,7 +1520,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     },
                     format: {
                         enabled: true,
-                        format: "{{TASK_TEXT}}\n"
+                        format: "⏰  {{TASK_TEXT}}  \n"
                     },
                     prepend: false,
                     appendLink: false,
@@ -1905,7 +1905,7 @@ export class SampleSettingTab extends PluginSettingTab {
                 .setPlaceholder("输入格式")
                 .setValue(settings.fileNameFormat)
                 .onChange((value) => {
-                    const newSettings = { ...settings, fileNameFormat: value };
+                    const newSettings = { ...currentSettings, fileNameFormat: value };
                     currentSettings = newSettings;
                     onChange(newSettings);
                     this.settingsChanged = true;
@@ -1923,7 +1923,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     .setValue(settings.savePath)
                     .setPlaceholder("例如：日记")
                     .onChange((value) => {
-                        const newSettings = { ...settings, savePath: value };
+                        const newSettings = { ...currentSettings, savePath: value };
                         currentSettings = newSettings;
                         onChange(newSettings);
                         this.settingsChanged = true;
@@ -1935,7 +1935,7 @@ export class SampleSettingTab extends PluginSettingTab {
                 .setButtonText("选择")
                 .onClick(() => {
                     new FolderSelectModal(this.app, (folder) => {
-                        const newSettings = { ...settings, savePath: folder.path };
+                        const newSettings = { ...currentSettings, savePath: folder.path };
                         currentSettings = newSettings;
                         onChange(newSettings);
                         this.settingsChanged = true;
@@ -1959,7 +1959,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     .setValue(settings.templatePath)
                     .setPlaceholder("例如：模板/日记模板")
                     .onChange((value) => {
-                        const newSettings = { ...settings, templatePath: value };
+                        const newSettings = { ...currentSettings, templatePath: value };
                         currentSettings = newSettings;
                         onChange(newSettings);
                         this.settingsChanged = true;
@@ -1969,7 +1969,7 @@ export class SampleSettingTab extends PluginSettingTab {
                 .setButtonText("选择")
                 .onClick(() => {
                     new FileSelectModal(this.app, (file) => {
-                        const newSettings = { ...settings, templatePath: file.path };
+                        const newSettings = { ...currentSettings, templatePath: file.path };
                         currentSettings = newSettings;
                         onChange(newSettings);
                         this.settingsChanged = true;

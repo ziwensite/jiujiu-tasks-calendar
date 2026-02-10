@@ -25,6 +25,7 @@ export class IndicatorRenderer {
         
         let hasNote = false;
         let hasTask = false;
+        let hasCompletedTask = false;
         
         if (await noteExists(this.plugin.app, dailyNotePath)) {
             hasNote = true;
@@ -43,8 +44,11 @@ export class IndicatorRenderer {
                         const status = match[1] || '';
                         const taskText = match[2] || '';
                         
-                        // 检查是否是未完成的任务
-                        if (status.toLowerCase() !== 'x') {
+                        // 检查是否是已完成或已取消的任务
+                                if (status.toLowerCase() === 'x' || status.toLowerCase() === '-') {
+                                    hasCompletedTask = true;
+                                } else {
+                            // 检查是否是未完成的任务
                             // 检查任务文本中是否包含截止日期
                             const dueDateRegex = /(?:[@#]|due:\s?|📅\s?)(\d{4}-\d{2}-\d{2})/;
                             const hasDueDate = dueDateRegex.test(taskText);
@@ -52,7 +56,6 @@ export class IndicatorRenderer {
                             // 如果没有截止日期，或者截止日期是当天，都算作当天的任务
                             if (!hasDueDate) {
                                 hasTask = true;
-                                break; // 只要有一个符合条件的任务，就可以退出循环
                             } else {
                                 // 有截止日期，检查是否是当天
                                 const dueDateMatch = taskText.match(dueDateRegex);
@@ -66,7 +69,6 @@ export class IndicatorRenderer {
                                     
                                     if (dueDate >= dayStart && dueDate <= dayEnd) {
                                         hasTask = true;
-                                        break;
                                     }
                                 }
                             }
@@ -102,8 +104,11 @@ export class IndicatorRenderer {
                     );
                     
                     if (taskDueDate >= dayStart && taskDueDate <= dayEnd) {
-                        hasTask = true;
-                        break;
+                        if (task.status === 'x' || task.status === '-') {
+                            hasCompletedTask = true;
+                        } else {
+                            hasTask = true;
+                        }
                     }
                 }
             }
@@ -112,7 +117,7 @@ export class IndicatorRenderer {
         }
         
         // 更新指示器
-        this.updateDayIndicators(dayCell, hasNote, hasTask);
+        this.updateDayIndicators(dayCell, hasNote, hasTask, hasCompletedTask);
     }
 
     /**
@@ -122,7 +127,7 @@ export class IndicatorRenderer {
            const dayCells = Array.from(container.querySelectorAll('.day-cell'));
            
            // 批量收集所有日期的数据
-           const indicatorData = new Map<string, { hasNote: boolean; hasTask: boolean }>();
+           const indicatorData = new Map<string, { hasNote: boolean; hasTask: boolean; hasCompletedTask: boolean }>();
            
            // 先提取所有任务，避免重复提取
            let allTasks: Task[] = [];
@@ -197,6 +202,7 @@ export class IndicatorRenderer {
                
                let hasNote = false;
                let hasTask = false;
+               let hasCompletedTask = false;
                
                if (await noteExists(this.plugin.app, dailyNotePath)) {
                    hasNote = true;
@@ -215,8 +221,11 @@ export class IndicatorRenderer {
                                const status = match[2] || '';
                                const taskText = match[3] || '';
                                
-                               // 检查是否是未完成的任务
-                               if (status.toLowerCase() !== 'x') {
+                               // 检查是否是已完成或已取消的任务
+                               if (status.toLowerCase() === 'x' || status.toLowerCase() === '-') {
+                                   hasCompletedTask = true;
+                               } else {
+                                   // 检查是否是未完成的任务
                                    // 检查任务文本中是否包含截止日期
                                    const dueDateRegex = /(?:[@#]|due:\s?|📅\s?)(\d{4}-\d{2}-\d{2})/;
                                    const hasDueDate = dueDateRegex.test(taskText);
@@ -224,7 +233,6 @@ export class IndicatorRenderer {
                                    // 如果没有截止日期，或者截止日期是当天，都算作当天的任务
                                    if (!hasDueDate) {
                                        hasTask = true;
-                                       break; // 只要有一个符合条件的任务，就可以退出循环
                                    } else {
                                        // 有截止日期，检查是否是当天
                                        const dueDateMatch = taskText.match(dueDateRegex);
@@ -238,7 +246,6 @@ export class IndicatorRenderer {
                                            
                                            if (dueDate >= dayStart && dueDate <= dayEnd) {
                                                hasTask = true;
-                                               break;
                                            }
                                        }
                                    }
@@ -271,8 +278,11 @@ export class IndicatorRenderer {
                            );
                            
                            if (taskDueDate >= dayStart && taskDueDate <= dayEnd) {
-                               hasTask = true;
-                               break;
+                               if (task.status === 'x' || task.status === '-') {
+                                   hasCompletedTask = true;
+                               } else {
+                                   hasTask = true;
+                               }
                            }
                        }
                    }
@@ -280,7 +290,7 @@ export class IndicatorRenderer {
                
                // 存储数据，使用日期字符串作为键
                const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-               indicatorData.set(dateKey, { hasNote, hasTask });
+               indicatorData.set(dateKey, { hasNote, hasTask, hasCompletedTask });
            }
            
            // 重置计数器，重新计算日期以应用更新
@@ -318,7 +328,7 @@ export class IndicatorRenderer {
                const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
                const data = indicatorData.get(dateKey);
                if (data) {
-                   this.updateDayIndicators(cellEl, data.hasNote, data.hasTask);
+                   this.updateDayIndicators(cellEl, data.hasNote, data.hasTask, data.hasCompletedTask);
                }
            }
        }
@@ -443,7 +453,7 @@ export class IndicatorRenderer {
     /**
      * 更新日期单元格的指示器
      */
-    private updateDayIndicators(cell: any, hasNote: boolean, hasTask: boolean) {
+    private updateDayIndicators(cell: any, hasNote: boolean, hasTask: boolean, hasCompletedTask: boolean) {
         // 清空现有指示器
         const indicatorsContainer = cell.querySelector('.day-indicators');
         if (indicatorsContainer) {
@@ -460,6 +470,11 @@ export class IndicatorRenderer {
             // 显示任务指示器（空心小圆点）
             if (hasTask) {
                 indicatorRow.createEl('div', {cls: 'indicator-dot hollow-dot'});
+            }
+            
+            // 显示已完成任务指示器（对勾）
+            if (hasCompletedTask) {
+                indicatorRow.createEl('div', {cls: 'indicator-dot check-dot'});
             }
         }
     }

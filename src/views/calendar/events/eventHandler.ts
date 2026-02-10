@@ -260,32 +260,176 @@ export class EventHandler {
      * 处理周数双击事件
      */
     async handleWeekDoubleClick(date: Date) {
-        // 只使用 captureTo 配置创建笔记
-        await this.executeCaptureToConfig(date, 'weekly');
+        try {
+            // 使用现有的 weeklySettings 配置和函数
+            const weeklySettings = this.plugin.settings.weeklyNote;
+            const weeklyFileName = formatDate(date, weeklySettings.fileNameFormat);
+            const weeklyNotePath = `${weeklySettings.savePath}/${weeklyFileName}.md`;
+            
+            // 检查周报是否存在
+            if (await noteExists(this.plugin.app, weeklyNotePath)) {
+                // 检查笔记是否已经在某个标签页打开
+                const leaves = this.plugin.app.workspace.getLeavesOfType('markdown');
+                let existingLeaf = null;
+                
+                for (const leaf of leaves) {
+                    const view = leaf.view as any;
+                    if (view && view.file && view.file.path === weeklyNotePath) {
+                        existingLeaf = leaf;
+                        break;
+                    }
+                }
+                
+                if (existingLeaf) {
+                    // 笔记已打开，切换到该标签页
+                    await this.plugin.app.workspace.setActiveLeaf(existingLeaf, { focus: true });
+                } else {
+                    // 笔记存在但未打开，在新标签页打开
+                    await this.plugin.app.workspace.openLinkText(
+                        weeklyFileName,
+                        weeklyNotePath,
+                        true // 在新标签页打开
+                    );
+                }
+            } else {
+                // 笔记不存在，调用 captureTo 配置创建笔记
+                await this.executeCaptureToConfig(date, 'weekly');
+            }
+        } catch (error) {
+            console.error('Failed to handle week double click:', error);
+        }
     }
 
     /**
      * 处理月份双击事件
      */
     async handleMonthDoubleClick(date: Date) {
-        // 只使用 captureTo 配置创建笔记
-        await this.executeCaptureToConfig(date, 'monthly');
+        try {
+            // 使用现有的 monthlySettings 配置和函数
+            const monthlySettings = this.plugin.settings.monthlyNote;
+            const monthlyFileName = formatDate(date, monthlySettings.fileNameFormat);
+            const monthlyNotePath = `${monthlySettings.savePath}/${monthlyFileName}.md`;
+            
+            // 检查月报是否存在
+            if (await noteExists(this.plugin.app, monthlyNotePath)) {
+                // 检查笔记是否已经在某个标签页打开
+                const leaves = this.plugin.app.workspace.getLeavesOfType('markdown');
+                let existingLeaf = null;
+                
+                for (const leaf of leaves) {
+                    const view = leaf.view as any;
+                    if (view && view.file && view.file.path === monthlyNotePath) {
+                        existingLeaf = leaf;
+                        break;
+                    }
+                }
+                
+                if (existingLeaf) {
+                    // 笔记已打开，切换到该标签页
+                    await this.plugin.app.workspace.setActiveLeaf(existingLeaf, { focus: true });
+                } else {
+                    // 笔记存在但未打开，在新标签页打开
+                    await this.plugin.app.workspace.openLinkText(
+                        monthlyFileName,
+                        monthlyNotePath,
+                        true // 在新标签页打开
+                    );
+                }
+            } else {
+                // 笔记不存在，调用 captureTo 配置创建笔记
+                await this.executeCaptureToConfig(date, 'monthly');
+            }
+        } catch (error) {
+            console.error('Failed to handle month double click:', error);
+        }
     }
 
     /**
      * 处理季度双击事件
      */
     async handleQuarterDoubleClick(date: Date) {
-        // 只使用 captureTo 配置创建笔记
-        await this.executeCaptureToConfig(date, 'quarterly');
+        try {
+            // 使用现有的 quarterlySettings 配置和函数
+            const quarterlySettings = this.plugin.settings.quarterlyNote;
+            const quarterlyFileName = formatDate(date, quarterlySettings.fileNameFormat);
+            const quarterlyNotePath = `${quarterlySettings.savePath}/${quarterlyFileName}.md`;
+            
+            // 检查季报是否存在
+            if (await noteExists(this.plugin.app, quarterlyNotePath)) {
+                // 检查笔记是否已经在某个标签页打开
+                const leaves = this.plugin.app.workspace.getLeavesOfType('markdown');
+                let existingLeaf = null;
+                
+                for (const leaf of leaves) {
+                    const view = leaf.view as any;
+                    if (view && view.file && view.file.path === quarterlyNotePath) {
+                        existingLeaf = leaf;
+                        break;
+                    }
+                }
+                
+                if (existingLeaf) {
+                    // 笔记已打开，切换到该标签页
+                    await this.plugin.app.workspace.setActiveLeaf(existingLeaf, { focus: true });
+                } else {
+                    // 笔记存在但未打开，在新标签页打开
+                    await this.plugin.app.workspace.openLinkText(
+                        quarterlyFileName,
+                        quarterlyNotePath,
+                        true // 在新标签页打开
+                    );
+                }
+            } else {
+                // 笔记不存在，调用 captureTo 配置创建笔记
+                await this.executeCaptureToConfig(date, 'quarterly');
+            }
+        } catch (error) {
+            console.error('Failed to handle quarter double click:', error);
+        }
     }
 
     /**
      * 处理年份双击事件
      */
     async handleYearDoubleClick(date: Date) {
-        // 只使用 captureTo 配置创建笔记
-        await this.executeCaptureToConfig(date, 'yearly');
+        try {
+            // 使用现有的 yearlySettings 配置和函数
+            const yearlySettings = this.plugin.settings.yearlyNote;
+            const yearlyFileName = formatDate(date, yearlySettings.fileNameFormat);
+            const yearlyNotePath = `${yearlySettings.savePath}/${yearlyFileName}.md`;
+            
+            // 检查年报是否存在
+            if (await noteExists(this.plugin.app, yearlyNotePath)) {
+                // 检查笔记是否已经在某个标签页打开
+                const leaves = this.plugin.app.workspace.getLeavesOfType('markdown');
+                let existingLeaf = null;
+                
+                for (const leaf of leaves) {
+                    const view = leaf.view as any;
+                    if (view && view.file && view.file.path === yearlyNotePath) {
+                        existingLeaf = leaf;
+                        break;
+                    }
+                }
+                
+                if (existingLeaf) {
+                    // 笔记已打开，切换到该标签页
+                    await this.plugin.app.workspace.setActiveLeaf(existingLeaf, { focus: true });
+                } else {
+                    // 笔记存在但未打开，在新标签页打开
+                    await this.plugin.app.workspace.openLinkText(
+                        yearlyFileName,
+                        yearlyNotePath,
+                        true // 在新标签页打开
+                    );
+                }
+            } else {
+                // 笔记不存在，调用 captureTo 配置创建笔记
+                await this.executeCaptureToConfig(date, 'yearly');
+            }
+        } catch (error) {
+            console.error('Failed to handle year double click:', error);
+        }
     }
 
     /**
