@@ -348,11 +348,9 @@ export async function extractBasicTasks(app: App): Promise<Task[]> {
                         taskDescription = taskDescription.replace(singleTimeRegex, '').trim();
                     }
                     
-                    // 移除标签（以#开头的标签），但不移除双链中的#部分
-                    taskDescription = taskDescription.replace(/(?<!\[\[.*)#\S+(?!.*\]\])/g, '').trim();
-                    
-                    // 移除emoji标签（如 🔁）
-                    taskDescription = taskDescription.replace(/[🔁📅⏳🔼📅✅⏸️🔁🔄]/g, '').trim();
+                    // 保留标签在任务内容中
+                    // 移除多余的空格
+                    taskDescription = taskDescription.replace(/\s+/g, ' ').trim();
                     
                     // 去除多余的空格
                     taskDescription = taskDescription.replace(/\s+/g, ' ').trim();
@@ -731,7 +729,7 @@ export async function updateTaskInNote(app: App, task: Task, completed: boolean,
                         recurrenceRule: task.recurrenceRule, // 确保重复规则正确传递给新任务
                         filePath: task.filePath,
                         dueDate: nextDate,
-                        createdAt: currentSystemDate, // 设置为当前日期，作为新任务的创建日期
+                        createdAt: task.createdAt ? currentSystemDate : undefined, // 只有原任务有创建日期时才添加
                         startDate: nextStartDate,
                         plannedDate: nextPlannedDate,
                         cancelledDate: undefined,

@@ -1,4 +1,5 @@
 import { Modal, App, Notice, EditorSuggest } from 'obsidian';
+import { TagManager, TagInfo } from '../services/tagManager';
 
 interface PromptModalOptions {
     app: App;
@@ -34,9 +35,11 @@ export class InputSuggest {
     private isOpen: boolean = false;
     private debounceTimer: number | null = null;
     private lastQuery: string = '';
+    private tagManager: TagManager;
 
     constructor(app: App) {
         this.app = app;
+        this.tagManager = new TagManager(app);
     }
 
     // 绑定到输入框
@@ -379,8 +382,14 @@ export class InputSuggest {
             const tagMatch = textBeforeCursor.match(/#([^\s#]*)$/);
             if (tagMatch) {
                 startPos = textBeforeCursor.lastIndexOf('#');
-                newText = value.substring(0, startPos) + `#${item.value} ` + value.substring(cursorPos);
-                newCursorPos = startPos + `#${item.value} `.length;
+                
+                // 检查#前方是否有空格，如果没有则添加一个空格
+                const charBeforeHash = startPos > 0 ? value.charAt(startPos - 1) : ' ';
+                const shouldAddSpace = !charBeforeHash.match(/\s/);
+                
+                const spacePrefix = shouldAddSpace ? ' ' : '';
+                newText = value.substring(0, startPos) + `${spacePrefix}#${item.value} ` + value.substring(cursorPos);
+                newCursorPos = startPos + `${spacePrefix}#${item.value} `.length;
             }
         }
         
@@ -427,26 +436,21 @@ export class InputSuggest {
     private getTagSuggestions(query: string): CompletionItem[] {
         const suggestions: CompletionItem[] = [];
         
-        // 使用app.metadataCache.getTags()获取所有标签，这是Obsidian提供的高效API
-        // @ts-expect-error - getTags() is available but not in the type definitions
-        const tags = this.app.metadataCache.getTags();
+        // 使用TagManager获取标签数据
+        const tagPrefix = query ? `#${query}` : '#';
+        const tagInfos = this.tagManager.getTagsByPrefix(tagPrefix);
         
         // 遍历所有标签
-        Object.entries(tags).forEach(([tag, count]) => {
+        tagInfos.forEach(tagInfo => {
             // 移除开头的#
-            const tagName = tag.startsWith('#') ? tag.slice(1) : tag;
-            const tagLower = tagName.toLowerCase();
-            const queryLower = query.toLowerCase();
+            const tagName = tagInfo.name.startsWith('#') ? tagInfo.name.slice(1) : tagInfo.name;
             
-            // 支持部分匹配
-            if (tagLower.includes(queryLower)) {
-                suggestions.push({
-                    label: tagName,
-                    value: tagName,
-                    description: `${count} 次使用`,
-                    type: 'tag'
-                });
-            }
+            suggestions.push({
+                label: tagName,
+                value: tagName,
+                description: `${tagInfo.count} 次使用`,
+                type: 'tag'
+            });
         });
         
         // 按匹配程度和使用次数排序

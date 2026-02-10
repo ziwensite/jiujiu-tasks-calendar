@@ -1,6 +1,7 @@
 import { App, Modal, Notice } from 'obsidian';
 import { Task } from '../services/taskService';
 import { generateTaskDateMarkers, generateTaskCompletionMarker } from '../utils/taskUtils';
+import { InputSuggest } from './PromptModal';
 
 interface TaskEditModalOptions {
     app: App;
@@ -42,7 +43,9 @@ export class TaskEditModal extends Modal {
     private cancelledDateTextInput: HTMLSelectElement;
     private cancelledDateInput: HTMLInputElement;
     private recurrenceSuggestionsContainer: HTMLElement;
+    private tagSuggestionsContainer: HTMLElement;
     private validationFeedback: HTMLElement;
+    private inputSuggest: InputSuggest;
 
     constructor(options: TaskEditModalOptions) {
         super(options.app);
@@ -58,16 +61,36 @@ export class TaskEditModal extends Modal {
         contentEl.style.padding = '20px';
 
         // Task content input - textarea for scrolling
-        this.contentTextArea = contentEl.createEl('textarea');
+        const contentContainer = contentEl.createDiv();
+        contentContainer.style.position = 'relative';
+        contentContainer.style.width = '100%';
+        contentContainer.style.marginBottom = '1rem';
+        
+        this.contentTextArea = contentContainer.createEl('textarea');
         this.contentTextArea.placeholder = '任务内容';
         this.contentTextArea.value = this.task.text;
         this.contentTextArea.style.width = '100%';
-        this.contentTextArea.style.marginBottom = '1rem';
         this.contentTextArea.style.height = '50px';
         this.contentTextArea.style.resize = 'vertical';
         this.contentTextArea.style.padding = '8px';
         this.contentTextArea.style.border = '1px solid var(--background-modifier-border)';
         this.contentTextArea.style.borderRadius = '4px';
+
+        // Tag suggestions container
+        this.tagSuggestionsContainer = contentContainer.createDiv();
+        this.tagSuggestionsContainer.style.position = 'absolute';
+        this.tagSuggestionsContainer.style.top = '100%';
+        this.tagSuggestionsContainer.style.left = '0';
+        this.tagSuggestionsContainer.style.right = '0';
+        this.tagSuggestionsContainer.style.zIndex = '1000';
+        this.tagSuggestionsContainer.style.maxHeight = '150px';
+        this.tagSuggestionsContainer.style.overflowY = 'auto';
+        this.tagSuggestionsContainer.style.border = '1px solid var(--background-modifier-border)';
+        this.tagSuggestionsContainer.style.borderRadius = '4px';
+        this.tagSuggestionsContainer.style.backgroundColor = 'var(--background-primary)';
+        this.tagSuggestionsContainer.style.display = 'none';
+        this.tagSuggestionsContainer.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+        this.tagSuggestionsContainer.style.marginTop = '2px';
 
         // Status dropdown
         const statusContainer = contentEl.createDiv();
@@ -439,6 +462,10 @@ export class TaskEditModal extends Modal {
         saveBtn.addEventListener('click', () => {
             this.handleSubmit();
         });
+
+        // Initialize InputSuggest for tag completion
+        this.inputSuggest = new InputSuggest(this.app);
+        this.inputSuggest.bindToInput(this.contentTextArea);
 
         // Focus on content input
         setTimeout(() => {
@@ -837,6 +864,12 @@ export class TaskEditModal extends Modal {
 
     onClose() {
         const { contentEl } = this;
+        
+        // 解绑InputSuggest
+        if (this.inputSuggest) {
+            this.inputSuggest.unbind();
+        }
+        
         contentEl.empty();
     }
 }
