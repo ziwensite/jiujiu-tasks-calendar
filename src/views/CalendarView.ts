@@ -35,6 +35,8 @@ export class CalendarView extends ItemView {
     
     // 时间监听器，用于检测日期变化
     private timeListenerId: number | null = null;
+    // 上次检查的日期，用于检测日期变化
+    private lastCheckedDate: Date | null = null;
 
     constructor(leaf: WorkspaceLeaf, plugin: MyPlugin) {
         super(leaf);
@@ -131,37 +133,34 @@ export class CalendarView extends ItemView {
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         
+        // 检查日期是否发生变化
+        if (this.lastCheckedDate) {
+            const lastCheckedDateOnly = new Date(this.lastCheckedDate.getFullYear(), this.lastCheckedDate.getMonth(), this.lastCheckedDate.getDate());
+            
+            // 如果日期没有变化，直接返回，避免不必要的更新
+            if (today.getTime() === lastCheckedDateOnly.getTime()) {
+                return;
+            }
+        }
+        
+        // 更新上次检查的日期
+        this.lastCheckedDate = today;
+        
         // 比较当前日期和选中日期是否在同一天
         if (this.selectedDate) {
-            const selectedDateOnly = new Date(this.selectedDate.getFullYear(), this.selectedDate.getMonth(), this.selectedDate.getDate());
-            
-            // 如果当前日期和选中日期不在同一天，且选中的是之前的日期
-            if (today.getTime() > selectedDateOnly.getTime()) {
-                // 如果选中的是昨天，自动切换到今天
-                const yesterday = new Date(today);
-                yesterday.setDate(yesterday.getDate() - 1);
-                const yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
-                
-                if (selectedDateOnly.getTime() === yesterdayOnly.getTime()) {
-                    // 更新选中日期为今天
-                    this.selectedDate = today;
-                    this.currentDate = today;
-                    
-                    // 刷新日历视图
-                    await this.renderCalendar();
-                    
-                    // 显示通知
-                    new Notice("已自动切换到今天");
-                }
-            }
+            // 当日期发生变化时，不需要改变用户的选择
+            // 只需要更新日历视图，让今日标签指向新的今天
         } else {
             // 如果没有选中日期，将当前日期设置为今天
             this.currentDate = today;
-            await this.renderCalendar();
         }
         
-        // 更新视图中的"今日"高亮状态
-        await this.updateDaySelection();
+        // 重新渲染日历，确保今日标签的日期和状态正确更新
+        // renderCalendar 方法会：
+        // 1. 更新所有日期单元格的内容，包括添加/移除 today 类
+        // 2. 更新今日标签的选中状态
+        // 3. 更新任务列表
+        await this.renderCalendar();
     }
 
     async onClose() {
