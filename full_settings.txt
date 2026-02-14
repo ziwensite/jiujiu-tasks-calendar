@@ -1,4 +1,4 @@
-import {App, PluginSettingTab, Setting, Notice, TextComponent} from "obsidian";
+﻿import {App, PluginSettingTab, Setting, Notice, TextComponent} from "obsidian";
 import MyPlugin from "./main";
 import { formatDate } from "./utils/dateUtils";
 import { AddCaptureToConfigBox } from "./components";
@@ -1323,6 +1323,37 @@ export class SampleSettingTab extends PluginSettingTab {
                 }
             });
 
+            // 恢复默认按钮（emoji 图形）
+            const resetButton = buttonContainer.createEl("button", {
+                cls: "config-button"
+            });
+            resetButton.style.width = "20px";
+            resetButton.style.height = "20px";
+            resetButton.style.display = "flex";
+            resetButton.style.alignItems = "center";
+            resetButton.style.justifyContent = "center";
+            resetButton.style.border = "none";
+            resetButton.style.background = "transparent";
+            resetButton.style.color = "var(--text-muted)";
+            resetButton.style.cursor = "pointer";
+            resetButton.textContent = "🔄";
+            resetButton.title = "恢复默认";
+            resetButton.addEventListener("click", () => {
+                // 从默认配置中找到对应的配置
+                const defaultConfig = DEFAULT_SETTINGS.taskSettings.captureToSettings.configs.find(c => c.id === config.id);
+                if (defaultConfig) {
+                    // 恢复默认配置
+                    if (this.plugin.settings.taskSettings.captureToSettings.configs) {
+                        this.plugin.settings.taskSettings.captureToSettings.configs[index] = {...defaultConfig};
+                        this.settingsChanged = true;
+                        // 重新渲染设置页面
+                        this.display();
+                        // 显示恢复成功提示
+                        new Notice("配置已恢复为默认值");
+                    }
+                }
+            });
+
             // 删除按钮（emoji 图形）
             const deleteButton = buttonContainer.createEl("button", {
                 cls: "config-button"
@@ -1492,14 +1523,14 @@ export class SampleSettingTab extends PluginSettingTab {
             }
         });
 
-        // 默认配置按钮
+
         const defaultConfigButton = addConfigContainer.createEl("button", {
             text: "默认配置",
             cls: "mod-button"
         });
         defaultConfigButton.style.padding = "6px 16px";
         defaultConfigButton.style.fontSize = "14px";
-        defaultConfigButton.addEventListener("click", () => {
+
             // 恢复默认配置
                 const defaultConfigs: CaptureToConfig[] = [
                 {
