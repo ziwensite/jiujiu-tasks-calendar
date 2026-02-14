@@ -107,6 +107,7 @@ export class InputSuggest {
             case 'Enter':
                 if (this.selectedIndex >= 0) {
                     e.preventDefault();
+                    e.stopImmediatePropagation();
                     this.selectSuggestion();
                 }
                 break;
@@ -609,7 +610,7 @@ export class PromptModal extends Modal {
         if (this.inputEl) {
             this.inputEl.addEventListener('keydown', (event: KeyboardEvent) => {
                 // 检查是否有标签建议显示，如果有，则不触发提交
-                if (this.inputSuggest['completionItems'] && this.inputSuggest['completionItems'].length > 0) {
+                if (this.inputSuggest['isOpen']) {
                     return;
                 }
                 
