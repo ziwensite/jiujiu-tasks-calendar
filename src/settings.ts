@@ -203,7 +203,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     },
                     format: {
                         enabled: true,
-                        format: "- ==📝{{DATE:YYYY-MM-DD HH:mm}}==  {{TASK_TEXT}}  \n"
+                        format: "-   ==📝{{DATE:YYYY-MM-DD HH:mm}}==  {{TASK_TEXT}}  \n"
                     },
                     prepend: false,
                     appendLink: false,
@@ -248,7 +248,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     },
                     format: {
                         enabled: true,
-                        format: "- 📝  {{TASK_TEXT}}  \n"
+                        format: "-   📝  {{TASK_TEXT}}  \n"
                     },
                     prepend: false,
                     appendLink: false,
@@ -1518,7 +1518,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     },
                     format: {
                         enabled: true,
-                        format: "- ==📝{{DATE:YYYY-MM-DD HH:mm}}==  {{TASK_TEXT}}  \n"
+                        format: "-   ==📝{{DATE:YYYY-MM-DD HH:mm}}==  {{TASK_TEXT}}  \n"
                     },
                     prepend: false,
                     appendLink: false,
@@ -1563,7 +1563,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     },
                     format: {
                         enabled: true,
-                        format: "- 📝  {{TASK_TEXT}}  \n"
+                        format: "-   📝  {{TASK_TEXT}}  \n"
                     },
                     prepend: false,
                     appendLink: false,

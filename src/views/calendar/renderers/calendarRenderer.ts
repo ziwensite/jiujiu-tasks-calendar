@@ -113,10 +113,9 @@ export class CalendarRenderer {
             cls: "calendar-header-label-year today-unselected"
         });
         
-        // 右侧：今按钮（显示今日的阳历数字）
-        const today = new Date();
+        // 右侧：今按钮（显示"今"）
         singleRow.createEl("div", { 
-            text: `${today.getDate()}`,
+            text: "今",
             cls: "calendar-header-label-today today-unselected"
         });
         
