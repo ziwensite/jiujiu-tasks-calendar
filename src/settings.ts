@@ -754,7 +754,7 @@ export class SampleSettingTab extends PluginSettingTab {
 
         new Setting(pluginInfoSection)
             .setName("版本号")
-            .setDesc("1.0.2");
+            .setDesc("1.0.3");
 
         new Setting(pluginInfoSection)
             .setName("作者")
