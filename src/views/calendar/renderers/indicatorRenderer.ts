@@ -44,35 +44,43 @@ export class IndicatorRenderer {
                         const status = match[1] || '';
                         const taskText = match[2] || '';
                         
-                        // 检查是否是已完成或已取消的任务
-                                if (status.toLowerCase() === 'x' || status.toLowerCase() === '-') {
-                                    hasCompletedTask = true;
-                                } else {
-                            // 检查是否是未完成的任务
-                            // 检查任务文本中是否包含截止日期
-                            const dueDateRegex = /(?:[@#]|due:\s?|📅\s?)(\d{4}-\d{2}-\d{2})/;
-                            const hasDueDate = dueDateRegex.test(taskText);
-                            
-                            // 如果没有截止日期，或者截止日期是当天，都算作当天的任务
-                            if (!hasDueDate) {
-                                hasTask = true;
-                            } else {
-                                // 有截止日期，检查是否是当天
-                                const dueDateMatch = taskText.match(dueDateRegex);
-                                if (dueDateMatch && dueDateMatch[1]) {
-                                    const dueDateStr = dueDateMatch[1];
-                                    const dueDate = new Date(dueDateStr);
-                                    
-                                    // 创建当天的开始和结束时间
-                                    const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
-                                    const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-                                    
-                                    if (dueDate >= dayStart && dueDate <= dayEnd) {
-                                        hasTask = true;
-                                    }
-                                }
-                            }
-                        }
+                        // 检查任务文本中是否包含截止日期
+                               const dueDateRegex = /(?:[@#]|due:\s?|📅\s?)(\d{4}-\d{2}-\d{2})/;
+                               const hasDueDate = dueDateRegex.test(taskText);
+                               
+                               // 检查是否是已完成或已取消的任务
+                               const isCompleted = status.toLowerCase() === 'x' || status.toLowerCase() === '-';
+                               
+                               // 创建当天的开始和结束时间
+                               const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+                               const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+                               
+                               let isTaskForToday = false;
+                               
+                               if (!hasDueDate) {
+                                   // 没有截止日期，算当天的任务
+                                   isTaskForToday = true;
+                               } else {
+                                   // 有截止日期，检查是否是当天
+                                   const dueDateMatch = taskText.match(dueDateRegex);
+                                   if (dueDateMatch && dueDateMatch[1]) {
+                                       const dueDateStr = dueDateMatch[1];
+                                       const dueDate = new Date(dueDateStr);
+                                       
+                                       if (dueDate >= dayStart && dueDate <= dayEnd) {
+                                           isTaskForToday = true;
+                                       }
+                                   }
+                               }
+                               
+                               // 根据任务状态和是否是当天任务更新指示器
+                               if (isTaskForToday) {
+                                   if (isCompleted) {
+                                       hasCompletedTask = true;
+                                   } else {
+                                       hasTask = true;
+                                   }
+                               }
                     }
                 }
             } catch (error) {
@@ -221,33 +229,41 @@ export class IndicatorRenderer {
                                const status = match[2] || '';
                                const taskText = match[3] || '';
                                
+                               // 检查任务文本中是否包含截止日期
+                               const dueDateRegex = /(?:[@#]|due:\s?|📅\s?)(\d{4}-\d{2}-\d{2})/;
+                               const hasDueDate = dueDateRegex.test(taskText);
+                               
                                // 检查是否是已完成或已取消的任务
-                               if (status.toLowerCase() === 'x' || status.toLowerCase() === '-') {
-                                   hasCompletedTask = true;
+                               const isCompleted = status.toLowerCase() === 'x' || status.toLowerCase() === '-';
+                               
+                               // 创建当天的开始和结束时间
+                               const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+                               const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+                               
+                               let isTaskForToday = false;
+                               
+                               if (!hasDueDate) {
+                                   // 没有截止日期，算当天的任务
+                                   isTaskForToday = true;
                                } else {
-                                   // 检查是否是未完成的任务
-                                   // 检查任务文本中是否包含截止日期
-                                   const dueDateRegex = /(?:[@#]|due:\s?|📅\s?)(\d{4}-\d{2}-\d{2})/;
-                                   const hasDueDate = dueDateRegex.test(taskText);
-                                   
-                                   // 如果没有截止日期，或者截止日期是当天，都算作当天的任务
-                                   if (!hasDueDate) {
-                                       hasTask = true;
-                                   } else {
-                                       // 有截止日期，检查是否是当天
-                                       const dueDateMatch = taskText.match(dueDateRegex);
-                                       if (dueDateMatch && dueDateMatch[1]) {
-                                           const dueDateStr = dueDateMatch[1];
-                                           const dueDate = new Date(dueDateStr);
-                                           
-                                           // 创建当天的开始和结束时间
-                                           const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
-                                           const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-                                           
-                                           if (dueDate >= dayStart && dueDate <= dayEnd) {
-                                               hasTask = true;
-                                           }
+                                   // 有截止日期，检查是否是当天
+                                   const dueDateMatch = taskText.match(dueDateRegex);
+                                   if (dueDateMatch && dueDateMatch[1]) {
+                                       const dueDateStr = dueDateMatch[1];
+                                       const dueDate = new Date(dueDateStr);
+                                       
+                                       if (dueDate >= dayStart && dueDate <= dayEnd) {
+                                           isTaskForToday = true;
                                        }
+                                   }
+                               }
+                               
+                               // 根据任务状态和是否是当天任务更新指示器
+                               if (isTaskForToday) {
+                                   if (isCompleted) {
+                                       hasCompletedTask = true;
+                                   } else {
+                                       hasTask = true;
                                    }
                                }
                            }
