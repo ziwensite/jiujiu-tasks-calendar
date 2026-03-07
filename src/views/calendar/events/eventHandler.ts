@@ -3,6 +3,7 @@ import { MyPlugin } from '../../../main';
 import { Task, updateTaskInNote } from '../../../services/taskService';
 import { formatDate } from '../../../utils/dateUtils';
 import { noteExists } from '../../../services/noteService';
+import { CalendarEvent } from '../../../core/EventEmitter';
 
 export class EventHandler {
     private plugin: MyPlugin;
@@ -131,6 +132,12 @@ export class EventHandler {
             
             // 重新渲染任务列表，显示最新状态
             await onRefreshTaskList();
+            
+            // 刷新任务数据缓存
+            await this.plugin.calendarDataManager.refreshTasks();
+            
+            // 触发任务数据更新事件，更新指示器
+            this.plugin.eventEmitter.emit(CalendarEvent.TASK_DATA_UPDATED);
         } catch (error) {
             console.error('[EventHandler] Failed to update task:', error);
         }

@@ -417,7 +417,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     name: "默认monthly",
                     description: "专门用于月报的配置",
                     enabled: true,
-                    defaultCapturePath: "{{默认monthly}}",
+                    defaultCapturePath: "{{月报}}",
                     captureToActiveFile: false,
                     hotkey: null,
                     inputMethod: "none",
@@ -754,7 +754,7 @@ export class SampleSettingTab extends PluginSettingTab {
 
         new Setting(pluginInfoSection)
             .setName("版本号")
-            .setDesc("1.0.3");
+            .setDesc("1.0.2");
 
         new Setting(pluginInfoSection)
             .setName("作者")
@@ -1000,7 +1000,7 @@ export class SampleSettingTab extends PluginSettingTab {
                 name: "默认monthly",
                 description: "专门用于月报的配置",
                 enabled: true,
-                defaultCapturePath: "{{默认monthly}}",
+                defaultCapturePath: "{{月报}}",
                 captureToActiveFile: false,
                 hotkey: null,
                 inputMethod: "none",
@@ -1686,6 +1686,8 @@ export class SampleSettingTab extends PluginSettingTab {
                         this.settingsChanged = true;
                         // 重新渲染设置页面
                         this.display();
+                        // 显示恢复成功提示
+                        new Notice("配置已恢复默认");
                     }
                 });
             }

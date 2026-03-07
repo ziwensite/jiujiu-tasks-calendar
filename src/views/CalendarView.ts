@@ -205,8 +205,8 @@ export class CalendarView extends ItemView {
         
         // 2. 优先更新任务列表，让用户尽快看到关键内容
         if (this.selectedDate) {
-            if (this.viewType === 'month' && this.selectionType === 'month') {
-                // 月视图且选择类型为月份：显示整个月份的任务
+            if ((this.viewType === 'month' || this.viewType === 'year') && this.selectionType === 'month') {
+                // 月视图或年视图且选择类型为月份：显示整个月份的任务
                 const year = this.selectedDate.getFullYear();
                 const month = this.selectedDate.getMonth();
                 const startDate = new Date(year, month, 1);
@@ -223,9 +223,10 @@ export class CalendarView extends ItemView {
         
         // 4. 最后更新非关键的指示器，这些操作不影响用户核心体验
         if (this.viewType === 'month') {
-            // 使用异步方式更新周数指示器，不阻塞主线程
-            setTimeout(() => {
+            // 使用异步方式更新所有指示器，不阻塞主线程
+            setTimeout(async () => {
                 const targetDate = this.selectedDate || this.currentDate;
+                await this.indicatorRenderer.updateAllDayIndicators(this.containerEl, targetDate);
                 this.indicatorRenderer.updateWeekIndicators(this.containerEl, targetDate);
             }, 0);
         }
@@ -244,6 +245,9 @@ export class CalendarView extends ItemView {
         } else {
             // 年视图也需要更新日历头部
             this.updateCalendarHeader();
+            
+            // 更新年视图的月份和指示器
+            await this.updateYearViewMonthIndicators();
         }
     }
 
@@ -635,6 +639,13 @@ export class CalendarView extends ItemView {
                     this.selectionType = 'date';
                     this.selectedWeekRange = null;
                     this.selectedQuarter = null;
+                    
+                    // 如果当前选中的月份是今日所在的月份，定位到今日
+                    const currentToday = new Date();
+                    if (this.selectedDate && this.selectedDate.getMonth() === currentToday.getMonth() && this.selectedDate.getFullYear() === currentToday.getFullYear()) {
+                        this.selectedDate = currentToday;
+                        this.currentDate = currentToday;
+                    }
                 }
                 
                 // 先更新选择状态，让用户立即看到日期变化
@@ -657,6 +668,28 @@ export class CalendarView extends ItemView {
                         });
                         // 添加当前月份的选中状态
                         monthContainers[currentMonthIndex].classList.add("selected");
+                        
+                        // 更新选择类型
+                        this.selectionType = 'month';
+                        this.selectedWeekRange = null;
+                        this.selectedQuarter = null;
+                        
+                        // 更新当前日期到选中的月份，并将选中日期设置为该月的1日
+                        const selectedMonthDate = new Date(this.selectedDate.getFullYear(), currentMonthIndex, 1);
+                        this.currentDate = selectedMonthDate;
+                        this.selectedDate = selectedMonthDate;
+                        
+                        // 更新选择状态并刷新日期显示
+                        await this.updateSelectionState();
+                        
+                        // 计算月份的开始和结束日期
+                        const year = this.selectedDate.getFullYear();
+                        const month = currentMonthIndex;
+                        const startDate = new Date(year, month, 1);
+                        const endDate = new Date(year, month + 1, 0);
+                        
+                        // 显示该月份内的任务
+                        await this.renderTaskListByDateRange(startDate, endDate);
                     }
                 }
             });
@@ -1153,6 +1186,22 @@ export class CalendarView extends ItemView {
         const selectedDateDisplay = this.containerEl.querySelector(".selected-date-display") as HTMLElement;
         if (selectedDateDisplay) {
             this.updateSelectedDateDisplay(selectedDateDisplay);
+        }
+        
+        // 更新今日标签的选中状态
+        const currentToday = new Date();
+        const isTodaySelected = this.selectedDate && 
+            this.selectedDate.toDateString() === currentToday.toDateString();
+        
+        const todayBtn = this.containerEl.querySelector(".calendar-header-label-today");
+        if (todayBtn) {
+            if (isTodaySelected) {
+                todayBtn.addClass("today-selected");
+                todayBtn.removeClass("today-unselected");
+            } else {
+                todayBtn.addClass("today-unselected");
+                todayBtn.removeClass("today-selected");
+            }
         }
     }
 
@@ -1775,6 +1824,7 @@ export class CalendarView extends ItemView {
             
             let hasQuarterlyNote = false;
             let hasQuarterlyTask = false;
+            let hasQuarterlyCompletedTask = false;
             
             // 检查季报
             const quarterlySettings = this.plugin.settings.quarterlyNote;
@@ -1791,32 +1841,37 @@ export class CalendarView extends ItemView {
                         const content = await this.app.vault.read(file);
                         
                         // 检查季报中是否有任务
-                        const taskRegex = /^\s*([-\*\d]+\.?)\s*\[([ xX])\]\s*(.+)$/gm;
+                        const taskRegex = /^\s*([-\*\d]+\.?)\s*\[([ xX-])\]\s*(.+)$/gm;
                         let match;
                         while ((match = taskRegex.exec(content)) !== null) {
                             const status = match[2] || '';
                             const taskText = match[3] || '';
                             
-                            // 检查是否是未完成的任务
-                            if (status.toLowerCase() !== 'x') {
-                                // 检查任务文本中是否包含截止日期
-                                const dueDateRegex = /(?:[@#]|due:\s?|📅\s?)(\d{4}-\d{2}-\d{2})/;
-                                const hasDueDate = dueDateRegex.test(taskText);
-                                
-                                // 如果没有截止日期，或者截止日期在本季度，都算作本季度的任务
-                                if (!hasDueDate) {
-                                    hasQuarterlyTask = true;
-                                    break;
-                                } else {
-                                    // 有截止日期，检查是否在本季度
-                                    const dueDateMatch = taskText.match(dueDateRegex);
-                                    if (dueDateMatch && dueDateMatch[1]) {
-                                        const dueDate = new Date(dueDateMatch[1]);
-                                        if (dueDate >= quarterStartDate && dueDate <= quarterEndDate) {
-                                            hasQuarterlyTask = true;
-                                            break;
-                                        }
+                            // 检查任务文本中是否包含截止日期
+                            const dueDateRegex = /(?:[@#]|due:\s?|📅\s?)(\d{4}-\d{2}-\d{2})/;
+                            const hasDueDate = dueDateRegex.test(taskText);
+                            
+                            // 如果没有截止日期，或者截止日期在本季度，都算作本季度的任务
+                            let isTaskForThisQuarter = false;
+                            if (!hasDueDate) {
+                                isTaskForThisQuarter = true;
+                            } else {
+                                // 有截止日期，检查是否在本季度
+                                const dueDateMatch = taskText.match(dueDateRegex);
+                                if (dueDateMatch && dueDateMatch[1]) {
+                                    const dueDate = new Date(dueDateMatch[1]);
+                                    if (dueDate >= quarterStartDate && dueDate <= quarterEndDate) {
+                                        isTaskForThisQuarter = true;
                                     }
+                                }
+                            }
+                            
+                            if (isTaskForThisQuarter) {
+                                // 根据任务状态更新指示器
+                                if (status.toLowerCase() === 'x' || status.toLowerCase() === '-') {
+                                    hasQuarterlyCompletedTask = true;
+                                } else {
+                                    hasQuarterlyTask = true;
                                 }
                             }
                         }
@@ -1831,8 +1886,11 @@ export class CalendarView extends ItemView {
             
             for (const task of allTasks) {
                 if (task.dueDate && task.dueDate >= quarterStartDate && task.dueDate <= quarterEndDate) {
-                    hasQuarterlyTask = true;
-                    break;
+                    if (task.status === 'x' || task.status === '-') {
+                        hasQuarterlyCompletedTask = true;
+                    } else {
+                        hasQuarterlyTask = true;
+                    }
                 }
             }
             
@@ -1846,9 +1904,14 @@ export class CalendarView extends ItemView {
                     quarterIndicators.createEl('div', {cls: 'indicator-dot solid-dot'});
                 }
                 
-                // 添加空心小圆点表示任务
+                // 添加空心小圆点表示未完成任务
                 if (hasQuarterlyTask) {
                     quarterIndicators.createEl('div', {cls: 'indicator-dot hollow-dot'});
+                }
+                
+                // 添加绿色实心小圆点表示已完成任务
+                if (hasQuarterlyCompletedTask) {
+                    quarterIndicators.createEl('div', {cls: 'indicator-dot check-dot'});
                 }
             }
         }
@@ -1875,6 +1938,7 @@ export class CalendarView extends ItemView {
             
             let hasMonthlyNote = false;
             let hasMonthlyTask = false;
+            let hasMonthlyCompletedTask = false;
             
             // 检查月报
             const monthlySettings = this.plugin.settings.monthlyNote;
@@ -1891,32 +1955,37 @@ export class CalendarView extends ItemView {
                         const content = await this.app.vault.read(file);
                         
                         // 检查是否有任务
-                        const taskRegex = /^\s*([-\*\d]+\.?)\s*\[([ xX])\]\s*(.+)$/gm;
+                        const taskRegex = /^\s*([-\*\d]+\.?)\s*\[([ xX-])\]\s*(.+)$/gm;
                         let match;
                         while ((match = taskRegex.exec(content)) !== null) {
                             const status = match[2] || '';
                             const taskText = match[3] || '';
                             
-                            // 检查是否是未完成的任务
-                            if (status.toLowerCase() !== 'x') {
-                                // 检查任务文本中是否包含截止日期
-                                const dueDateRegex = /(?:[@#]|due:\s?|📅\s?)(\d{4}-\d{2}-\d{2})/;
-                                const hasDueDate = dueDateRegex.test(taskText);
-                                
-                                // 如果没有截止日期，或者截止日期在当月，都算作当月的任务
-                                if (!hasDueDate) {
-                                    hasMonthlyTask = true;
-                                    break;
-                                } else {
-                                    // 有截止日期，检查是否在当月
-                                    const dueDateMatch = taskText.match(dueDateRegex);
-                                    if (dueDateMatch && dueDateMatch[1]) {
-                                        const dueDate = new Date(dueDateMatch[1]);
-                                        if (dueDate.getFullYear() === year && dueDate.getMonth() === monthIndex) {
-                                            hasMonthlyTask = true;
-                                            break;
-                                        }
+                            // 检查任务文本中是否包含截止日期
+                            const dueDateRegex = /(?:[@#]|due:\s?|📅\s?)(\d{4}-\d{2}-\d{2})/;
+                            const hasDueDate = dueDateRegex.test(taskText);
+                            
+                            // 如果没有截止日期，或者截止日期在当月，都算作当月的任务
+                            let isTaskForThisMonth = false;
+                            if (!hasDueDate) {
+                                isTaskForThisMonth = true;
+                            } else {
+                                // 有截止日期，检查是否在当月
+                                const dueDateMatch = taskText.match(dueDateRegex);
+                                if (dueDateMatch && dueDateMatch[1]) {
+                                    const dueDate = new Date(dueDateMatch[1]);
+                                    if (dueDate.getFullYear() === year && dueDate.getMonth() === monthIndex) {
+                                        isTaskForThisMonth = true;
                                     }
+                                }
+                            }
+                            
+                            if (isTaskForThisMonth) {
+                                // 根据任务状态更新指示器
+                                if (status.toLowerCase() === 'x' || status.toLowerCase() === '-') {
+                                    hasMonthlyCompletedTask = true;
+                                } else {
+                                    hasMonthlyTask = true;
                                 }
                             }
                         }
@@ -1927,15 +1996,18 @@ export class CalendarView extends ItemView {
             }
             
             // 检查该月份内是否有截止任务
-            const allTasks = await extractTasks(this.app, this.plugin.settings);
+            const allTasks = await this.plugin.calendarDataManager.getTasks();
             const monthStartDate = new Date(year, monthIndex, 1);
             const monthEndDate = new Date(year, monthIndex + 1, 0);
             monthEndDate.setHours(23, 59, 59, 999);
             
             for (const task of allTasks) {
                 if (task.dueDate && task.dueDate >= monthStartDate && task.dueDate <= monthEndDate) {
-                    hasMonthlyTask = true;
-                    break;
+                    if (task.status === 'x' || task.status === '-') {
+                        hasMonthlyCompletedTask = true;
+                    } else {
+                        hasMonthlyTask = true;
+                    }
                 }
             }
             
@@ -1949,9 +2021,14 @@ export class CalendarView extends ItemView {
                     monthIndicators.createEl('div', {cls: 'indicator-dot solid-dot'});
                 }
                 
-                // 添加空心小圆点表示任务
+                // 添加空心小圆点表示未完成任务
                 if (hasMonthlyTask) {
                     monthIndicators.createEl('div', {cls: 'indicator-dot hollow-dot'});
+                }
+                
+                // 添加绿色实心小圆点表示已完成任务
+                if (hasMonthlyCompletedTask) {
+                    monthIndicators.createEl('div', {cls: 'indicator-dot check-dot'});
                 }
             }
         }
