@@ -396,8 +396,9 @@ export class CalendarView extends ItemView {
         
         // 添加闪念按钮
         const flashButton = actionButtons.createEl("button", {
-            text: "+闪念",
-            cls: "task-action-button flash-button"
+            text: " 💡 ",
+            cls: "task-action-button flash-button",
+            title: "新建闪念"
         });
         flashButton.addEventListener("click", async () => {
             // 获取闪念配置
@@ -412,8 +413,9 @@ export class CalendarView extends ItemView {
         
         // 添加记录按钮
         const recordButton = actionButtons.createEl("button", {
-            text: "+记录",
-            cls: "task-action-button record-button"
+            text: " 📝 ",
+            cls: "task-action-button record-button",
+            title: "新建记录"
         });
         recordButton.addEventListener("click", async () => {
             // 获取记录配置
@@ -428,8 +430,9 @@ export class CalendarView extends ItemView {
         
         // 添加任务按钮
         const taskButton = actionButtons.createEl("button", {
-            text: "+任务",
-            cls: "task-action-button task-button"
+            text: " ⏰ ",
+            cls: "task-action-button task-button",
+            title: "新建任务"
         });
         taskButton.addEventListener("click", async () => {
             // 获取任务配置
