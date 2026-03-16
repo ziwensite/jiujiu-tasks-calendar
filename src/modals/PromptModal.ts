@@ -163,11 +163,12 @@ export class InputSuggest {
             return;
         }
         
-        this.completionItems = suggestions;
-        this.selectedIndex = 0;
-        
         // 关闭之前的建议
         this.close();
+        
+        // 设置建议项和选中索引
+        this.completionItems = suggestions;
+        this.selectedIndex = 0;
         
         // 创建建议容器
         this.suggestionsEl = document.createElement('div');

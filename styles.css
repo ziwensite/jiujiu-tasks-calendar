@@ -1015,22 +1015,29 @@ li.task-highlighted {
 
 /* 移动端适配 */
 @media screen and (max-width: 768px) {
-    /* 季度容器在移动端更小 */
+    /* 季度容器在移动端样式调整 */
     .quarter-container {
-        min-width: 3em;
+        min-width: 2em;
         max-width: 3em;
         padding: 0.2em;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
     
     /* 月份行容器在移动端调整 */
     .year-view-months-row {
         gap: 0.2em;
+        justify-content: stretch;
     }
     
-    /* 月份容器在移动端调整大小 */
+    /* 月份容器在移动端自适应宽度 */
     .month-container {
-        min-width: calc(20% - 0.2em);
-        max-width: calc(25% - 0.2em);
+        flex: 1;
+        min-width: 2em;
+        max-width: none;
         padding: 0.2em;
     }
     
@@ -1054,6 +1061,26 @@ li.task-highlighted {
     .year-view-container {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+    }
+    
+    /* 确保季度行容器在移动端保持flex布局 */
+    .year-view-quarter-row {
+        display: flex !important;
+        gap: 0.3em;
+        justify-content: flex-start;
+        align-items: stretch;
+        width: 100%;
+        box-sizing: border-box;
+        margin-bottom: 0.3em;
+        flex-wrap: nowrap;
+    }
+    
+    /* 确保月份行容器在移动端保持flex布局 */
+    .year-view-months-row {
+        display: flex !important;
+        gap: 0.2em;
+        flex: 1;
+        flex-wrap: nowrap;
     }
     
     /* 增大触摸目标大小 */
@@ -1131,8 +1158,17 @@ li.task-highlighted {
         font-size: 0.9em;
     }
     
-    /* 调整月份容器大小 */
-    .month-container {
+    /* 调整非年视图的月份容器大小 */
+    /* 年视图中的月份容器使用单独的样式 */
+    .year-view-container .month-container {
+        flex: 1;
+        min-width: 2em;
+        max-width: none;
+        margin-bottom: 0;
+    }
+    
+    /* 非年视图的月份容器可以垂直排列 */
+    .month-container:not(.year-view-container .month-container) {
         min-width: 100%;
         max-width: 100%;
         margin-bottom: 0.3em;
@@ -1157,9 +1193,13 @@ li.task-highlighted {
         transition: none;
     }
     
-    /* 隐藏不必要的元素 */
+    /* 保持周数指示器显示 */
     .week-indicators {
-        display: none;
+        display: flex;
+        justify-content: center;
+        gap: 0.15em;
+        margin-top: 0;
+        line-height: 1;
     }
     
     /* 小屏幕时间输入框进一步调整 */
