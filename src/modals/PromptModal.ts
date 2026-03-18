@@ -321,7 +321,7 @@ export class InputSuggest {
     private selectNext() {
         if (!this.isOpen || !this.suggestionsEl) return;
         
-        this.selectedIndex = Math.min(this.selectedIndex + 1, this.completionItems.length - 1);
+        this.selectedIndex = (this.selectedIndex + 1) % this.completionItems.length;
         this.updateSelection();
     }
 
@@ -329,7 +329,7 @@ export class InputSuggest {
     private selectPrevious() {
         if (!this.isOpen || !this.suggestionsEl) return;
         
-        this.selectedIndex = Math.max(this.selectedIndex - 1, 0);
+        this.selectedIndex = (this.selectedIndex - 1 + this.completionItems.length) % this.completionItems.length;
         this.updateSelection();
     }
 
