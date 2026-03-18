@@ -37,6 +37,8 @@ export class CalendarView extends ItemView {
     private timeListenerId: number | null = null;
     // 上次检查的日期，用于检测日期变化
     private lastCheckedDate: Date | null = null;
+    // 任务排序方向：desc - 从新到旧（默认），asc - 从旧到新
+    private taskSortDirection: 'desc' | 'asc' = 'desc';
 
     constructor(leaf: WorkspaceLeaf, plugin: MyPlugin) {
         super(leaf);
@@ -442,6 +444,54 @@ export class CalendarView extends ItemView {
             );
             if (taskConfig) {
                 await this.plugin.executeCaptureToConfig(taskConfig);
+            }
+        });
+        
+        // 排序箭头 - 放到任务按钮的后面
+        const sortArrow = actionButtons.createEl("div", {
+            cls: `task-sort-arrow ${this.taskSortDirection}`,
+            title: "点击切换排序方向"
+        });
+        sortArrow.textContent = this.taskSortDirection === 'desc' ? '↑' : '↓';
+        sortArrow.style.cursor = 'pointer';
+        sortArrow.style.margin = '0 0.5em';
+        sortArrow.style.fontSize = '1.0em';
+        sortArrow.style.color = 'var(--text-muted)';
+        sortArrow.style.display = 'inline-flex';
+        sortArrow.style.alignItems = 'center';
+        
+        // 添加点击事件，切换排序方向
+        sortArrow.addEventListener("click", async () => {
+            // 切换排序方向
+            this.taskSortDirection = this.taskSortDirection === 'desc' ? 'asc' : 'desc';
+            // 更新箭头显示
+            sortArrow.textContent = this.taskSortDirection === 'desc' ? '↑' : '↓';
+            sortArrow.className = `task-sort-arrow ${this.taskSortDirection}`;
+            // 重新渲染任务列表
+            if (this.selectionType === 'date') {
+                await this.refreshTaskList();
+            } else if (this.selectedWeekRange) {
+                await this.renderTaskListByDateRange(this.selectedWeekRange.start, this.selectedWeekRange.end);
+            } else if (this.selectionType === 'month' || this.selectionType === 'quarter' || this.selectionType === 'year') {
+                const year = this.currentDate.getFullYear();
+                let startDate: Date;
+                let endDate: Date;
+                
+                if (this.selectionType === 'month') {
+                    const month = this.currentDate.getMonth();
+                    startDate = new Date(year, month, 1);
+                    endDate = new Date(year, month + 1, 0);
+                } else if (this.selectionType === 'quarter') {
+                    const quarter = this.selectedQuarter || 1;
+                    const startMonth = (quarter - 1) * 3;
+                    startDate = new Date(year, startMonth, 1);
+                    endDate = new Date(year, startMonth + 3, 0);
+                } else {
+                    startDate = new Date(year, 0, 1);
+                    endDate = new Date(year, 11, 31);
+                }
+                
+                await this.renderTaskListByDateRange(startDate, endDate);
             }
         });
         
@@ -1074,8 +1124,21 @@ export class CalendarView extends ItemView {
                 const allTasks = await this.plugin.calendarDataManager.getTasks();
                 const filteredTasks = filterTasks(allTasks, this.plugin.settings, this.selectedDate);
                 
+                // 按截止日期排序任务
+                const sortedTasks = [...filteredTasks].sort((a, b) => {
+                    // 无截止日期的任务排在最后
+                    if (!a.dueDate && !b.dueDate) return 0;
+                    if (!a.dueDate) return 1;
+                    if (!b.dueDate) return -1;
+                    
+                    // 按截止日期排序
+                    const diff = a.dueDate.getTime() - b.dueDate.getTime();
+                    // 根据排序方向调整
+                    return this.taskSortDirection === 'desc' ? -diff : diff;
+                });
+                
                 // 使用taskListRenderer更新任务列表
-                this.taskListRenderer.renderTaskList(taskListContainer, filteredTasks, 
+                this.taskListRenderer.renderTaskList(taskListContainer, sortedTasks, 
                     async (index, updatedTask) => {
                         if (updatedTask) {
                             await this.eventHandler.handleTaskToggle(updatedTask, updatedTask.completed, async () => {
@@ -1422,8 +1485,21 @@ export class CalendarView extends ItemView {
             return evaluateExpression(task, expression);
         }) : filteredByDateRange;
         
+        // 按截止日期排序任务
+        const sortedTasks = [...finalFilteredTasks].sort((a, b) => {
+            // 无截止日期的任务排在最后
+            if (!a.dueDate && !b.dueDate) return 0;
+            if (!a.dueDate) return 1;
+            if (!b.dueDate) return -1;
+            
+            // 按截止日期排序
+            const diff = a.dueDate.getTime() - b.dueDate.getTime();
+            // 根据排序方向调整
+            return this.taskSortDirection === 'desc' ? -diff : diff;
+        });
+        
         // 使用taskListRenderer更新任务列表
-        this.taskListRenderer.renderTaskList(taskListContainer, finalFilteredTasks, 
+        this.taskListRenderer.renderTaskList(taskListContainer, sortedTasks, 
             async (index, updatedTask) => {
                 if (updatedTask) {
                     await this.eventHandler.handleTaskToggle(updatedTask, updatedTask.completed, async () => {
