@@ -1,5 +1,5 @@
 import { MyPlugin } from '../main';
-import { extractTasks, Task } from '../services/taskService';
+import { extractTasks, clearTaskCache, Task } from '../services/taskService';
 import { calculateCalendarMonthData, formatDate } from '../utils/dateUtils';
 
 /**
@@ -14,9 +14,8 @@ export class CalendarDataManager {
     private taskUpdateInterval: number = 5000; // 任务数据缓存时间，5秒
     
     // 日历月份数据缓存
-    private calendarMonthCache: Map<string, any> = new Map();
+    private calendarMonthCache: Map<string, { data: any; timestamp: number }> = new Map();
     private calendarMonthCacheInterval: number = 30000; // 日历月份数据缓存时间，30秒
-    private lastCalendarMonthUpdateTime: number = 0;
 
     constructor(plugin: MyPlugin) {
         this.plugin = plugin;
@@ -31,19 +30,15 @@ export class CalendarDataManager {
         const key = `${date.getFullYear()}-${date.getMonth()}`;
         const now = Date.now();
         
-        // 如果缓存存在且在有效期内，直接返回缓存数据
-        if (this.calendarMonthCache.has(key) && now - this.lastCalendarMonthUpdateTime < this.calendarMonthCacheInterval) {
-            return this.calendarMonthCache.get(key);
+        const cached = this.calendarMonthCache.get(key);
+        if (cached && now - cached.timestamp < this.calendarMonthCacheInterval) {
+            return cached.data;
         }
         
-        // 计算新的日历月份数据
         const data = calculateCalendarMonthData(date);
         
-        // 更新缓存
-        this.calendarMonthCache.set(key, data);
-        this.lastCalendarMonthUpdateTime = now;
+        this.calendarMonthCache.set(key, { data, timestamp: now });
         
-        // 清理过期缓存（只保留最近3个月的数据）
         this.cleanupCalendarMonthCache(date);
         
         return data;
@@ -102,8 +97,7 @@ export class CalendarDataManager {
      * 刷新任务数据
      */
     public async refreshTasks(): Promise<void> {
-        // 清除任务缓存，确保获取最新的任务数据
-        await import('../services/taskService').then(({ clearTaskCache }) => clearTaskCache());
+        clearTaskCache();
         this.tasks = await extractTasks(this.plugin.app, this.plugin.settings);
         this.lastTaskUpdateTime = Date.now();
     }
@@ -121,7 +115,6 @@ export class CalendarDataManager {
      */
     public clearCalendarMonthCache(): void {
         this.calendarMonthCache.clear();
-        this.lastCalendarMonthUpdateTime = 0;
     }
 
     /**
@@ -177,25 +170,5 @@ export class CalendarDataManager {
                 this.calendarMonthCache.delete(key);
             }
         }
-    }
-
-    /**
-     * 格式化日期（内部使用）
-     * @param date 日期
-     * @param format 格式
-     * @returns 格式化后的日期字符串
-     */
-    private formatDate(date: Date, format: string): string {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        
-        return format
-            .replace('YYYY', String(year))
-            .replace('MM', month)
-            .replace('DD', day)
-            .replace('YY', String(year).slice(-2))
-            .replace('M', String(date.getMonth() + 1))
-            .replace('D', String(date.getDate()));
     }
 }

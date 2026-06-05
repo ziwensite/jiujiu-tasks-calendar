@@ -1177,6 +1177,100 @@ li.task-highlighted {
     }
 }
 
+/* 设置页面 tab 样式 */
+.setting-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--background-modifier-border);
+    margin-bottom: 16px;
+    overflow-x: auto;
+}
+
+.setting-tabs .setting-tab {
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+/* 配置列表行样式 */
+.capture-config-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    margin-bottom: 4px;
+    cursor: grab;
+    transition: opacity 0.15s ease;
+}
+
+.capture-config-row.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.capture-config-row.drag-over-top {
+    transform: translateY(8px);
+    border-color: var(--interactive-accent);
+}
+
+.capture-config-row.drag-over-bottom {
+    transform: translateY(-8px);
+    border-color: var(--interactive-accent);
+}
+
+/* 配置操作按钮样式 */
+.config-button {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+.config-button:disabled {
+    cursor: not-allowed;
+}
+
+.config-name {
+    flex: 1;
+    font-size: 14px;
+}
+
+.config-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* 新建配置容器样式 */
+.add-config-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 8px;
+    border: 1px dashed var(--background-modifier-border);
+    border-radius: 4px;
+}
+
+.add-config-input {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.add-config-button {
+    padding: 6px 16px;
+    font-size: 14px;
+}
+
 /* PromptModal 样式 */
 .prompt-modal {
     max-width: 800px;

@@ -7,6 +7,7 @@ import { FolderSelectModal } from "./modals/FolderSelectModal";
 import { CaptureToConfigModal } from "./views/calendar/modals/CaptureToConfigModal";
 import { CommandSelectModal } from "./modals/CommandSelectModal";
 import { MyPluginSettings, NoteTemplateSettings, CaptureToConfig, CustomLabel } from "./settings/types";
+import { DEFAULT_SETTINGS } from "./settings/defaults";
 export type { MyPluginSettings, NoteTemplateSettings, CaptureToConfig, CaptureToSettings, CustomLabel, TaskFilterSettings, TaskSettings, MoreLabelSettings, CreateFileIfItDoesntExist, FormatSettings, InsertAfterSettings, NewLineCaptureSettings, FileOpeningSettings, TaskInsertSettings } from "./settings/types";
 export { DEFAULT_SETTINGS } from "./settings/defaults";
 
@@ -15,6 +16,7 @@ export class SampleSettingTab extends PluginSettingTab {
     private settingsChanged: boolean = false;
     private activeTab: string = "basic";
     private saveTimeout: number | null = null;
+    private contentEl: HTMLElement | null = null;
 
     constructor(app: App, plugin: MyPlugin) {
         super(app, plugin);
@@ -24,16 +26,17 @@ export class SampleSettingTab extends PluginSettingTab {
     display(): void {
         const {containerEl} = this;
 
-        containerEl.empty();
+        if (!this.contentEl) {
+            // 首次渲染：创建完整结构
+            containerEl.empty();
+            this.createTabs(containerEl);
+            this.contentEl = containerEl.createEl("div", { cls: "tab-content" });
+        } else {
+            // 后续渲染：只清空内容区域，保留导航栏
+            this.contentEl.empty();
+        }
         
-        // 创建标签页导航
-        this.createTabs(containerEl);
-        
-        // 创建内容区域
-        const contentEl = containerEl.createEl("div", { cls: "tab-content" });
-        
-        // 根据活动标签渲染内容
-        this.renderTabContent(contentEl);
+        this.renderTabContent(this.contentEl);
     }
 
     private scheduleSave() {
@@ -53,10 +56,6 @@ export class SampleSettingTab extends PluginSettingTab {
 
     private createTabs(containerEl: HTMLElement): void {
         const tabsContainer = containerEl.createEl("div", { cls: "setting-tabs" });
-        tabsContainer.style.display = "flex";
-        tabsContainer.style.borderBottom = "1px solid var(--background-modifier-border)";
-        tabsContainer.style.marginBottom = "16px";
-        tabsContainer.style.overflowX = "auto";
         
         const tabs = [
             { id: "basic", name: "基本设置" },
@@ -72,13 +71,9 @@ export class SampleSettingTab extends PluginSettingTab {
                 text: tab.name
             });
             
-            tabEl.style.padding = "8px 16px";
-            tabEl.style.cursor = "pointer";
             tabEl.style.borderBottom = this.activeTab === tab.id ? "2px solid var(--interactive-accent)" : "";
             tabEl.style.color = this.activeTab === tab.id ? "var(--interactive-accent)" : "var(--text-muted)";
             tabEl.style.fontWeight = this.activeTab === tab.id ? "bold" : "normal";
-            tabEl.style.transition = "all 0.2s ease";
-            tabEl.style.whiteSpace = "nowrap";
             
             tabEl.addEventListener("click", () => {
                 this.activeTab = tab.id;
@@ -172,419 +167,6 @@ export class SampleSettingTab extends PluginSettingTab {
             .setDesc("综合性日历插件，支持农历、节假日、任务管理、笔记管理等功能");
     }
 
-    /**
-     * 获取默认配置数组
-     */
-    private getDefaultConfigs(): CaptureToConfig[] {
-        return [
-            {
-                id: "fleetingNote",
-                name: "默认闪念",
-                description: "默认的闪念捕获插入配置",
-                enabled: true,
-                defaultCapturePath: "{{闪念}}",
-                captureToActiveFile: false,
-                hotkey: null,
-                inputMethod: "single-line",
-                createFileIfItDoesntExist: {
-                    enabled: true,
-                    createWithTemplate: true,
-                    template: "{{闪念模板}}"
-                },
-                format: {
-                    enabled: true,
-                    format: "-   ==💡{{DATE:YYYY-MM-DD HH:mm}}==  {{TASK_TEXT}}  \n"
-                },
-                prepend: false,
-                appendLink: false,
-                task: false,
-                autoAddCreatedDate: false,
-                autoAddDueDate: false,
-                dueDateOption: "today",
-                customDueDays: 1,
-                insertAfter: {
-                    enabled: true,
-                    after: "## 闪念",
-                    insertAtEnd: false,
-                    considerSubsections: false,
-                    createIfNotFound: true,
-                    createIfNotFoundLocation: "bottom"
-                },
-                newLineCapture: {
-                    enabled: false,
-                    direction: "below"
-                },
-                openFile: false,
-                fileOpening: {
-                    location: "tab",
-                    direction: "vertical",
-                    mode: "default",
-                    focus: true
-                }
-            },
-            {
-                id: "record",
-                name: "默认记录",
-                description: "默认的记录捕获插入配置",
-                enabled: true,
-                defaultCapturePath: "{{日记}}",
-                captureToActiveFile: false,
-                hotkey: null,
-                inputMethod: "single-line",
-                createFileIfItDoesntExist: {
-                    enabled: true,
-                    createWithTemplate: true,
-                    template: "{{日记模板}}"
-                },
-                format: {
-                    enabled: true,
-                    format: "-   📝  {{TASK_TEXT}}  \n"
-                },
-                prepend: false,
-                appendLink: false,
-                task: false,
-                autoAddCreatedDate: false,
-                autoAddDueDate: false,
-                dueDateOption: "today",
-                customDueDays: 1,
-                insertAfter: {
-                    enabled: true,
-                    after: "## 日常记录",
-                    insertAtEnd: true,
-                    considerSubsections: false,
-                    createIfNotFound: true,
-                    createIfNotFoundLocation: "bottom"
-                },
-                newLineCapture: {
-                    enabled: false,
-                    direction: "below"
-                },
-                openFile: false,
-                fileOpening: {
-                    location: "tab",
-                    direction: "vertical",
-                    mode: "default",
-                    focus: true
-                }
-            },
-            {
-                id: "task",
-                name: "默认任务",
-                description: "默认的捕获插入配置",
-                enabled: true,
-                defaultCapturePath: "{{日记}}",
-                captureToActiveFile: false,
-                hotkey: null,
-                inputMethod: "single-line",
-                createFileIfItDoesntExist: {
-                    enabled: true,
-                    createWithTemplate: true,
-                    template: "{{日记模板}}"
-                },
-                format: {
-                    enabled: true,
-                    format: "⏰  {{TASK_TEXT}}  \n"
-                },
-                prepend: false,
-                appendLink: false,
-                task: true,
-                insertAfter: {
-                    enabled: true,
-                    after: "## 日常记录",
-                    insertAtEnd: true,
-                    considerSubsections: false,
-                    createIfNotFound: true,
-                    createIfNotFoundLocation: "bottom"
-                },
-                newLineCapture: {
-                    enabled: false,
-                    direction: "below"
-                },
-                openFile: false,
-                fileOpening: {
-                    location: "tab",
-                    direction: "vertical",
-                    mode: "default",
-                    focus: true
-                },
-                autoAddCreatedDate: false,
-                autoAddDueDate: true,
-                dueDateOption: "today",
-                customDueDays: 0
-            },
-            {
-                id: "daily",
-                name: "默认daily",
-                description: "专门用于每日笔记的配置",
-                enabled: true,
-                defaultCapturePath: "{{日记}}",
-                captureToActiveFile: false,
-                hotkey: null,
-                inputMethod: "none",
-                createFileIfItDoesntExist: {
-                    enabled: true,
-                    createWithTemplate: true,
-                    template: "{{日记模板}}"
-                },
-                format: {
-                    enabled: true,
-                    format: "{{TASK_TEXT}}\n"
-                },
-                prepend: false,
-                appendLink: false,
-                task: false,
-                insertAfter: {
-                    enabled: true,
-                    after: "## 日常记录",
-                    insertAtEnd: true,
-                    considerSubsections: false,
-                    createIfNotFound: true,
-                    createIfNotFoundLocation: "bottom"
-                },
-                newLineCapture: {
-                    enabled: false,
-                    direction: "below"
-                },
-                openFile: true,
-                fileOpening: {
-                    location: "tab",
-                    direction: "vertical",
-                    mode: "default",
-                    focus: true
-                },
-                autoAddCreatedDate: false,
-                autoAddDueDate: false,
-                dueDateOption: "today",
-                customDueDays: 0
-            },
-            {
-                id: "weekly",
-                name: "默认weekly",
-                description: "专门用于周报的配置",
-                enabled: true,
-                defaultCapturePath: "{{周报}}",
-                captureToActiveFile: false,
-                hotkey: null,
-                inputMethod: "none",
-                createFileIfItDoesntExist: {
-                    enabled: true,
-                    createWithTemplate: true,
-                    template: "{{周报模板}}"
-                },
-                format: {
-                    enabled: true,
-                    format: "## {{TASK_TEXT}}\n\n- 本周工作: \n- 下周计划: \n- 遇到问题: \n\n"
-                },
-                prepend: false,
-                appendLink: false,
-                task: false,
-                insertAfter: {
-                    enabled: true,
-                    after: "## 工作记录",
-                    insertAtEnd: true,
-                    considerSubsections: false,
-                    createIfNotFound: true,
-                    createIfNotFoundLocation: "bottom"
-                },
-                newLineCapture: {
-                    enabled: false,
-                    direction: "below"
-                },
-                openFile: true,
-                fileOpening: {
-                    location: "tab",
-                    direction: "vertical",
-                    mode: "default",
-                    focus: true
-                },
-                autoAddCreatedDate: false,
-                autoAddDueDate: false,
-                dueDateOption: "today",
-                customDueDays: 0
-            },
-            {
-                id: "monthly",
-                name: "默认monthly",
-                description: "专门用于月报的配置",
-                enabled: true,
-                defaultCapturePath: "{{月报}}",
-                captureToActiveFile: false,
-                hotkey: null,
-                inputMethod: "none",
-                createFileIfItDoesntExist: {
-                    enabled: true,
-                    createWithTemplate: true,
-                    template: "{{月报模板}}"
-                },
-                format: {
-                    enabled: true,
-                    format: "## {{TASK_TEXT}}\n\n- 本月工作: \n- 下月计划: \n- 总结反思: \n\n"
-                },
-                prepend: false,
-                appendLink: false,
-                task: false,
-                insertAfter: {
-                    enabled: true,
-                    after: "## 月度总结",
-                    insertAtEnd: true,
-                    considerSubsections: false,
-                    createIfNotFound: true,
-                    createIfNotFoundLocation: "bottom"
-                },
-                newLineCapture: {
-                    enabled: false,
-                    direction: "below"
-                },
-                openFile: true,
-                fileOpening: {
-                    location: "tab",
-                    direction: "vertical",
-                    mode: "default",
-                    focus: true
-                },
-                autoAddCreatedDate: false,
-                autoAddDueDate: false,
-                dueDateOption: "today",
-                customDueDays: 0
-            },
-            {
-                id: "quarterly",
-                name: "默认quarterly",
-                description: "专门用于季报的配置",
-                enabled: true,
-                defaultCapturePath: "{{季报}}",
-                captureToActiveFile: false,
-                hotkey: null,
-                inputMethod: "none",
-                createFileIfItDoesntExist: {
-                    enabled: true,
-                    createWithTemplate: true,
-                    template: "{{季报模板}}"
-                },
-                format: {
-                    enabled: true,
-                    format: "## {{TASK_TEXT}}\n\n- 本季工作: \n- 下季计划: \n- 季度反思: \n\n"
-                },
-                prepend: false,
-                appendLink: false,
-                task: false,
-                insertAfter: {
-                    enabled: true,
-                    after: "## 季度总结",
-                    insertAtEnd: true,
-                    considerSubsections: false,
-                    createIfNotFound: true,
-                    createIfNotFoundLocation: "bottom"
-                },
-                newLineCapture: {
-                    enabled: false,
-                    direction: "below"
-                },
-                openFile: true,
-                fileOpening: {
-                    location: "tab",
-                    direction: "vertical",
-                    mode: "default",
-                    focus: true
-                },
-                autoAddCreatedDate: false,
-                autoAddDueDate: false,
-                dueDateOption: "today",
-                customDueDays: 0
-            },
-            {
-                id: "yearly",
-                name: "默认yearly",
-                description: "专门用于年报的配置",
-                enabled: true,
-                defaultCapturePath: "{{年报}}",
-                captureToActiveFile: false,
-                hotkey: null,
-                inputMethod: "none",
-                createFileIfItDoesntExist: {
-                    enabled: true,
-                    createWithTemplate: true,
-                    template: "{{年报模板}}"
-                },
-                format: {
-                    enabled: true,
-                    format: "## {{TASK_TEXT}}\n\n- 本年工作: \n- 明年计划: \n- 年度反思: \n- 目标达成: \n\n"
-                },
-                prepend: false,
-                appendLink: false,
-                task: false,
-                insertAfter: {
-                    enabled: true,
-                    after: "## 年度总结",
-                    insertAtEnd: true,
-                    considerSubsections: false,
-                    createIfNotFound: true,
-                    createIfNotFoundLocation: "bottom"
-                },
-                newLineCapture: {
-                    enabled: false,
-                    direction: "below"
-                },
-                openFile: true,
-                fileOpening: {
-                    location: "tab",
-                    direction: "vertical",
-                    mode: "default",
-                    focus: true
-                },
-                autoAddCreatedDate: false,
-                autoAddDueDate: false,
-                dueDateOption: "today",
-                customDueDays: 0
-            },
-            {
-                id: "meeting",
-                name: "会议笔记",
-                description: "专门用于会议笔记的配置",
-                enabled: true,
-                defaultCapturePath: "{{日记}}",
-                captureToActiveFile: false,
-                hotkey: null,
-                inputMethod: "single-line",
-                createFileIfItDoesntExist: {
-                    enabled: true,
-                    createWithTemplate: true,
-                    template: "{{日记模板}}"
-                },
-                format: {
-                    enabled: true,
-                    format: "## {{TASK_TEXT}}\n\n- 时间: {{DATE}}\n- 地点: \n- 参与人员: \n- 内容: \n- 行动项: \n\n"
-                },
-                prepend: false,
-                appendLink: false,
-                task: false,
-                insertAfter: {
-                    enabled: true,
-                    after: "## 日常记录",
-                    insertAtEnd: true,
-                    considerSubsections: false,
-                    createIfNotFound: true,
-                    createIfNotFoundLocation: "bottom"
-                },
-                newLineCapture: {
-                    enabled: false,
-                    direction: "below"
-                },
-                openFile: true,
-                fileOpening: {
-                    location: "tab",
-                    direction: "vertical",
-                    mode: "default",
-                    focus: true
-                },
-                autoAddCreatedDate: false,
-                autoAddDueDate: false,
-                dueDateOption: "today",
-                customDueDays: 0
-            }
-        ];
-    }
-
     private renderMoreLabelSettings(contentEl: HTMLElement): void {
         const section = contentEl.createEl("div", {cls: "setting-section"});
         section.createEl("h4", {text: "自定义标签设置"});
@@ -594,8 +176,6 @@ export class SampleSettingTab extends PluginSettingTab {
         this.renderCustomLabelSettings(section, "LB1", moreSettings.lb1);
         this.renderCustomLabelSettings(section, "LB2", moreSettings.lb2);
     }
-
-
 
     private renderCustomLabelSettings(section: HTMLElement, labelName: string, labelSettings: CustomLabel): void {
         const labelSection = section.createEl("div", {cls: "setting-section"});
@@ -744,10 +324,6 @@ export class SampleSettingTab extends PluginSettingTab {
             });
     }
 
-    private renderTaskSettings(): void {
-        // 任务创建设置已移至 Capture To 设置中
-    }
-
     private renderCaptureToSettings(contentEl: HTMLElement): void {
         const section = contentEl.createEl("div", {cls: "setting-section"});
         section.createEl("h4", {text: "捕获插入设置"});
@@ -824,14 +400,6 @@ export class SampleSettingTab extends PluginSettingTab {
                 cls: "capture-config-row"
             });
             configRow.setAttribute("draggable", "true");
-            configRow.style.display = "flex";
-            configRow.style.justifyContent = "space-between";
-            configRow.style.alignItems = "center";
-            configRow.style.padding = "8px 12px";
-            configRow.style.border = "1px solid var(--background-modifier-border)";
-            configRow.style.borderRadius = "4px";
-            configRow.style.marginBottom = "4px";
-            configRow.style.cursor = "grab";
             
             // 存储配置索引
             configRow.dataset.index = index.toString();
@@ -840,20 +408,17 @@ export class SampleSettingTab extends PluginSettingTab {
             configRow.addEventListener("dragstart", (e) => {
                 draggedElement = configRow;
                 dragStartIndex = parseInt(configRow.dataset.index || "-1");
-                configRow.style.opacity = "0.5";
-                configRow.style.cursor = "grabbing";
+                configRow.addClass("dragging");
             });
 
             // 拖拽结束事件
             configRow.addEventListener("dragend", (e) => {
                 draggedElement = null;
-                configRow.style.opacity = "1";
-                configRow.style.cursor = "grab";
+                configRow.removeClass("dragging");
                 // 移除所有拖拽提示样式
-                document.querySelectorAll(".capture-config-row").forEach(el => {
-                    const htmlEl = el as HTMLElement;
-                    htmlEl.style.borderColor = "var(--background-modifier-border)";
-                    htmlEl.style.transform = "";
+                document.querySelectorAll(".capture-config-row.drag-over-top, .capture-config-row.drag-over-bottom").forEach(el => {
+                    el.removeClass("drag-over-top");
+                    el.removeClass("drag-over-bottom");
                 });
             });
 
@@ -862,30 +427,26 @@ export class SampleSettingTab extends PluginSettingTab {
                 e.preventDefault();
                 if (draggedElement === configRow) return;
                 
-                // 计算拖拽位置
+                configRow.removeClass("drag-over-top drag-over-bottom");
                 const rect = configRow.getBoundingClientRect();
                 const y = e.clientY - rect.top;
                 
-                // 显示拖拽提示
                 if (y < rect.height / 2) {
-                    // 拖拽到上方
-                    configRow.style.transform = "translateY(8px)";
+                    configRow.addClass("drag-over-top");
                 } else {
-                    // 拖拽到下方
-                    configRow.style.transform = "translateY(-8px)";
+                    configRow.addClass("drag-over-bottom");
                 }
-                configRow.style.borderColor = "var(--interactive-accent)";
             });
 
             // 拖拽离开事件
             configRow.addEventListener("dragleave", (e) => {
-                configRow.style.borderColor = "var(--background-modifier-border)";
-                configRow.style.transform = "";
+                configRow.removeClass("drag-over-top drag-over-bottom");
             });
 
             // 拖拽放置事件
             configRow.addEventListener("drop", (e) => {
                 e.preventDefault();
+                configRow.removeClass("drag-over-top drag-over-bottom");
                 if (draggedElement && dragStartIndex !== -1) {
                     const dragEndIndex = parseInt(configRow.dataset.index || "-1");
                     if (dragStartIndex !== dragEndIndex) {
@@ -902,16 +463,13 @@ export class SampleSettingTab extends PluginSettingTab {
                         }
                     }
                 }
-                configRow.style.borderColor = "var(--background-modifier-border)";
-                configRow.style.transform = "";
+                configRow.removeClass("drag-over-top drag-over-bottom");
             });
 
             // 配置名称
             const configName = configRow.createEl("div", {
                 cls: "config-name"
             });
-            configName.style.flex = "1";
-            configName.style.fontSize = "14px";
             configName.style.color = config.enabled ? "var(--text-normal)" : "var(--text-muted)";
             configName.textContent = config.name;
 
@@ -927,15 +485,7 @@ export class SampleSettingTab extends PluginSettingTab {
             const toggleButton = buttonContainer.createEl("button", {
                 cls: "config-button"
             });
-            toggleButton.style.width = "20px";
-            toggleButton.style.height = "20px";
-            toggleButton.style.display = "flex";
-            toggleButton.style.alignItems = "center";
-            toggleButton.style.justifyContent = "center";
-            toggleButton.style.border = "none";
-            toggleButton.style.background = "transparent";
             toggleButton.style.color = config.enabled ? "var(--text-normal)" : "var(--text-muted)";
-            toggleButton.style.cursor = "pointer";
             toggleButton.textContent = config.enabled ? "⚡" : "🔴";
             toggleButton.title = config.enabled ? "禁用配置" : "启用配置";
             toggleButton.addEventListener("click", () => {
@@ -952,15 +502,7 @@ export class SampleSettingTab extends PluginSettingTab {
             const settingsButton = buttonContainer.createEl("button", {
                 cls: "config-button"
             });
-            settingsButton.style.width = "20px";
-            settingsButton.style.height = "20px";
-            settingsButton.style.display = "flex";
-            settingsButton.style.alignItems = "center";
-            settingsButton.style.justifyContent = "center";
-            settingsButton.style.border = "none";
-            settingsButton.style.background = "transparent";
             settingsButton.style.color = "var(--text-muted)";
-            settingsButton.style.cursor = "pointer";
             settingsButton.textContent = "⚙️";
             settingsButton.title = "配置";
             settingsButton.addEventListener("click", () => {
@@ -987,15 +529,7 @@ export class SampleSettingTab extends PluginSettingTab {
             const duplicateButton = buttonContainer.createEl("button", {
                 cls: "config-button"
             });
-            duplicateButton.style.width = "20px";
-            duplicateButton.style.height = "20px";
-            duplicateButton.style.display = "flex";
-            duplicateButton.style.alignItems = "center";
-            duplicateButton.style.justifyContent = "center";
-            duplicateButton.style.border = "none";
-            duplicateButton.style.background = "transparent";
             duplicateButton.style.color = "var(--text-muted)";
-            duplicateButton.style.cursor = "pointer";
             duplicateButton.textContent = "📋";
             duplicateButton.title = "复制";
             duplicateButton.addEventListener("click", () => {
@@ -1017,19 +551,12 @@ export class SampleSettingTab extends PluginSettingTab {
             const resetButton = buttonContainer.createEl("button", {
                 cls: "config-button"
             });
-            resetButton.style.width = "20px";
-            resetButton.style.height = "20px";
-            resetButton.style.display = "flex";
-            resetButton.style.alignItems = "center";
-            resetButton.style.justifyContent = "center";
-            resetButton.style.border = "none";
-            resetButton.style.background = "transparent";
             resetButton.textContent = "🔄";
             resetButton.title = "恢复默认";
             
             // 检查是否为新建配置项（ID格式为config-${Date.now()}）
             const isNewConfig = config.id.startsWith('config-');
-            const defaultConfig = this.getDefaultConfigs().find(defaultCfg => defaultCfg.id === config.id);
+            const defaultConfig = DEFAULT_SETTINGS.taskSettings.captureToSettings.configs.find(defaultCfg => defaultCfg.id === config.id);
             const hasDefaultConfig = !!defaultConfig;
             
             if (isNewConfig || !hasDefaultConfig) {
@@ -1062,15 +589,7 @@ export class SampleSettingTab extends PluginSettingTab {
             const renameButton = buttonContainer.createEl("button", {
                 cls: "config-button"
             });
-            renameButton.style.width = "20px";
-            renameButton.style.height = "20px";
-            renameButton.style.display = "flex";
-            renameButton.style.alignItems = "center";
-            renameButton.style.justifyContent = "center";
-            renameButton.style.border = "none";
-            renameButton.style.background = "transparent";
             renameButton.style.color = "var(--text-muted)";
-            renameButton.style.cursor = "pointer";
             renameButton.textContent = "✏️";
             renameButton.title = "重命名";
             renameButton.addEventListener("click", async () => {
@@ -1151,18 +670,11 @@ export class SampleSettingTab extends PluginSettingTab {
             const deleteButton = buttonContainer.createEl("button", {
                 cls: "config-button"
             });
-            deleteButton.style.width = "20px";
-            deleteButton.style.height = "20px";
-            deleteButton.style.display = "flex";
-            deleteButton.style.alignItems = "center";
-            deleteButton.style.justifyContent = "center";
-            deleteButton.style.border = "none";
-            deleteButton.style.background = "transparent";
             deleteButton.textContent = "🗑️";
             deleteButton.title = "删除";
             
             // 检查是否为默认配置项
-            const isDefaultConfig = this.getDefaultConfigs().some(defaultCfg => defaultCfg.id === config.id);
+            const isDefaultConfig = DEFAULT_SETTINGS.taskSettings.captureToSettings.configs.some(defaultCfg => defaultCfg.id === config.id);
             
             if (isDefaultConfig) {
                 // 默认配置项，禁用删除按钮
@@ -1231,13 +743,6 @@ export class SampleSettingTab extends PluginSettingTab {
         const addConfigContainer = section.createEl("div", {
             cls: "add-config-container"
         });
-        addConfigContainer.style.display = "flex";
-        addConfigContainer.style.alignItems = "center";
-        addConfigContainer.style.gap = "8px";
-        addConfigContainer.style.marginTop = "12px";
-        addConfigContainer.style.padding = "8px";
-        addConfigContainer.style.border = "1px dashed var(--background-modifier-border)";
-        addConfigContainer.style.borderRadius = "4px";
 
         // 名称输入框
         const nameInput = addConfigContainer.createEl("input", {
@@ -1245,19 +750,12 @@ export class SampleSettingTab extends PluginSettingTab {
             placeholder: "名称",
             cls: "add-config-input"
         });
-        nameInput.style.flex = "1";
-        nameInput.style.padding = "6px 8px";
-        nameInput.style.border = "1px solid var(--background-modifier-border)";
-        nameInput.style.borderRadius = "4px";
-        nameInput.style.fontSize = "14px";
 
         // 添加按钮
         const addButton = addConfigContainer.createEl("button", {
             text: "新建配置",
             cls: "mod-cta add-config-button"
         });
-        addButton.style.padding = "6px 16px";
-        addButton.style.fontSize = "14px";
         addButton.addEventListener("click", () => {
             const name = nameInput.value.trim();
             if (!name) {

@@ -3,20 +3,15 @@ import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
 import {CalendarView} from "./views/CalendarView";
 import { CalendarViewController } from './core/CalendarViewController';
 import { CalendarDataManager } from './core/CalendarDataManager';
-import { EventEmitter } from './core/EventEmitter';
 
 export class MyPlugin extends Plugin {
     settings: MyPluginSettings = DEFAULT_SETTINGS;
     calendarViewController: CalendarViewController;
     calendarDataManager: CalendarDataManager;
-    eventEmitter: EventEmitter;
 
     async onload() {
         try {
             await this.loadSettings();
-            
-            // 初始化事件发射器
-            this.eventEmitter = new EventEmitter();
             
             // 初始化日历数据管理器
             this.calendarDataManager = new CalendarDataManager(this);
@@ -45,8 +40,15 @@ export class MyPlugin extends Plugin {
             // 加载设置页
             this.addSettingTab(new SampleSettingTab(this.app, this));
             
-            // 插件启用时自动打开默认视图（延迟执行，等待 workspace 就绪）
-            setTimeout(() => this.activateView(), 0);
+            // 一次性注册捕获插入快捷键命令
+            this.registerCaptureToHotkeys();
+            
+            // 插件启用时自动打开默认视图（等待 workspace 布局就绪后一次性激活）
+            const layoutHandler = () => {
+                this.app.workspace.off('layout-change', layoutHandler);
+                this.activateView();
+            };
+            this.registerEvent(this.app.workspace.on('layout-change', layoutHandler));
         } catch (error) {
             console.error("[JiuJiu Calendar] Plugin load error:", error);
             new Notice(`JiuJiu Calendar plugin failed to load: ${(error as Error).message}`);
@@ -68,7 +70,18 @@ export class MyPlugin extends Plugin {
             if (leaves.length > 0 && leaves[0]) {
                 leaf = leaves[0];
             } else {
-                leaf = workspace.getRightLeaf(false);
+                try {
+                    leaf = workspace.getRightLeaf(false);
+                } catch (e) {
+                    leaf = null;
+                }
+                if (!leaf) {
+                    try {
+                        leaf = workspace.getLeaf('tab');
+                    } catch (e) {
+                        leaf = null;
+                    }
+                }
                 if (leaf) {
                     await leaf.setViewState({
                         type: "jiujiu-calendar-view",
@@ -126,15 +139,10 @@ export class MyPlugin extends Plugin {
             // 保存默认设置到data.json文件
             await this.saveSettings();
         }
-
-        // 设置加载完成后注册快捷键命令
-        this.registerCaptureToHotkeys();
     }
 
     async saveSettings() {
         await this.saveData(this.settings);
-        // 保存设置后重新注册快捷键
-        this.registerCaptureToHotkeys();
     }
 
     /**

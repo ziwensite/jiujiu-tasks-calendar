@@ -6,7 +6,6 @@ import { Solar } from 'lunar-typescript';
 import { noteExists } from '../services/noteService';
 import { extractTasks, filterTasks, updateTaskInNote, Task, parseCustomFilter, evaluateExpression } from '../services/taskService';
 import { CalendarRenderer, TaskListRenderer, IndicatorRenderer, EventHandler } from './calendar';
-import { CalendarEvent } from '../core/EventEmitter';
 import { CommandSelectModal } from '../modals/CommandSelectModal';
 import { updateDaySelection, updateIndicators, updateYearViewMonthIndicators, updateAllDayIndicators, updateWeekIndicators, checkWeekNoteAndTasks, checkQuarterNoteAndTasks, checkMonthNoteAndTasks, addDayIndicators } from './CalendarView/indicators';
 import { installNavigationListeners, installCellListeners } from './CalendarView/eventListeners';
@@ -94,32 +93,6 @@ export class CalendarView extends ItemView {
         this.registerEvent(this.app.vault.on('rename', async (file, oldPath) => {
             await this.handleFileChange(file);
         }));
-        
-        // 添加事件监听器，使用事件驱动机制
-        this.plugin.eventEmitter.on(CalendarEvent.FILE_CHANGED, async () => {
-            // 文件变化时，刷新任务数据缓存并更新任务列表
-            await this.plugin.calendarDataManager.refreshTasks();
-            await this.refreshTaskList();
-            // 更新所有日期指示器
-            await this.updateIndicators();
-        });
-        
-        this.plugin.eventEmitter.on(CalendarEvent.TASK_DATA_UPDATED, async () => {
-            // 任务数据更新时，刷新任务列表
-            await this.refreshTaskList();
-            // 更新所有日期指示器
-            await this.updateIndicators();
-        });
-        
-        this.plugin.eventEmitter.on(CalendarEvent.CALENDAR_VIEW_UPDATED, async () => {
-            // 日历视图更新时，重新渲染日历
-            await this.renderCalendar();
-        });
-        
-        this.plugin.eventEmitter.on(CalendarEvent.SELECTED_DATE_CHANGED, async () => {
-            // 选择日期变化时，刷新任务列表
-            await this.refreshTaskList();
-        });
         
         // 初始化时间监听器，每秒检查一次日期变化
         this.timeListenerId = window.setInterval(async () => {
@@ -560,17 +533,6 @@ export class CalendarView extends ItemView {
      */
     private async addCalendarCellEventListeners() {
         await installCellListeners(this);
-    }
-
-    private async refreshAll() {
-        await this.updateCalendarContent();
-        await this.updateIndicators();
-        await this.refreshTaskList();
-    }
-
-    private async refreshCalendar() {
-        await this.updateCalendarContent();
-        await this.updateIndicators();
     }
 
     public async refreshTaskList() {
