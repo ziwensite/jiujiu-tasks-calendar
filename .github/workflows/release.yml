@@ -28,7 +28,7 @@ jobs:
           npm run build
           mkdir ${{ env.PLUGIN_NAME }}
           cp main.js manifest.json styles.css ${{ env.PLUGIN_NAME }}
-          zip -r ${{ env.PLUGIN_NAME }}.zip ${{ env.PLUGIN_NAME }}
+          zip -r ${{ env.PLUGIN_NAME }}-${{ github.event.release.tag_name }}.zip ${{ env.PLUGIN_NAME }}
           ls -la
 
       - name: Upload release assets
@@ -38,4 +38,4 @@ jobs:
             ./main.js
             ./manifest.json
             ./styles.css
-            ./${{ env.PLUGIN_NAME }}.zip
+            ./${{ env.PLUGIN_NAME }}-${{ github.event.release.tag_name }}.zip
