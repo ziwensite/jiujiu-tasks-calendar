@@ -169,25 +169,6 @@ export class SampleSettingTab extends PluginSettingTab {
             .setDesc(this.plugin.manifest.version);
 
         new Setting(pluginInfoSection)
-            .setName("作者")
-            .setDesc("JiuJiu");
-
-        // 异步从磁盘读取 manifest.json 替换缓存值（重载插件后缓存不会刷新）
-        (async () => {
-            try {
-                const pluginId = this.plugin.manifest.id;
-                const basePath = this.app.vault.configDir + '/plugins/' + pluginId;
-                const content = await this.app.vault.adapter.read(basePath + '/manifest.json');
-                const diskVersion = JSON.parse(content).version;
-                if (diskVersion && diskVersion !== this.plugin.manifest.version) {
-                    versionSetting.setDesc(diskVersion);
-                }
-            } catch {
-                // 静默失败，使用缓存值
-            }
-        })();
-
-        new Setting(pluginInfoSection)
             .setName("描述")
             .setDesc("综合性日历插件，支持农历、节假日、任务管理、笔记管理等功能");
     }

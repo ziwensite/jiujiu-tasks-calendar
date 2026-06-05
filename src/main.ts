@@ -9,10 +9,19 @@ export class MyPlugin extends Plugin {
     calendarViewController: CalendarViewController;
     calendarDataManager: CalendarDataManager;
 
-    async onload() {
+async onload() {
         try {
             await this.loadSettings();
-            
+
+            // 从磁盘覆盖 Obsidian 缓存的 manifest（重载插件时缓存不会自动刷新）
+            try {
+                const manifestPath = this.app.vault.configDir + '/plugins/' + this.manifest.id + '/manifest.json';
+                const content = await this.app.vault.adapter.read(manifestPath);
+                Object.assign(this.manifest, JSON.parse(content));
+            } catch {
+                // 读取失败则使用缓存值
+            }
+
             // 初始化日历数据管理器
             this.calendarDataManager = new CalendarDataManager(this);
             
