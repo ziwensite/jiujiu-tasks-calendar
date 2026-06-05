@@ -1,6 +1,6 @@
 {
 	"name": "jiujiu-tasks-calendar",
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"description": "A comprehensive calendar plugin with lunar calendar, holidays, tasks management, and note management features.",
 	"main": "main.js",
 	"type": "module",
