@@ -37,6 +37,7 @@ export class SampleSettingTab extends PluginSettingTab {
         }
         
         this.renderTabContent(this.contentEl);
+        this.updateActiveTabStyles();
     }
 
     private scheduleSave() {
@@ -70,6 +71,7 @@ export class SampleSettingTab extends PluginSettingTab {
                 cls: `setting-tab ${this.activeTab === tab.id ? "active" : ""}`,
                 text: tab.name
             });
+            tabEl.dataset.tab = tab.id;
             
             tabEl.style.borderBottom = this.activeTab === tab.id ? "2px solid var(--interactive-accent)" : "";
             tabEl.style.color = this.activeTab === tab.id ? "var(--interactive-accent)" : "var(--text-muted)";
@@ -92,6 +94,17 @@ export class SampleSettingTab extends PluginSettingTab {
                     tabEl.style.color = "var(--text-muted)";
                 }
             });
+        });
+    }
+
+    private updateActiveTabStyles(): void {
+        const tabs = this.containerEl.querySelectorAll('.setting-tab');
+        tabs.forEach(tab => {
+            const el = tab as HTMLElement;
+            const isActive = el.dataset.tab === this.activeTab;
+            el.style.borderBottom = isActive ? "2px solid var(--interactive-accent)" : "";
+            el.style.color = isActive ? "var(--interactive-accent)" : "var(--text-muted)";
+            el.style.fontWeight = isActive ? "bold" : "normal";
         });
     }
 
@@ -152,11 +165,11 @@ export class SampleSettingTab extends PluginSettingTab {
 
         new Setting(pluginInfoSection)
             .setName("插件名称")
-            .setDesc("久久任务日历 (JiuJiu Tasks Calendar)");
+            .setDesc(this.plugin.manifest.name);
 
         new Setting(pluginInfoSection)
             .setName("版本号")
-            .setDesc("1.0.2");
+            .setDesc(this.plugin.manifest.version);
 
         new Setting(pluginInfoSection)
             .setName("作者")

@@ -56,7 +56,7 @@ export class CalendarView extends ItemView {
     }
 
     getDisplayText(): string {
-        return "JiuJiu Calendar";
+        return this.plugin.manifest.name;
     }
 
     getIcon(): string {
