@@ -8,37 +8,36 @@ import { extractTasks, filterTasks, updateTaskInNote, Task, parseCustomFilter, e
 import { CalendarRenderer, TaskListRenderer, IndicatorRenderer, EventHandler } from './calendar';
 import { CalendarEvent } from '../core/EventEmitter';
 import { CommandSelectModal } from '../modals/CommandSelectModal';
+import { updateDaySelection, updateIndicators, updateYearViewMonthIndicators, updateAllDayIndicators, updateWeekIndicators, checkWeekNoteAndTasks, checkQuarterNoteAndTasks, checkMonthNoteAndTasks, addDayIndicators } from './CalendarView/indicators';
+import { installNavigationListeners, installCellListeners } from './CalendarView/eventListeners';
 
 const VIEW_TYPE_CALENDAR = "jiujiu-calendar-view";
 
 export class CalendarView extends ItemView {
-    private currentDate: Date;
-    private plugin: MyPlugin;
+    currentDate: Date;
+    plugin: MyPlugin;
 
-    private selectedDate: Date | null = null;
-    private viewType: 'month' | 'year' | 'tasks' = 'month';
+    selectedDate: Date | null = null;
+    viewType: 'month' | 'year' | 'tasks' = 'month';
+    selectionType: 'date' | 'month' | 'quarter' | 'year' | 'tasks' | 'week' = 'date';
+    selectedWeekRange: { start: Date; end: Date } | null = null;
+    selectedQuarter: number | null = null;
+    taskSortDirection: 'desc' | 'asc' = 'desc';
+
+    // 模块化组件
+    calendarRenderer: CalendarRenderer;
+    taskListRenderer: TaskListRenderer;
+    eventHandler: EventHandler;
+
     private lastRenderedYear: number = -1;
     private lastRenderedMonth: number = -1;
     private lastRenderedViewType: 'month' | 'year' | 'tasks' = 'month';
     private lastRenderedRows: number = -1;
-    private selectionType: 'date' | 'month' | 'quarter' | 'year' | 'tasks' | 'week' = 'date';
-    private selectedWeekRange: { start: Date; end: Date } | null = null;
-    private selectedQuarter: number | null = null;
     private lastRenderedNavigationType: 'month' | 'year' = 'month';
-    private navigationType: 'month' | 'year' = 'month';
-    
-    // 模块化组件
-    private calendarRenderer: CalendarRenderer;
-    private taskListRenderer: TaskListRenderer;
+    navigationType: 'month' | 'year' = 'month';
     private indicatorRenderer: IndicatorRenderer;
-    private eventHandler: EventHandler;
-    
-    // 时间监听器，用于检测日期变化
     private timeListenerId: number | null = null;
-    // 上次检查的日期，用于检测日期变化
     private lastCheckedDate: Date | null = null;
-    // 任务排序方向：desc - 从新到旧（默认），asc - 从旧到新
-    private taskSortDirection: 'desc' | 'asc' = 'desc';
 
     constructor(leaf: WorkspaceLeaf, plugin: MyPlugin) {
         super(leaf);
@@ -553,556 +552,14 @@ export class CalendarView extends ItemView {
      * 添加导航按钮事件监听器
      */
     private addNavigationEventListeners() {
-        // 月份导航按钮
-        const prevMonthBtn = this.containerEl.querySelector(".calendar-header-block-month .prev-btn");
-        const nextMonthBtn = this.containerEl.querySelector(".calendar-header-block-month .next-btn");
-        const monthContent = this.containerEl.querySelector(".calendar-header-block-month .calendar-header-content");
-        
-        if (prevMonthBtn) {
-            (prevMonthBtn as HTMLElement).title = "上一月";
-            prevMonthBtn.addEventListener("click", () => {
-                this.currentDate.setMonth(this.currentDate.getMonth() - 1);
-                this.selectedDate = this.currentDate;
-                this.renderCalendar();
-            });
-        }
-        
-        if (nextMonthBtn) {
-            (nextMonthBtn as HTMLElement).title = "下一月";
-            nextMonthBtn.addEventListener("click", () => {
-                this.currentDate.setMonth(this.currentDate.getMonth() + 1);
-                this.selectedDate = this.currentDate;
-                this.renderCalendar();
-            });
-        }
-        
-        if (monthContent) {
-            monthContent.addEventListener("click", async (event) => {
-                // 如果是月视图，点击月份数字部分切换导航类型
-                if (this.viewType === 'month') {
-                    // 切换导航类型
-                    this.navigationType = 'year';
-                    this.renderCalendar();
-                } else {
-                    // 显示当月所有任务
-                    const year = this.currentDate.getFullYear();
-                    const month = this.currentDate.getMonth();
-                    const startDate = new Date(year, month, 1);
-                    const endDate = new Date(year, month + 1, 0);
-                    await this.renderTaskListByDateRange(startDate, endDate);
-                }
-            });
-            monthContent.addEventListener("dblclick", async () => {
-                await this.eventHandler.handleMonthDoubleClick(this.currentDate);
-            });
-        }
-        
-        // 年份导航按钮
-        const prevYearBtn = this.containerEl.querySelector(".calendar-header-block-year .prev-btn");
-        const nextYearBtn = this.containerEl.querySelector(".calendar-header-block-year .next-btn");
-        const yearContent = this.containerEl.querySelector(".calendar-header-block-year .calendar-header-content");
-        
-        if (prevYearBtn) {
-            (prevYearBtn as HTMLElement).title = "上一年";
-            prevYearBtn.addEventListener("click", () => {
-                this.currentDate.setFullYear(this.currentDate.getFullYear() - 1);
-                this.selectedDate = this.currentDate;
-                this.renderCalendar();
-            });
-        }
-        
-        if (nextYearBtn) {
-            (nextYearBtn as HTMLElement).title = "下一年";
-            nextYearBtn.addEventListener("click", () => {
-                this.currentDate.setFullYear(this.currentDate.getFullYear() + 1);
-                this.selectedDate = this.currentDate;
-                this.renderCalendar();
-            });
-        }
-        
-        if (yearContent) {
-            yearContent.addEventListener("click", async (event) => {
-                // 如果是月视图，点击年份数字部分切换导航类型
-                if (this.viewType === 'month') {
-                    // 切换导航类型
-                    this.navigationType = 'month';
-                    this.renderCalendar();
-                } else {
-                    // 更新选择类型
-                    this.selectionType = 'year';
-                    this.selectedDate = null;
-                    this.selectedWeekRange = null;
-                    this.selectedQuarter = null;
-                    
-                    // 更新选择状态并刷新日期显示
-                    await this.updateSelectionState();
-                    
-                    // 显示当年所有任务
-                    const year = this.currentDate.getFullYear();
-                    const startDate = new Date(year, 0, 1);
-                    const endDate = new Date(year, 11, 31);
-                    await this.renderTaskListByDateRange(startDate, endDate);
-                }
-            });
-            yearContent.addEventListener("dblclick", async () => {
-                await this.eventHandler.handleYearDoubleClick(this.currentDate);
-            });
-        }
-        
-        // 今日和年按钮
-        const todayBtn = this.containerEl.querySelector(".calendar-header .calendar-header-label-today");
-        const yearBtn = this.containerEl.querySelector(".calendar-header .calendar-header-label-year");
-        
-        if (todayBtn) {
-            // 今日按钮：根据是否选中今天日期来决定样式
-            const currentToday = new Date();
-            const isTodaySelected = this.selectedDate && 
-                this.selectedDate.toDateString() === currentToday.toDateString();
-            todayBtn.className = `calendar-header-label-today ${isTodaySelected ? 'today-selected' : 'today-unselected'}`;
-            todayBtn.addEventListener("click", async () => {
-                // 选中今天日期，切换到月视图
-                this.selectedDate = new Date();
-                this.currentDate = new Date();
-                this.viewType = 'month'; // 切换到月视图
-                this.navigationType = 'month'; // 同步更新导航类型
-                this.selectionType = 'date'; // 更新选择类型为日期
-                this.selectedWeekRange = null;
-                this.selectedQuarter = null;
-                
-                // 先更新选择状态，让用户立即看到日期变化
-                this.updateSelectionState();
-                
-                // 然后刷新视图
-                this.renderCalendar();
-            });
-        }
-        
-        if (yearBtn) {
-            // 年按钮：在月视图和年视图之间切换
-            yearBtn.textContent = this.viewType === 'month' ? "年" : "月";
-            yearBtn.className = `calendar-header-label-year ${this.viewType === 'year' ? 'today-selected' : 'today-unselected'}`;
-            yearBtn.addEventListener("click", async () => {
-                // 切换视图类型
-                this.viewType = this.viewType === 'month' ? 'year' : 'month';
-                // 同步更新导航类型：年视图默认使用年导航
-                this.navigationType = this.viewType === 'year' ? 'year' : 'month';
-                
-                // 如果从年视图切换回月视图，确保更新选择类型和相关状态
-                if (this.viewType === 'month') {
-                    this.selectionType = 'date';
-                    this.selectedWeekRange = null;
-                    this.selectedQuarter = null;
-                    
-                    // 如果当前选中的月份是今日所在的月份，定位到今日
-                    const currentToday = new Date();
-                    if (this.selectedDate && this.selectedDate.getMonth() === currentToday.getMonth() && this.selectedDate.getFullYear() === currentToday.getFullYear()) {
-                        this.selectedDate = currentToday;
-                        this.currentDate = currentToday;
-                    }
-                }
-                
-                // 先更新选择状态，让用户立即看到日期变化
-                this.updateSelectionState();
-                
-                // 然后刷新视图
-                await this.renderCalendar();
-                
-                // 如果切换到年视图，默认选择当前选中日期所在的月份
-                if (this.viewType === 'year' && this.selectedDate) {
-                    const currentMonthIndex = this.selectedDate.getMonth();
-                    const monthContainers = this.containerEl.querySelectorAll(".month-container:not(.quarter-container)");
-                    if (monthContainers[currentMonthIndex]) {
-                        // 移除所有月份和季度的选中状态
-                        document.querySelectorAll(".month-container").forEach(el => {
-                            el.classList.remove("selected");
-                        });
-                        document.querySelectorAll(".quarter-container").forEach(el => {
-                            el.classList.remove("selected");
-                        });
-                        // 添加当前月份的选中状态
-                        monthContainers[currentMonthIndex].classList.add("selected");
-                        
-                        // 更新选择类型
-                        this.selectionType = 'month';
-                        this.selectedWeekRange = null;
-                        this.selectedQuarter = null;
-                        
-                        // 更新当前日期到选中的月份，并将选中日期设置为该月的1日
-                        const selectedMonthDate = new Date(this.selectedDate.getFullYear(), currentMonthIndex, 1);
-                        this.currentDate = selectedMonthDate;
-                        this.selectedDate = selectedMonthDate;
-                        
-                        // 更新选择状态并刷新日期显示
-                        await this.updateSelectionState();
-                        
-                        // 计算月份的开始和结束日期
-                        const year = this.selectedDate.getFullYear();
-                        const month = currentMonthIndex;
-                        const startDate = new Date(year, month, 1);
-                        const endDate = new Date(year, month + 1, 0);
-                        
-                        // 显示该月份内的任务
-                        await this.renderTaskListByDateRange(startDate, endDate);
-                    }
-                }
-            });
-        }
-        
-        // 添加LB1按钮的点击事件监听
-        const lb1Btn = this.containerEl.querySelector(".calendar-header-label-lb1");
-        if (lb1Btn) {
-            lb1Btn.addEventListener("click", async () => {
-                const lb1Settings = this.plugin.settings.moreLabelSettings.lb1;
-                
-                if (!lb1Settings.enabled) {
-                    return;
-                }
-                
-                switch (lb1Settings.actionType) {
-                    case "systemCommand":
-                        if (lb1Settings.systemCommand) {
-                            try {
-                                await (this.app as any).commands.executeCommandById(lb1Settings.systemCommand);
-                            } catch (error) {
-                                console.error('Failed to execute system command:', error);
-                                new Notice(`执行命令失败: ${error}`);
-                            }
-                        } else {
-                            // 如果没有配置命令，打开插件设置
-                            (this.app as any).setting.open();
-                            (this.app as any).setting.openTabById(this.plugin.manifest.id);
-                        }
-                        break;
-                    case "openFile":
-                        if (lb1Settings.filePath) {
-                            try {
-                                const file = this.app.vault.getAbstractFileByPath(lb1Settings.filePath);
-                                if (file instanceof TFile) {
-                                    await this.app.workspace.openLinkText(lb1Settings.filePath, "", true);
-                                } else {
-                                    new Notice('文件不存在，请检查路径');
-                                }
-                            } catch (error) {
-                                console.error('Failed to open file:', error);
-                                new Notice(`打开文件失败: ${error}`);
-                            }
-                        } else {
-                            // 如果没有配置文件路径，打开插件设置
-                            (this.app as any).setting.open();
-                            (this.app as any).setting.openTabById(this.plugin.manifest.id);
-                        }
-                        break;
-                }
-            });
-        }
-        
-        // 添加LB2按钮的点击事件监听
-        const lb2Btn = this.containerEl.querySelector(".calendar-header-label-lb2");
-        if (lb2Btn) {
-            lb2Btn.addEventListener("click", async () => {
-                const lb2Settings = this.plugin.settings.moreLabelSettings.lb2;
-                
-                if (!lb2Settings.enabled) {
-                    return;
-                }
-                
-                switch (lb2Settings.actionType) {
-                    case "systemCommand":
-                        if (lb2Settings.systemCommand) {
-                            try {
-                                await (this.app as any).commands.executeCommandById(lb2Settings.systemCommand);
-                            } catch (error) {
-                                console.error('Failed to execute system command:', error);
-                                new Notice(`执行命令失败: ${error}`);
-                            }
-                        } else {
-                            // 如果没有配置命令，打开插件设置
-                            (this.app as any).setting.open();
-                            (this.app as any).setting.openTabById(this.plugin.manifest.id);
-                        }
-                        break;
-                    case "openFile":
-                        if (lb2Settings.filePath) {
-                            try {
-                                const file = this.app.vault.getAbstractFileByPath(lb2Settings.filePath);
-                                if (file instanceof TFile) {
-                                    await this.app.workspace.openLinkText(lb2Settings.filePath, "", true);
-                                } else {
-                                    new Notice('文件不存在，请检查路径');
-                                }
-                            } catch (error) {
-                                console.error('Failed to open file:', error);
-                                new Notice(`打开文件失败: ${error}`);
-                            }
-                        } else {
-                            // 如果没有配置文件路径，打开插件设置
-                            (this.app as any).setting.open();
-                            (this.app as any).setting.openTabById(this.plugin.manifest.id);
-                        }
-                        break;
-                }
-            });
-        }
+        installNavigationListeners(this);
     }
 
     /**
      * 添加日期和周数单元格事件监听器
      */
     private async addCalendarCellEventListeners() {
-        // 处理月视图的周数和日期单元格
-        if (this.viewType === 'month') {
-            // 周数单元格
-            const weekNumberCells = this.containerEl.querySelectorAll(".week-number-cell");
-            weekNumberCells.forEach((cell, index) => {
-                // 计算周的开始日期
-                const currentYear = this.currentDate.getFullYear();
-                const currentMonth = this.currentDate.getMonth();
-                const firstDay = new Date(currentYear, currentMonth, 1);
-                let startDay = firstDay.getDay();
-                const prevMonthDaysToShow = startDay === 0 ? 6 : startDay - 1;
-                
-                // 计算当前周的起始日期
-                const weeksPassed = index;
-                const daysPassed = weeksPassed * 7 - prevMonthDaysToShow;
-                const weekStartDate = new Date(currentYear, currentMonth, 1 + daysPassed);
-                
-                // 调整到周一
-                const dayOfWeek = weekStartDate.getDay();
-                const adjustedDate = new Date(weekStartDate);
-                adjustedDate.setDate(adjustedDate.getDate() + (dayOfWeek === 0 ? -6 : 1) - dayOfWeek);
-                
-                // 获取周数
-                const weekInfo = getWeekInfo(adjustedDate);
-                const weekNumber = weekInfo.week;
-                
-                // 周数状态指示器
-                const weekIndicators = cell.querySelector(".week-indicators");
-                if (weekIndicators) {
-                    // 检查周报和任务
-                    this.checkWeekNoteAndTasks(adjustedDate, weekNumber, weekIndicators as HTMLElement);
-                }
-                
-                // 单击事件
-                cell.addEventListener("click", async () => {
-                    // 取消之前选择的日期
-                    this.selectedDate = null;
-
-                    // 更新选择类型和周范围
-                    this.selectionType = 'week';
-                    // 计算周的开始和结束日期
-                    const weekStart = new Date(adjustedDate);
-                    const weekEnd = new Date(adjustedDate);
-                    weekEnd.setDate(weekEnd.getDate() + 6);
-                    this.selectedWeekRange = { start: weekStart, end: weekEnd };
-                    this.selectedQuarter = null;
-
-                    // 更新日期单元格的选中状态
-                    this.updateDaySelection();
-
-                    // 更新周数单元格的选中状态
-                    this.updateWeekSelection(cell as HTMLElement);
-
-                    // 更新选择状态并刷新日期显示
-                    await this.updateSelectionState();
-
-                    // 显示该周内的任务
-                    await this.renderTaskListByDateRange(weekStart, weekEnd);
-                });
-
-                // 双击事件
-                cell.addEventListener("dblclick", async () => {
-                    await this.eventHandler.handleWeekDoubleClick(adjustedDate);
-                });
-            });
-            
-            // 日期单元格
-            const dayCells = this.containerEl.querySelectorAll(".day-cell");
-            const currentYear = this.currentDate.getFullYear();
-            const currentMonth = this.currentDate.getMonth();
-            const firstDay = new Date(currentYear, currentMonth, 1);
-            let startDay = firstDay.getDay();
-            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-            const prevMonthDaysToShow = startDay === 0 ? 6 : startDay - 1;
-            
-            // 计算上个月的最后一天
-            const lastDayOfPrevMonth = new Date(currentYear, currentMonth, 0);
-            const prevMonthDays = lastDayOfPrevMonth.getDate();
-            const prevMonth = lastDayOfPrevMonth.getMonth();
-            const prevMonthYear = lastDayOfPrevMonth.getFullYear();
-            
-            // 计算下个月的第一天
-            const firstDayOfNextMonth = new Date(currentYear, currentMonth + 1, 1);
-            const nextMonth = firstDayOfNextMonth.getMonth();
-            const nextMonthYear = firstDayOfNextMonth.getFullYear();
-            
-            let cellIndex = 0;
-            let currentDay = 1;
-            let prevMonthDay = prevMonthDays - prevMonthDaysToShow + 1;
-            let nextMonthDay = 1;
-            
-            // 将 NodeList 转换为数组
-            const dayCellArray = Array.from(dayCells);
-            for (const cell of dayCellArray) {
-                let date: Date;
-                let isOtherMonth = false;
-                
-                // 计算当前单元格的日期
-                if (cellIndex < prevMonthDaysToShow) {
-                    // 上个月的日期
-                    date = new Date(prevMonthYear, prevMonth, prevMonthDay);
-                    prevMonthDay++;
-                    isOtherMonth = true;
-                } else if (currentDay <= daysInMonth) {
-                    // 当前月的日期
-                    date = new Date(currentYear, currentMonth, currentDay);
-                    currentDay++;
-                } else {
-                    // 下个月的日期
-                    date = new Date(nextMonthYear, nextMonth, nextMonthDay);
-                    nextMonthDay++;
-                    isOtherMonth = true;
-                }
-                
-                // 检查是否有日记和任务，添加指示器
-                const indicatorsContainer = cell.querySelector(".day-indicators");
-                if (indicatorsContainer) {
-                    await this.addDayIndicators(indicatorsContainer as HTMLElement, date);
-                }
-                
-                // 检查是否是选中的日期
-                if (this.selectedDate) {
-                    const isSelected = this.selectedDate.getFullYear() === date.getFullYear() &&
-                                      this.selectedDate.getMonth() === date.getMonth() &&
-                                      this.selectedDate.getDate() === date.getDate();
-                    if (isSelected) {
-                        cell.addClass("selected-day");
-                    }
-                }
-                
-                // 双击事件 - 只在当前月份的日期上添加
-                if (!isOtherMonth) {
-                    cell.addEventListener("dblclick", async () => {
-                        await this.eventHandler.handleDayDoubleClick(date);
-                    });
-                }
-                
-                // 单击事件 - 所有日期都添加
-                cell.addEventListener("click", () => {
-                    this.onDayClick(date);
-                });
-                
-                cellIndex++;
-            }
-        } else {
-            // 年视图的季度和月份单元格
-            // 季度容器（使用与月份容器相同的处理方式）
-            const quarterContainers = this.containerEl.querySelectorAll(".quarter-container");
-            quarterContainers.forEach((container, index) => {
-                const quarter = index;
-                
-                // 单击事件
-                container.addEventListener("click", async () => {
-                    // 移除所有月份和季度的选中状态
-                    document.querySelectorAll(".month-container").forEach(el => {
-                        el.classList.remove("selected");
-                    });
-                    document.querySelectorAll(".quarter-container").forEach(el => {
-                        el.classList.remove("selected");
-                    });
-                    // 添加当前季度的选中状态
-                    container.classList.add("selected");
-                    
-                    // 更新选择类型和季度值
-                    this.selectionType = 'quarter';
-                    this.selectedDate = null;
-                    this.selectedWeekRange = null;
-                    this.selectedQuarter = quarter + 1; // 季度从1开始
-                    
-                    // 更新选择状态并刷新日期显示
-                    await this.updateSelectionState();
-                    
-                    // 计算季度的开始和结束日期
-                    const year = this.currentDate.getFullYear();
-                    const quarterStartMonth = quarter * 3;
-                    const quarterEndMonth = quarter * 3 + 2;
-                    const startDate = new Date(year, quarterStartMonth, 1);
-                    const endDate = new Date(year, quarterEndMonth + 1, 0);
-                    
-                    // 显示该季度内的任务
-                    await this.renderTaskListByDateRange(startDate, endDate);
-                });
-                
-                // 双击事件
-                container.addEventListener("dblclick", async () => {
-                    const quarterDate = new Date(this.currentDate.getFullYear(), quarter * 3, 1);
-                    await this.eventHandler.handleQuarterDoubleClick(quarterDate);
-                });
-                
-                // 季度状态指示器
-                const quarterIndicators = container.querySelector(".month-indicators");
-                if (quarterIndicators) {
-                    // 检查季报和任务
-                    this.checkQuarterNoteAndTasks(quarter, quarterIndicators as HTMLElement);
-                }
-            });
-            
-            // 月份容器（排除季度容器）
-            const monthContainers = this.containerEl.querySelectorAll(".month-container:not(.quarter-container)");
-            monthContainers.forEach((container, index) => {
-                const currentMonthIndex = index;
-                
-                // 月份标题
-                const monthHeader = container.querySelector(".month-header");
-                
-                // 单击事件
-                container.addEventListener("click", async () => {
-                    // 移除所有月份和季度的选中状态
-                    document.querySelectorAll(".month-container").forEach(el => {
-                        el.classList.remove("selected");
-                    });
-                    document.querySelectorAll(".quarter-container").forEach(el => {
-                        el.classList.remove("selected");
-                    });
-                    // 添加当前月份的选中状态
-                    container.classList.add("selected");
-                    
-                    // 更新选择类型
-                    this.selectionType = 'month';
-                    this.selectedWeekRange = null;
-                    this.selectedQuarter = null;
-                    
-                    // 更新当前日期到选中的月份，并将选中日期设置为该月的1日
-                    const selectedMonthDate = new Date(this.currentDate.getFullYear(), currentMonthIndex, 1);
-                    this.currentDate = selectedMonthDate;
-                    this.selectedDate = selectedMonthDate;
-                    
-                    // 更新选择状态并刷新日期显示
-                    await this.updateSelectionState();
-                    
-                    // 计算月份的开始和结束日期
-                    const year = this.currentDate.getFullYear();
-                    const month = currentMonthIndex;
-                    const startDate = new Date(year, month, 1);
-                    const endDate = new Date(year, month + 1, 0);
-                    
-                    // 显示该月份内的任务
-                    await this.renderTaskListByDateRange(startDate, endDate);
-                });
-                
-                // 双击事件
-                container.addEventListener("dblclick", async () => {
-                    const monthDate = new Date(this.currentDate.getFullYear(), currentMonthIndex, 1);
-                    await this.eventHandler.handleMonthDoubleClick(monthDate);
-                });
-                
-                // 月份状态指示器
-                const monthIndicators = container.querySelector(".month-indicators");
-                if (monthIndicators) {
-                    // 检查月报和任务
-                    this.checkMonthNoteAndTasks(currentMonthIndex, monthIndicators as HTMLElement);
-                }
-            });
-        }
+        await installCellListeners(this);
     }
 
     private async refreshAll() {
@@ -1192,7 +649,7 @@ export class CalendarView extends ItemView {
         await this.updateIndicators();
     }
 
-    private async onDayClick(date: Date) {
+    async onDayClick(date: Date) {
         this.selectedDate = date;
         this.currentDate = date; // 使当前月切换到选中日期的月份
 
@@ -1211,31 +668,15 @@ export class CalendarView extends ItemView {
         await this.refreshTaskList();
     }
 
-    private updateDaySelection() {
-        // 使用indicatorRenderer更新日期选择状态
-        this.indicatorRenderer.updateDaySelection(this.containerEl, this.selectedDate);
-        
-        // 更新"今"字按钮的样式，根据今天是否被选中
-        const currentToday = new Date();
-        const isTodaySelected = this.selectedDate && 
-            this.selectedDate.toDateString() === currentToday.toDateString();
-        
-        const todayBtn = this.containerEl.querySelector(".calendar-header-label-today");
-        if (todayBtn) {
-            if (isTodaySelected) {
-                todayBtn.addClass("today-selected");
-                todayBtn.removeClass("today-unselected");
-            } else {
-                todayBtn.addClass("today-unselected");
-                todayBtn.removeClass("today-selected");
-            }
-        }
-        
-        // 点击日期时取消周数的选中状态
+    updateDaySelection() {
+        updateDaySelection(this);
+    }
+
+    public updateWeekSelectionIfNeeded() {
         this.updateWeekSelection();
     }
 
-    private updateWeekSelection(selectedWeekCell?: HTMLElement) {
+    updateWeekSelection(selectedWeekCell?: HTMLElement) {
         // 移除所有周数单元格的选中状态
         this.containerEl.querySelectorAll(".week-number-cell").forEach((cell: any) => {
             cell.removeClass('selected-week');
@@ -1247,7 +688,7 @@ export class CalendarView extends ItemView {
         }
     }
 
-    private updateSelectionState() {
+    updateSelectionState() {
         // 更新任务列表头部的日期显示
         const selectedDateDisplay = this.containerEl.querySelector(".selected-date-display") as HTMLElement;
         if (selectedDateDisplay) {
@@ -1360,7 +801,7 @@ export class CalendarView extends ItemView {
         }
     }
 
-    private async renderTaskListByDateRange(startDate: Date, endDate: Date) {
+    async renderTaskListByDateRange(startDate: Date, endDate: Date) {
         // 获取任务列表容器
         const taskListContainer = this.containerEl.querySelector(".task-list-container") as HTMLElement;
         if (!taskListContainer) return;
@@ -1391,25 +832,12 @@ export class CalendarView extends ItemView {
             // 2.2: 检查任务是否属于当前周期笔记中的任务
             // 根据当前视图类型和选择类型，判断任务是否属于当前周期
             if (this.viewType === 'year' && this.selectionType === 'quarter') {
-                // 季度视图：检查任务是否在季报中
                 if (this.selectedQuarter !== null) {
                     const quarterlySettings = this.plugin.settings.quarterlyNote;
                     const quarterlyFileName = formatDate(startDate, quarterlySettings.fileNameFormat);
                     const quarterlyNotePath = `${quarterlySettings.savePath}/${quarterlyFileName}.md`;
                     if (task.filePath === quarterlyNotePath) {
                         return true;
-                    }
-                    
-                    // 检查其他可能的季报路径
-                    const possibleQuarterlyPaths = [
-                        `00-周期笔记/4-季报/${quarterlyFileName}.md`,
-                        `00-周期笔记/4-季报/${formatDate(startDate, "YYYY-QQQ")}.md`,
-                        `00-周期笔记/4-季报/${formatDate(startDate, "YYYY-QQ")}.md`
-                    ];
-                    for (const path of possibleQuarterlyPaths) {
-                        if (task.filePath === path) {
-                            return true;
-                        }
                     }
                 }
             } else if (this.viewType === 'year' && this.selectionType === 'month') {
@@ -1420,17 +848,6 @@ export class CalendarView extends ItemView {
                 if (task.filePath === monthlyNotePath) {
                     return true;
                 }
-                
-                // 检查其他可能的月报路径
-                const possibleMonthlyPaths = [
-                    `00-周期笔记/3-月报/${monthlyFileName}.md`,
-                    `00-周期笔记/3-月报/${formatDate(startDate, "YYYY-MM")}.md`
-                ];
-                for (const path of possibleMonthlyPaths) {
-                    if (task.filePath === path) {
-                        return true;
-                    }
-                }
             } else if (this.selectionType === 'week') {
                 // 周选择：检查任务是否在周报中
                 const weeklySettings = this.plugin.settings.weeklyNote;
@@ -1438,18 +855,6 @@ export class CalendarView extends ItemView {
                 const weeklyNotePath = `${weeklySettings.savePath}/${weeklyFileName}.md`;
                 if (task.filePath === weeklyNotePath) {
                     return true;
-                }
-                
-                // 检查其他可能的周报路径
-                const possibleWeeklyPaths = [
-                    `00-周期笔记/2-周报/${weeklyFileName}.md`,
-                    `00-周期笔记/2-周报/${formatDate(startDate, "YYYY-wWW")}.md`,
-                    `00-周期笔记/2-周报/${formatDate(startDate, "YYYY-WW")}.md`
-                ];
-                for (const path of possibleWeeklyPaths) {
-                    if (task.filePath === path) {
-                        return true;
-                    }
                 }
             } else if (this.viewType === 'year' && this.selectionType === 'year') {
                 // 年视图：检查任务是否在年报中
@@ -1459,17 +864,6 @@ export class CalendarView extends ItemView {
                     const yearlyNotePath = `${yearlySettings.savePath}/${yearlyFileName}.md`;
                     if (task.filePath === yearlyNotePath) {
                         return true;
-                    }
-                    
-                    // 检查其他可能的年报路径
-                    const possibleYearlyPaths = [
-                        `00-周期笔记/5-年报/${yearlyFileName}.md`,
-                        `00-周期笔记/5-年报/${formatDate(startDate, "YYYY")}.md`
-                    ];
-                    for (const path of possibleYearlyPaths) {
-                        if (task.filePath === path) {
-                            return true;
-                        }
                     }
                 }
             }
@@ -1521,602 +915,53 @@ export class CalendarView extends ItemView {
     }
 
     private async checkWeekNoteAndTasks(weekStartDate: Date, weekNumber: number, indicators: HTMLElement) {
-        // 计算周结束日期
-        const weekEndDate = new Date(weekStartDate);
-        weekEndDate.setDate(weekEndDate.getDate() + 6);
-        
-        let hasWeeklyNote = false;
-        let hasWeeklyTask = false;
-        
-        // 获取周报设置
-        const weeklySettings = this.plugin.settings.weeklyNote;
-        const weeklyFileName = formatDate(weekStartDate, weeklySettings.fileNameFormat);
-        
-        // 检查多种可能的周报路径
-        const possiblePaths = [
-            `${weeklySettings.savePath}/${weeklyFileName}.md`,
-            `00-周期笔记/2-周报/${weeklyFileName}.md`,
-            `00-周期笔记/2-周报/${formatDate(weekStartDate, "YYYY-wWW")}.md`,
-            `00-周期笔记/2-周报/${formatDate(weekStartDate, "YYYY-WW")}.md`
-        ];
-        
-        // 检查是否存在周报
-        let weeklyFilePath = '';
-        for (const path of possiblePaths) {
-            if (await noteExists(this.app, path)) {
-                hasWeeklyNote = true;
-                weeklyFilePath = path;
-                break;
-            }
-        }
-        
-        // 检查周报中是否有任务
-        if (hasWeeklyNote && weeklyFilePath) {
-            try {
-                const file = this.app.vault.getAbstractFileByPath(weeklyFilePath);
-                if (file instanceof TFile) {
-                    const content = await this.app.vault.read(file);
-                    
-                    // 检查周报中是否有任务
-                    const taskRegex = /^\s*([-\*\d]+\.?)\s*\[(.)\]\s*(.+)$/gm;
-                    let match;
-                    while ((match = taskRegex.exec(content)) !== null) {
-                        const status = match[2] || '';
-                        const taskText = match[3] || '';
-                        
-                        // 检查是否是未完成的任务
-                        if (status.toLowerCase() !== 'x') {
-                            // 检查任务文本中是否包含截止日期
-                            const dueDateRegex = /(?:[@#]|due:\s?|📅\s?)(\d{4}-\d{2}-\d{2})/;
-                            const hasDueDate = dueDateRegex.test(taskText);
-                            
-                            // 如果没有截止日期，或者截止日期在本周，都算作本周的任务
-                            if (!hasDueDate) {
-                                hasWeeklyTask = true;
-                                break;
-                            } else {
-                                // 有截止日期，检查是否在本周
-                                const dueDateMatch = taskText.match(dueDateRegex);
-                                if (dueDateMatch && dueDateMatch[1]) {
-                                    const dueDate = new Date(dueDateMatch[1]);
-                                    if (dueDate >= weekStartDate && dueDate <= weekEndDate) {
-                                        hasWeeklyTask = true;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error(`Failed to read weekly note: ${weeklyFilePath}`, error);
-            }
-        }
-        
-        // 检查本周内是否有截止任务（其他文件）
-        if (!hasWeeklyTask) {
-            const allTasks = await extractTasks(this.app, this.plugin.settings);
-            for (const task of allTasks) {
-                if (task.dueDate && task.dueDate >= weekStartDate && task.dueDate <= weekEndDate) {
-                    hasWeeklyTask = true;
-                    break;
-                }
-            }
-        }
-        
-        // 清空现有指示器
-        indicators.empty();
-        
-        // 添加实心小圆点表示周报
-        if (hasWeeklyNote) {
-            indicators.createEl("div", {cls: "indicator-dot solid-dot"});
-        }
-        
-        // 添加空心小圆点表示任务
-        if (hasWeeklyTask) {
-            indicators.createEl("div", {cls: "indicator-dot hollow-dot"});
-        }
+        await checkWeekNoteAndTasks(this, weekStartDate, weekNumber, indicators);
     }
 
     private async checkQuarterNoteAndTasks(quarter: number, indicators: HTMLElement) {
-        // 计算季度的开始和结束日期
-        const year = this.currentDate.getFullYear();
-        const quarterStartMonth = quarter * 3;
-        const quarterEndMonth = quarter * 3 + 2;
-        const quarterStartDate = new Date(year, quarterStartMonth, 1);
-        const quarterEndDate = new Date(year, quarterEndMonth + 1, 0);
-        quarterEndDate.setHours(23, 59, 59, 999);
-        
-        let hasQuarterlyNote = false;
-        let hasQuarterlyIncompleteTask = false;
-        let hasQuarterlyCompletedTask = false;
-        
-        // 获取季度设置
-        const quarterlySettings = this.plugin.settings.quarterlyNote;
-        const quarterlyFileName = formatDate(quarterStartDate, quarterlySettings.fileNameFormat);
-        
-        // 检查多种可能的季度报告路径
-        const possiblePaths = [
-            `${quarterlySettings.savePath}/${quarterlyFileName}.md`,
-            `00-周期笔记/4-季报/${quarterlyFileName}.md`,
-            `00-周期笔记/4-季报/${formatDate(quarterStartDate, "YYYY-QQQ")}.md`,
-            `00-周期笔记/4-季报/${formatDate(quarterStartDate, "YYYY-QQ")}.md`
-        ];
-        
-        // 检查是否存在季度报告
-        for (const path of possiblePaths) {
-            if (await noteExists(this.app, path)) {
-                hasQuarterlyNote = true;
-                break;
-            }
-        }
-        
-        // 检查本季度内是否有截止任务
-        const allTasks = await extractTasks(this.app, this.plugin.settings);
-        for (const task of allTasks) {
-            if (task.dueDate && task.dueDate >= quarterStartDate && task.dueDate <= quarterEndDate) {
-                if (task.status === "x" || task.status === "-") {
-                    // 已完成或已取消的任务
-                    hasQuarterlyCompletedTask = true;
-                } else {
-                    // 未完成的任务（待办或进行中）
-                    hasQuarterlyIncompleteTask = true;
-                }
-            }
-        }
-        
-        // 清空现有指示器
+        const result = await checkQuarterNoteAndTasks(this, quarter);
         indicators.empty();
-        
-        // 添加实心小圆点表示季度报告
-        if (hasQuarterlyNote) {
+        if (result.hasNote) {
             indicators.createEl("div", { cls: "indicator-dot solid-dot" });
         }
-        
-        // 添加空心小圆点表示未完成任务
-        if (hasQuarterlyIncompleteTask) {
+        if (result.hasIncomplete) {
             indicators.createEl("div", { cls: "indicator-dot hollow-dot" });
         }
-        
-        // 添加绿色实心小圆点表示已完成任务
-        if (hasQuarterlyCompletedTask) {
+        if (result.hasCompleted) {
             indicators.createEl("div", { cls: "indicator-dot check-dot" });
         }
     }
 
     private async checkMonthNoteAndTasks(monthIndex: number, indicators: HTMLElement) {
-        // 计算月份的开始和结束日期
-        const year = this.currentDate.getFullYear();
-        const monthStartDate = new Date(year, monthIndex, 1);
-        const monthEndDate = new Date(year, monthIndex + 1, 0);
-        monthEndDate.setHours(23, 59, 59, 999);
-        
-        let hasMonthlyNote = false;
-        let hasMonthlyIncompleteTask = false;
-        let hasMonthlyCompletedTask = false;
-        
-        // 获取月份设置
-        const monthlySettings = this.plugin.settings.monthlyNote;
-        const monthlyFileName = formatDate(monthStartDate, monthlySettings.fileNameFormat);
-        
-        // 检查多种可能的月报路径
-        const possiblePaths = [
-            `${monthlySettings.savePath}/${monthlyFileName}.md`,
-            `00-周期笔记/3-月报/${monthlyFileName}.md`,
-            `00-周期笔记/3-月报/${formatDate(monthStartDate, "YYYY-MM")}.md`
-        ];
-        
-        // 检查是否存在月报
-        for (const path of possiblePaths) {
-            if (await noteExists(this.app, path)) {
-                hasMonthlyNote = true;
-                break;
-            }
-        }
-        
-        // 检查本月内是否有截止任务
-        const allTasks = await extractTasks(this.app, this.plugin.settings);
-        for (const task of allTasks) {
-            if (task.dueDate && task.dueDate >= monthStartDate && task.dueDate <= monthEndDate) {
-                if (task.status === "x" || task.status === "-") {
-                    // 已完成或已取消的任务
-                    hasMonthlyCompletedTask = true;
-                } else {
-                    // 未完成的任务（待办或进行中）
-                    hasMonthlyIncompleteTask = true;
-                }
-            }
-        }
-        
-        // 清空现有指示器
+        const result = await checkMonthNoteAndTasks(this, monthIndex);
         indicators.empty();
-        
-        // 添加实心小圆点表示月报
-        if (hasMonthlyNote) {
+        if (result.hasNote) {
             indicators.createEl("div", { cls: "indicator-dot solid-dot" });
         }
-        
-        // 添加空心小圆点表示未完成任务
-        if (hasMonthlyIncompleteTask) {
+        if (result.hasIncomplete) {
             indicators.createEl("div", { cls: "indicator-dot hollow-dot" });
         }
-        
-        // 添加绿色实心小圆点表示已完成任务
-        if (hasMonthlyCompletedTask) {
+        if (result.hasCompleted) {
             indicators.createEl("div", { cls: "indicator-dot check-dot" });
         }
     }
 
     private async addDayIndicators(container: HTMLElement, date: Date) {
-        // 检查是否有日记和任务，添加指示器
-        const dailySettings = this.plugin.settings.dailyNote;
-        const dailyFileName = formatDate(date, dailySettings.fileNameFormat);
-        const dailyNotePath = `${dailySettings.savePath}/${dailyFileName}.md`;
-        
-        let hasNote = false;
-        let hasTask = false;
-        
-        if (await noteExists(this.app, dailyNotePath)) {
-            hasNote = true;
-            
-            // 检查当天日记中没有截止日期的任务
-            try {
-                const dailyFile = this.app.vault.getAbstractFileByPath(dailyNotePath);
-                if (dailyFile instanceof TFile) {
-                    const content = await this.app.vault.read(dailyFile);
-                    
-                    // 使用 taskRegex 匹配所有任务
-                    const taskRegex = /^\s*([-\*\d]+\.?)\s*\[(.)\]\s*(.+)$/gm;
-                    let match;
-                    while ((match = taskRegex.exec(content)) !== null) {
-                        const status = match[2] || '';
-                        const taskText = match[3] || '';
-                        
-                        // 检查是否是未完成的任务
-                        if (status.toLowerCase() !== 'x') {
-                            // 检查任务文本中是否包含截止日期
-                            const dueDateRegex = /(?:[@#]|due:\s?|📅\s?)(\d{4}-\d{2}-\d{2})/;
-                            const hasDueDate = dueDateRegex.test(taskText);
-                            
-                            // 如果没有截止日期，或者截止日期是当天，都算作当天的任务
-                            if (!hasDueDate) {
-                                hasTask = true;
-                                break;
-                            } else {
-                                // 有截止日期，检查是否是当天
-                                const dueDateMatch = taskText.match(dueDateRegex);
-                                if (dueDateMatch && dueDateMatch[1]) {
-                                    const dueDate = new Date(dueDateMatch[1]);
-                                    
-                                    // 创建当天的开始和结束时间
-                                    const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
-                                    const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-                                    
-                                    if (dueDate >= dayStart && dueDate <= dayEnd) {
-                                        hasTask = true;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to check daily note tasks:', error);
-            }
-        }
-        
-        // 检查所有文件中截止日期在当天的任务（其他文件中的任务）
-        if (!hasTask) {
-            try {
-                const allTasks = await extractTasks(this.app, this.plugin.settings);
-                
-                // 筛选截止日期在当天的任务
-                // 创建当天的开始和结束时间（本地时间）
-                const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
-                const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-                
-                for (const task of allTasks) {
-                    // 只检查其他文件中的任务，避免重复检查
-                    if (task.filePath !== dailyNotePath && task.dueDate) {
-                        // 创建任务截止日期的本地时间版本（去除时区影响）
-                        const taskDueDate = new Date(
-                            task.dueDate.getFullYear(),
-                            task.dueDate.getMonth(),
-                            task.dueDate.getDate(),
-                            task.dueDate.getHours(),
-                            task.dueDate.getMinutes(),
-                            task.dueDate.getSeconds(),
-                            task.dueDate.getMilliseconds()
-                        );
-                        
-                        if (taskDueDate >= dayStart && taskDueDate <= dayEnd) {
-                            hasTask = true;
-                            break;
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to check tasks for day indicator:', error);
-            }
-        }
-        
-        // 清空现有指示器
-        container.empty();
-        
-        // 创建一行指示器
-        const indicatorRow = container.createEl('div', {cls: 'indicator-row'});
-        
-        // 显示日记指示器（实心小圆点）
-        if (hasNote) {
-            indicatorRow.createEl('div', {cls: 'indicator-dot solid-dot'});
-        }
-        
-        // 显示任务指示器（空心小圆点）
-        if (hasTask) {
-            indicatorRow.createEl('div', {cls: 'indicator-dot hollow-dot'});
-        }
+        await addDayIndicators(container, this, date);
     }
 
     private async updateIndicators() {
-        if (this.viewType === 'month') {
-            // 使用indicatorRenderer更新指示器
-            const targetDate = this.selectedDate || this.currentDate;
-            await this.indicatorRenderer.updateAllDayIndicators(this.containerEl, targetDate);
-            await this.indicatorRenderer.updateWeekIndicators(this.containerEl, targetDate);
-        } else if (this.viewType === 'year') {
-            // 年视图：更新月份指示器
-            await this.updateYearViewMonthIndicators();
-        }
-        // 移除不必要的refreshTaskList调用，避免重复提取任务
+        await updateIndicators(this);
     }
 
     private async updateYearViewMonthIndicators() {
-        // 获取年视图容器
-        const yearViewContainer = this.containerEl.querySelector('.year-view-container');
-        if (!yearViewContainer) return;
-        
-        // 获取所有季度容器
-        const quarterContainers = Array.from(yearViewContainer.querySelectorAll('.quarter-container'));
-        
-        // 遍历所有季度容器
-        for (const quarterContainer of quarterContainers) {
-            const quarterHeader = quarterContainer.querySelector('.month-header');
-            if (!quarterHeader) continue;
-            
-            // 解析季度标题，获取季度索引
-            const quarterText = quarterHeader.textContent || '';
-            const quarterMatch = quarterText.match(/(\d+)季度/);
-            if (!quarterMatch || !quarterMatch[1]) continue;
-            
-            const quarterIndex = parseInt(quarterMatch[1]) - 1;
-            if (isNaN(quarterIndex) || quarterIndex < 0 || quarterIndex > 3) continue;
-            
-            // 检查该季度是否有季报和任务
-            const year = this.currentDate.getFullYear();
-            const quarterDate = new Date(year, quarterIndex * 3, 1);
-            
-            // 提前声明季度开始和结束日期
-            const quarterStartDate = new Date(year, quarterIndex * 3, 1);
-            const quarterEndDate = new Date(year, quarterIndex * 3 + 3, 0);
-            quarterEndDate.setHours(23, 59, 59, 999);
-            
-            let hasQuarterlyNote = false;
-            let hasQuarterlyTask = false;
-            let hasQuarterlyCompletedTask = false;
-            
-            // 检查季报
-            const quarterlySettings = this.plugin.settings.quarterlyNote;
-            const quarterlyFileName = formatDate(quarterDate, quarterlySettings.fileNameFormat);
-            const quarterlyNotePath = `${quarterlySettings.savePath}/${quarterlyFileName}.md`;
-            
-            if (await noteExists(this.app, quarterlyNotePath)) {
-                hasQuarterlyNote = true;
-                
-                // 有季报，检查是否有任务
-                try {
-                    const file = this.app.vault.getAbstractFileByPath(quarterlyNotePath);
-                    if (file instanceof TFile) {
-                        const content = await this.app.vault.read(file);
-                        
-                        // 检查季报中是否有任务
-                        const taskRegex = /^\s*([-\*\d]+\.?)\s*\[([ xX-])\]\s*(.+)$/gm;
-                        let match;
-                        while ((match = taskRegex.exec(content)) !== null) {
-                            const status = match[2] || '';
-                            const taskText = match[3] || '';
-                            
-                            // 检查任务文本中是否包含截止日期
-                            const dueDateRegex = /(?:[@#]|due:\s?|📅\s?)(\d{4}-\d{2}-\d{2})/;
-                            const hasDueDate = dueDateRegex.test(taskText);
-                            
-                            // 如果没有截止日期，或者截止日期在本季度，都算作本季度的任务
-                            let isTaskForThisQuarter = false;
-                            if (!hasDueDate) {
-                                isTaskForThisQuarter = true;
-                            } else {
-                                // 有截止日期，检查是否在本季度
-                                const dueDateMatch = taskText.match(dueDateRegex);
-                                if (dueDateMatch && dueDateMatch[1]) {
-                                    const dueDate = new Date(dueDateMatch[1]);
-                                    if (dueDate >= quarterStartDate && dueDate <= quarterEndDate) {
-                                        isTaskForThisQuarter = true;
-                                    }
-                                }
-                            }
-                            
-                            if (isTaskForThisQuarter) {
-                                // 根据任务状态更新指示器
-                                if (status.toLowerCase() === 'x' || status.toLowerCase() === '-') {
-                                    hasQuarterlyCompletedTask = true;
-                                } else {
-                                    hasQuarterlyTask = true;
-                                }
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error(`Failed to read quarterly note: ${quarterlyNotePath}`, error);
-                }
-            }
-            
-            // 检查该季度内是否有截止任务
-            const allTasks = await this.plugin.calendarDataManager.getTasks();
-            
-            for (const task of allTasks) {
-                if (task.dueDate && task.dueDate >= quarterStartDate && task.dueDate <= quarterEndDate) {
-                    if (task.status === 'x' || task.status === '-') {
-                        hasQuarterlyCompletedTask = true;
-                    } else {
-                        hasQuarterlyTask = true;
-                    }
-                }
-            }
-            
-            // 更新季度指示器
-            const quarterIndicators = quarterContainer.querySelector('.month-indicators');
-            if (quarterIndicators) {
-                quarterIndicators.empty();
-                
-                // 添加实心小圆点表示季报
-                if (hasQuarterlyNote) {
-                    quarterIndicators.createEl('div', {cls: 'indicator-dot solid-dot'});
-                }
-                
-                // 添加空心小圆点表示未完成任务
-                if (hasQuarterlyTask) {
-                    quarterIndicators.createEl('div', {cls: 'indicator-dot hollow-dot'});
-                }
-                
-                // 添加绿色实心小圆点表示已完成任务
-                if (hasQuarterlyCompletedTask) {
-                    quarterIndicators.createEl('div', {cls: 'indicator-dot check-dot'});
-                }
-            }
-        }
-        
-        // 获取所有月份容器（排除季度容器）
-        const monthContainers = Array.from(yearViewContainer.querySelectorAll('.month-container:not(.quarter-container)'));
-        
-        // 遍历所有月份容器
-        for (const monthContainer of monthContainers) {
-            const monthHeader = monthContainer.querySelector('.month-header');
-            if (!monthHeader) continue;
-            
-            // 解析月份标题，获取月份索引
-            const monthText = monthHeader.textContent || '';
-            const monthMatch = monthText.match(/(\d+)月/);
-            if (!monthMatch || !monthMatch[1]) continue;
-            
-            const monthIndex = parseInt(monthMatch[1]) - 1;
-            if (isNaN(monthIndex) || monthIndex < 0 || monthIndex > 11) continue;
-            
-            // 检查该月份是否有月报和任务
-            const year = this.currentDate.getFullYear();
-            const monthDate = new Date(year, monthIndex, 1);
-            
-            let hasMonthlyNote = false;
-            let hasMonthlyTask = false;
-            let hasMonthlyCompletedTask = false;
-            
-            // 检查月报
-            const monthlySettings = this.plugin.settings.monthlyNote;
-            const monthlyFileName = formatDate(monthDate, monthlySettings.fileNameFormat);
-            const monthlyNotePath = `${monthlySettings.savePath}/${monthlyFileName}.md`;
-            
-            if (await noteExists(this.app, monthlyNotePath)) {
-                hasMonthlyNote = true;
-                
-                // 检查是否有任务
-                try {
-                    const file = this.app.vault.getAbstractFileByPath(monthlyNotePath);
-                    if (file instanceof TFile) {
-                        const content = await this.app.vault.read(file);
-                        
-                        // 检查是否有任务
-                        const taskRegex = /^\s*([-\*\d]+\.?)\s*\[([ xX-])\]\s*(.+)$/gm;
-                        let match;
-                        while ((match = taskRegex.exec(content)) !== null) {
-                            const status = match[2] || '';
-                            const taskText = match[3] || '';
-                            
-                            // 检查任务文本中是否包含截止日期
-                            const dueDateRegex = /(?:[@#]|due:\s?|📅\s?)(\d{4}-\d{2}-\d{2})/;
-                            const hasDueDate = dueDateRegex.test(taskText);
-                            
-                            // 如果没有截止日期，或者截止日期在当月，都算作当月的任务
-                            let isTaskForThisMonth = false;
-                            if (!hasDueDate) {
-                                isTaskForThisMonth = true;
-                            } else {
-                                // 有截止日期，检查是否在当月
-                                const dueDateMatch = taskText.match(dueDateRegex);
-                                if (dueDateMatch && dueDateMatch[1]) {
-                                    const dueDate = new Date(dueDateMatch[1]);
-                                    if (dueDate.getFullYear() === year && dueDate.getMonth() === monthIndex) {
-                                        isTaskForThisMonth = true;
-                                    }
-                                }
-                            }
-                            
-                            if (isTaskForThisMonth) {
-                                // 根据任务状态更新指示器
-                                if (status.toLowerCase() === 'x' || status.toLowerCase() === '-') {
-                                    hasMonthlyCompletedTask = true;
-                                } else {
-                                    hasMonthlyTask = true;
-                                }
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error(`Failed to read monthly note: ${monthlyNotePath}`, error);
-                }
-            }
-            
-            // 检查该月份内是否有截止任务
-            const allTasks = await this.plugin.calendarDataManager.getTasks();
-            const monthStartDate = new Date(year, monthIndex, 1);
-            const monthEndDate = new Date(year, monthIndex + 1, 0);
-            monthEndDate.setHours(23, 59, 59, 999);
-            
-            for (const task of allTasks) {
-                if (task.dueDate && task.dueDate >= monthStartDate && task.dueDate <= monthEndDate) {
-                    if (task.status === 'x' || task.status === '-') {
-                        hasMonthlyCompletedTask = true;
-                    } else {
-                        hasMonthlyTask = true;
-                    }
-                }
-            }
-            
-            // 更新月份指示器
-            const monthIndicators = monthContainer.querySelector('.month-indicators');
-            if (monthIndicators) {
-                monthIndicators.empty();
-                
-                // 添加实心小圆点表示月报
-                if (hasMonthlyNote) {
-                    monthIndicators.createEl('div', {cls: 'indicator-dot solid-dot'});
-                }
-                
-                // 添加空心小圆点表示未完成任务
-                if (hasMonthlyTask) {
-                    monthIndicators.createEl('div', {cls: 'indicator-dot hollow-dot'});
-                }
-                
-                // 添加绿色实心小圆点表示已完成任务
-                if (hasMonthlyCompletedTask) {
-                    monthIndicators.createEl('div', {cls: 'indicator-dot check-dot'});
-                }
-            }
-        }
+        await updateYearViewMonthIndicators(this);
     }
 
     /**
      * 计算并调整任务列表高度，使其占据剩余空间
      */
-    private adjustTaskListHeight() {
+    adjustTaskListHeight() {
         // 获取整个视图容器
         const viewContainer = this.containerEl.children[1] as HTMLElement;
         if (!viewContainer) return;
@@ -2179,7 +1024,7 @@ export class CalendarView extends ItemView {
     /**
      * 切换日历视图的展开和收缩状态
      */
-    private toggleCalendarView() {
+    toggleCalendarView() {
         // 月视图的收缩/展开逻辑
         if (this.viewType === 'month') {
             const calendarTable = this.containerEl.querySelector('.calendar-table') as HTMLElement;

@@ -3,7 +3,7 @@ import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
 import {CalendarView} from "./views/CalendarView";
 import { CalendarViewController } from './core/CalendarViewController';
 import { CalendarDataManager } from './core/CalendarDataManager';
-import { EventEmitter, CalendarEvent } from './core/EventEmitter';
+import { EventEmitter } from './core/EventEmitter';
 
 export class MyPlugin extends Plugin {
     settings: MyPluginSettings = DEFAULT_SETTINGS;
@@ -23,11 +23,6 @@ export class MyPlugin extends Plugin {
             
             // 初始化日历视图控制器
             this.calendarViewController = new CalendarViewController(this);
-            
-            // 暴露插件实例到 window 对象，以便其他模块访问
-            (window as any).jiujiuObsidianCalendarPlugin = {
-                instance: this
-            };
 
             // 注册视图
             this.registerView(
@@ -50,8 +45,8 @@ export class MyPlugin extends Plugin {
             // 加载设置页
             this.addSettingTab(new SampleSettingTab(this.app, this));
             
-            // 插件启用时自动打开默认视图
-            this.activateView();
+            // 插件启用时自动打开默认视图（延迟执行，等待 workspace 就绪）
+            setTimeout(() => this.activateView(), 0);
         } catch (error) {
             console.error("[JiuJiu Calendar] Plugin load error:", error);
             new Notice(`JiuJiu Calendar plugin failed to load: ${(error as Error).message}`);
@@ -63,25 +58,30 @@ export class MyPlugin extends Plugin {
     }
 
     async activateView() {
-        const { workspace } = this.app;
+        try {
+            const { workspace } = this.app;
+            if (!workspace) return;
 
-        let leaf: WorkspaceLeaf | null = null;
-        const leaves = workspace.getLeavesOfType("jiujiu-calendar-view");
+            let leaf: WorkspaceLeaf | null = null;
+            const leaves = workspace.getLeavesOfType("jiujiu-calendar-view");
 
-        if (leaves.length > 0 && leaves[0]) {
-            leaf = leaves[0];
-        } else {
-            leaf = workspace.getRightLeaf(false);
-            if (leaf) {
-                await leaf.setViewState({
-                    type: "jiujiu-calendar-view",
-                    active: true,
-                });
+            if (leaves.length > 0 && leaves[0]) {
+                leaf = leaves[0];
+            } else {
+                leaf = workspace.getRightLeaf(false);
+                if (leaf) {
+                    await leaf.setViewState({
+                        type: "jiujiu-calendar-view",
+                        active: true,
+                    });
+                }
             }
-        }
 
-        if (leaf) {
-            workspace.revealLeaf(leaf);
+            if (leaf) {
+                workspace.revealLeaf(leaf);
+            }
+        } catch (error) {
+            console.error("[JiuJiu Calendar] Failed to activate view:", error);
         }
     }
 
@@ -202,7 +202,7 @@ export class MyPlugin extends Plugin {
             // 检查配置是否有效
             if (!config || !config.id) {
     
-                new (require('obsidian').Notice)('Error executing capture: Invalid config');
+                new Notice('Error executing capture: Invalid config');
                 return;
             }
             
@@ -249,19 +249,19 @@ export class MyPlugin extends Plugin {
                 const module = await import('./engine/CaptureChoiceEngine');
                 CaptureChoiceEngine = module.CaptureChoiceEngine;
             } catch (importError) {
-                new (require('obsidian').Notice)('Error executing capture: Failed to load CaptureChoiceEngine');
+                new Notice('Error executing capture: Failed to load CaptureChoiceEngine');
                 return;
             }
             
             if (!CaptureChoiceEngine) {
-                new (require('obsidian').Notice)('Error executing capture: CaptureChoiceEngine not found');
+                new Notice('Error executing capture: CaptureChoiceEngine not found');
                 return;
             }
             
             const engine = new CaptureChoiceEngine(this.app, this, captureChoice, choiceExecutor);
             await engine.run();
         } catch (error) {
-            new (require('obsidian').Notice)(`Error executing capture: ${(error as Error).message}`);
+            new Notice(`Error executing capture: ${(error as Error).message}`);
         }
     }
 }

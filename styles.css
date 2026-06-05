@@ -740,25 +740,6 @@
     font-size: 0.8em;
 }
 
-/* 任务列表 */
-.task-list {
-    font-size: 1.0em;
-    color: var(--text-normal);
-    min-height: 6em;
-}
-
-/* 任务项 */
-.task-item {
-    display: flex;
-    align-items: flex-start;
-    margin-bottom: 0.5em;
-    padding: 0.3em;
-    border-radius: 0.3em;
-    background-color: transparent;
-    transition: all 0.2s ease;
-    min-height: 2em;
-}
-
 /* 任务复选框 */
 .task-checkbox {
     margin-right: 0.5em !important;
@@ -885,20 +866,6 @@
     margin-top: 0.1em;
 }
 
-/* 任务内容 */
-.task-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.2em;
-    padding: 0.2em;
-    border-radius: 0.2em;
-    transition: background-color 0.2s ease;
-    min-width: 0;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-}
-
 /* 任务内容悬停效果 */
 .task-content:hover {
     background-color: var(--background-modifier-hover) !important;
@@ -982,7 +949,6 @@ li.task-highlighted {
 
 /* 任务模态框样式 */
 .task-modal {
-    position: flex;
     top: 0;
     left: 0;
     width: 100%;

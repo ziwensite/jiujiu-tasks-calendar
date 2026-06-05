@@ -1,4 +1,4 @@
-import {App, PluginSettingTab, Setting, Notice, TextComponent} from "obsidian";
+import {App, Modal, PluginSettingTab, Setting, Notice, TextComponent} from "obsidian";
 import MyPlugin from "./main";
 import { formatDate } from "./utils/dateUtils";
 import { AddCaptureToConfigBox } from "./components";
@@ -6,620 +6,15 @@ import { FileSelectModal } from "./modals/FileSelectModal";
 import { FolderSelectModal } from "./modals/FolderSelectModal";
 import { CaptureToConfigModal } from "./views/calendar/modals/CaptureToConfigModal";
 import { CommandSelectModal } from "./modals/CommandSelectModal";
-
-export interface NoteTemplateSettings {
-    savePath: string;
-    templatePath: string;
-    fileNameFormat: string;
-}
-
-export interface TaskInsertSettings {
-    insertSection: string;
-    insertPosition: "first" | "last";
-}
-
-export interface CreateFileIfItDoesntExist {
-    enabled: boolean;
-    createWithTemplate: boolean;
-    template: string;
-}
-
-export interface FormatSettings {
-    enabled: boolean;
-    format: string;
-}
-
-export interface InsertAfterSettings {
-    enabled: boolean;
-    after: string;
-    insertAtEnd: boolean;
-    considerSubsections: boolean;
-    createIfNotFound: boolean;
-    createIfNotFoundLocation: "top" | "bottom";
-}
-
-export interface NewLineCaptureSettings {
-    enabled: boolean;
-    direction: "above" | "below";
-}
-
-export interface FileOpeningSettings {
-    location: "reuse" | "tab" | "split" | "window" | "left-sidebar" | "right-sidebar";
-    direction: "vertical" | "horizontal";
-    mode: "preview" | "source" | "live" | "live-preview" | "default";
-    focus: boolean;
-}
-
-export interface CaptureToConfig {
-    id: string;
-    name: string;
-    description: string;
-    
-    // 基本设置
-    enabled: boolean;
-    defaultCapturePath: string;
-    captureToActiveFile: boolean;
-    
-    // 快捷键设置
-    hotkey: {
-        modifiers: string[];
-        key: string;
-    } | null;
-    
-    // 输入方式设置
-    inputMethod: "single-line" | "multi-line" | "none";
-    
-    // 文件创建设置
-    createFileIfItDoesntExist: CreateFileIfItDoesntExist;
-    
-    // 格式化设置
-    format: FormatSettings;
-    
-    // 插入设置
-    prepend: boolean;
-    appendLink: boolean;
-    
-    // 任务设置
-    task: boolean;
-    
-    // 日期设置
-    autoAddCreatedDate: boolean;
-    autoAddDueDate: boolean;
-    dueDateOption: "today" | "custom" | "weekend" | "monthEnd" | "yearEnd";
-    customDueDays: number;
-    
-    // 插入位置设置
-    insertAfter: InsertAfterSettings;
-    newLineCapture: NewLineCaptureSettings;
-    
-    // 文件打开设置
-    openFile: boolean;
-    fileOpening: FileOpeningSettings;
-}
-
-export interface CaptureToSettings {
-    enabled: boolean;
-    fleetingNoteConfigId: string;
-    recordConfigId: string;
-    taskConfigId: string;
-    configs: CaptureToConfig[];
-}
-
-export interface TaskSettings {
-    // 捕获插入设置
-    captureToSettings: CaptureToSettings;
-    // 重复任务设置
-    recurrenceSettings: {
-        // 新任务添加位置：above 或 below
-        newTaskPosition: "above" | "below";
-    };
-}
-
-export interface TaskFilterSettings {
-    customFilter: string;
-}
-
-// 更多标签设置
-export interface CustomLabel {
-    enabled: boolean;
-    labelText: string;
-    actionType: "systemCommand" | "openFile";
-    systemCommand: string;
-    filePath: string;
-}
-
-export interface MoreLabelSettings {
-    lb1: CustomLabel;
-    lb2: CustomLabel;
-}
-
-
-export interface MyPluginSettings {
-    fleetingNote: NoteTemplateSettings;
-    dailyNote: NoteTemplateSettings;
-    weeklyNote: NoteTemplateSettings;
-    monthlyNote: NoteTemplateSettings;
-    quarterlyNote: NoteTemplateSettings;
-    yearlyNote: NoteTemplateSettings;
-    taskFilter: TaskFilterSettings;
-    taskSettings: TaskSettings;
-    moreLabelSettings: MoreLabelSettings;
-}
-
-export const DEFAULT_SETTINGS: MyPluginSettings = {
-    fleetingNote: {
-        savePath: "闪念",
-        templatePath: "模板/闪念模板",
-        fileNameFormat: "闪念 YYYY-MM"
-    },
-    dailyNote: {
-        savePath: "日记",
-        templatePath: "模板/日记模板",
-        fileNameFormat: "YYYY-MM-DD"
-    },
-    weeklyNote: {
-        savePath: "周报",
-        templatePath: "模板/周报模板",
-        fileNameFormat: "GGGG-[w]WW"
-    },
-    monthlyNote: {
-        savePath: "月报",
-        templatePath: "模板/月报模板",
-        fileNameFormat: "YYYY-MM"
-    },
-    quarterlyNote: {
-        savePath: "季报",
-        templatePath: "模板/季报模板",
-        fileNameFormat: "YYYY-Q[Q]"
-    },
-    yearlyNote: {
-        savePath: "年报",
-        templatePath: "模板/年报模板",
-        fileNameFormat: "YYYY"
-    },
-    taskFilter: {
-        customFilter: ""
-    },
-    taskSettings: {
-        captureToSettings: {
-            enabled: true,
-            fleetingNoteConfigId: "fleetingNote",
-            recordConfigId: "record",
-            taskConfigId: "task",
-            configs: [
-                {
-                    id: "fleetingNote",
-                    name: "默认闪念",
-                    description: "默认的闪念捕获插入配置",
-                    enabled: true,
-                    defaultCapturePath: "{{闪念}}",
-                    captureToActiveFile: false,
-                    hotkey: null,
-                    inputMethod: "single-line",
-                    createFileIfItDoesntExist: {
-                        enabled: true,
-                        createWithTemplate: true,
-                        template: "{{闪念模板}}"
-                    },
-                    format: {
-                        enabled: true,
-                        format: "-   ==💡{{DATE:YYYY-MM-DD HH:mm}}==  {{TASK_TEXT}}  \n"
-                    },
-                    prepend: false,
-                    appendLink: false,
-                    task: false,
-                    autoAddCreatedDate: false,
-                    autoAddDueDate: false,
-                    dueDateOption: "today",
-                    customDueDays: 1,
-                    insertAfter: {
-                        enabled: true,
-                        after: "## 闪念",
-                        insertAtEnd: false,
-                        considerSubsections: false,
-                        createIfNotFound: true,
-                        createIfNotFoundLocation: "bottom" as "top" | "bottom"
-                    },
-                    newLineCapture: {
-                        enabled: false,
-                        direction: "below"
-                    },
-                    openFile: false,
-                    fileOpening: {
-                        location: "tab",
-                        direction: "vertical",
-                        mode: "default",
-                        focus: true
-                    }
-                },
-                {
-                    id: "record",
-                    name: "默认记录",
-                    description: "默认的记录捕获插入配置",
-                    enabled: true,
-                    defaultCapturePath: "{{日记}}",
-                    captureToActiveFile: false,
-                    hotkey: null,
-                    inputMethod: "single-line",
-                    createFileIfItDoesntExist: {
-                        enabled: true,
-                        createWithTemplate: true,
-                        template: "{{日记模板}}"
-                    },
-                    format: {
-                        enabled: true,
-                        format: "-   📝  {{TASK_TEXT}}  \n"
-                    },
-                    prepend: false,
-                    appendLink: false,
-                    task: false,
-                    autoAddCreatedDate: false,
-                    autoAddDueDate: false,
-                    dueDateOption: "today",
-                    customDueDays: 1,
-                    insertAfter: {
-                        enabled: true,
-                        after: "## 日常记录",
-                        insertAtEnd: true,
-                        considerSubsections: false,
-                        createIfNotFound: true,
-                        createIfNotFoundLocation: "bottom" as "top" | "bottom"
-                    },
-                    newLineCapture: {
-                        enabled: false,
-                        direction: "below"
-                    },
-                    openFile: false,
-                    fileOpening: {
-                        location: "tab",
-                        direction: "vertical",
-                        mode: "default",
-                        focus: true
-                    }
-                },
-                {
-                    id: "task",
-                    name: "默认任务",
-                    description: "默认的捕获插入配置",
-                    enabled: true,
-                    defaultCapturePath: "{{日记}}",
-                    captureToActiveFile: false,
-                    hotkey: null,
-                    inputMethod: "single-line",
-                    createFileIfItDoesntExist: {
-                        enabled: true,
-                        createWithTemplate: true,
-                        template: "{{日记模板}}"
-                    },
-                    format: {
-                        enabled: true,
-                        format: "⏰  {{TASK_TEXT}}  \n"
-                    },
-                    prepend: false,
-                    appendLink: false,
-                    task: true,
-                    autoAddCreatedDate: false,
-                    autoAddDueDate: true,
-                    dueDateOption: "today",
-                    customDueDays: 1,
-                    insertAfter: {
-                        enabled: true,
-                        after: "## 日常记录",
-                        insertAtEnd: true,
-                        considerSubsections: false,
-                        createIfNotFound: true,
-                        createIfNotFoundLocation: "bottom" as "top" | "bottom"
-                    },
-                    newLineCapture: {
-                        enabled: false,
-                        direction: "below"
-                    },
-                    openFile: false,
-                    fileOpening: {
-                        location: "tab",
-                        direction: "vertical",
-                        mode: "default",
-                        focus: true
-                    }
-                },
-                {
-                    id: "daily",
-                    name: "默认daily",
-                    description: "专门用于每日笔记的配置",
-                    enabled: true,
-                    defaultCapturePath: "{{日记}}",
-                    captureToActiveFile: false,
-                    hotkey: null,
-                    inputMethod: "none",
-                    createFileIfItDoesntExist: {
-                        enabled: true,
-                        createWithTemplate: true,
-                        template: "{{日记模板}}"
-                    },
-                    format: {
-                        enabled: true,
-                        format: "{{TASK_TEXT}}\n"
-                    },
-                    prepend: false,
-                    appendLink: false,
-                    task: false,
-                    autoAddCreatedDate: false,
-                    autoAddDueDate: false,
-                    dueDateOption: "today",
-                    customDueDays: 1,
-                    insertAfter: {
-                        enabled: true,
-                        after: "## 日常记录",
-                        insertAtEnd: true,
-                        considerSubsections: false,
-                        createIfNotFound: true,
-                        createIfNotFoundLocation: "bottom" as "top" | "bottom"
-                    },
-                    newLineCapture: {
-                        enabled: false,
-                        direction: "below"
-                    },
-                    openFile: true,
-                    fileOpening: {
-                        location: "tab",
-                        direction: "vertical",
-                        mode: "default",
-                        focus: true
-                    }
-                },
-                {
-                    id: "weekly",
-                    name: "默认weekly",
-                    description: "专门用于周报的配置",
-                    enabled: true,
-                    defaultCapturePath: "{{周报}}",
-                    captureToActiveFile: false,
-                    hotkey: null,
-                    inputMethod: "none",
-                    createFileIfItDoesntExist: {
-                        enabled: true,
-                        createWithTemplate: true,
-                        template: "{{周报模板}}"
-                    },
-                    format: {
-                        enabled: true,
-                        format: "## {{TASK_TEXT}}\n\n- 本周工作: \n- 下周计划: \n- 遇到问题: \n\n"
-                    },
-                    prepend: false,
-                    appendLink: false,
-                    task: false,
-                    autoAddCreatedDate: false,
-                    autoAddDueDate: false,
-                    dueDateOption: "today",
-                    customDueDays: 1,
-                    insertAfter: {
-                        enabled: true,
-                        after: "## 工作记录",
-                        insertAtEnd: true,
-                        considerSubsections: false,
-                        createIfNotFound: true,
-                        createIfNotFoundLocation: "bottom" as "top" | "bottom"
-                    },
-                    newLineCapture: {
-                        enabled: false,
-                        direction: "below"
-                    },
-                    openFile: true,
-                    fileOpening: {
-                        location: "tab",
-                        direction: "vertical",
-                        mode: "default",
-                        focus: true
-                    }
-                },
-                {
-                    id: "monthly",
-                    name: "默认monthly",
-                    description: "专门用于月报的配置",
-                    enabled: true,
-                    defaultCapturePath: "{{月报}}",
-                    captureToActiveFile: false,
-                    hotkey: null,
-                    inputMethod: "none",
-                    createFileIfItDoesntExist: {
-                        enabled: true,
-                        createWithTemplate: true,
-                        template: "{{月报模板}}"
-                    },
-                    format: {
-                        enabled: true,
-                        format: "## {{TASK_TEXT}}\n\n- 本月工作: \n- 下月计划: \n- 总结反思: \n\n"
-                    },
-                    prepend: false,
-                    appendLink: false,
-                    task: false,
-                    autoAddCreatedDate: false,
-                    autoAddDueDate: false,
-                    dueDateOption: "today",
-                    customDueDays: 1,
-                    insertAfter: {
-                        enabled: true,
-                        after: "## 月度总结",
-                        insertAtEnd: true,
-                        considerSubsections: false,
-                        createIfNotFound: true,
-                        createIfNotFoundLocation: "bottom" as "top" | "bottom"
-                    },
-                    newLineCapture: {
-                        enabled: false,
-                        direction: "below"
-                    },
-                    openFile: true,
-                    fileOpening: {
-                        location: "tab",
-                        direction: "vertical",
-                        mode: "default",
-                        focus: true
-                    }
-                },
-                {
-                    id: "quarterly",
-                    name: "默认quarterly",
-                    description: "专门用于季报的配置",
-                    enabled: true,
-                    defaultCapturePath: "{{季报}}",
-                    captureToActiveFile: false,
-                    hotkey: null,
-                    inputMethod: "none",
-                    createFileIfItDoesntExist: {
-                        enabled: true,
-                        createWithTemplate: true,
-                        template: "{{季报模板}}"
-                    },
-                    format: {
-                        enabled: true,
-                        format: "## {{TASK_TEXT}}\n\n- 本季工作: \n- 下季计划: \n- 季度反思: \n\n"
-                    },
-                    prepend: false,
-                    appendLink: false,
-                    task: false,
-                    autoAddCreatedDate: false,
-                    autoAddDueDate: false,
-                    dueDateOption: "today",
-                    customDueDays: 1,
-                    insertAfter: {
-                        enabled: true,
-                        after: "## 季度总结",
-                        insertAtEnd: true,
-                        considerSubsections: false,
-                        createIfNotFound: true,
-                        createIfNotFoundLocation: "bottom" as "top" | "bottom"
-                    },
-                    newLineCapture: {
-                        enabled: false,
-                        direction: "below"
-                    },
-                    openFile: true,
-                    fileOpening: {
-                        location: "tab",
-                        direction: "vertical",
-                        mode: "default",
-                        focus: true
-                    }
-                },
-                {
-                    id: "yearly",
-                    name: "默认yearly",
-                    description: "专门用于年报的配置",
-                    enabled: true,
-                    defaultCapturePath: "{{年报}}",
-                    captureToActiveFile: false,
-                    hotkey: null,
-                    inputMethod: "none",
-                    createFileIfItDoesntExist: {
-                        enabled: true,
-                        createWithTemplate: true,
-                        template: "{{年报模板}}"
-                    },
-                    format: {
-                        enabled: true,
-                        format: "## {{TASK_TEXT}}\n\n- 本年工作: \n- 明年计划: \n- 年度反思: \n- 目标达成: \n\n"
-                    },
-                    prepend: false,
-                    appendLink: false,
-                    task: false,
-                    autoAddCreatedDate: false,
-                    autoAddDueDate: false,
-                    dueDateOption: "today",
-                    customDueDays: 1,
-                    insertAfter: {
-                        enabled: true,
-                        after: "## 年度总结",
-                        insertAtEnd: true,
-                        considerSubsections: false,
-                        createIfNotFound: true,
-                        createIfNotFoundLocation: "bottom" as "top" | "bottom"
-                    },
-                    newLineCapture: {
-                        enabled: false,
-                        direction: "below"
-                    },
-                    openFile: true,
-                    fileOpening: {
-                        location: "tab",
-                        direction: "vertical",
-                        mode: "default",
-                        focus: true
-                    }
-                },
-                {
-                    id: "meeting",
-                    name: "会议笔记",
-                    description: "专门用于会议笔记的配置",
-                    enabled: true,
-                    defaultCapturePath: "{{日记}}",
-                    captureToActiveFile: false,
-                    hotkey: null,
-                    inputMethod: "single-line",
-                    createFileIfItDoesntExist: {
-                        enabled: true,
-                        createWithTemplate: true,
-                        template: "{{日记模板}}"
-                    },
-                    format: {
-                        enabled: true,
-                        format: "## {{TASK_TEXT}}\n\n- 时间: {{DATE}}\n- 地点: \n- 参与人员: \n- 内容: \n- 行动项: \n\n"
-                    },
-                    prepend: false,
-                    appendLink: false,
-                    task: false,
-                    autoAddCreatedDate: false,
-                    autoAddDueDate: false,
-                    dueDateOption: "today",
-                    customDueDays: 1,
-                    insertAfter: {
-                        enabled: true,
-                        after: "## 日常记录",
-                        insertAtEnd: true,
-                        considerSubsections: false,
-                        createIfNotFound: true,
-                        createIfNotFoundLocation: "bottom" as "top" | "bottom"
-                    },
-                    newLineCapture: {
-                        enabled: false,
-                        direction: "below"
-                    },
-                    openFile: true,
-                    fileOpening: {
-                        location: "tab",
-                        direction: "vertical",
-                        mode: "default",
-                        focus: true
-                    }
-                }
-            ]
-        },
-        recurrenceSettings: {
-            newTaskPosition: "below"
-        }
-    },
-    moreLabelSettings: {
-        lb1: {
-            enabled: false,
-            labelText: "LB1",
-            actionType: "systemCommand",
-            systemCommand: "",
-            filePath: ""
-        },
-        lb2: {
-            enabled: false,
-            labelText: "LB2",
-            actionType: "systemCommand",
-            systemCommand: "",
-            filePath: ""
-        }
-    }
-}
+import { MyPluginSettings, NoteTemplateSettings, CaptureToConfig, CustomLabel } from "./settings/types";
+export type { MyPluginSettings, NoteTemplateSettings, CaptureToConfig, CaptureToSettings, CustomLabel, TaskFilterSettings, TaskSettings, MoreLabelSettings, CreateFileIfItDoesntExist, FormatSettings, InsertAfterSettings, NewLineCaptureSettings, FileOpeningSettings, TaskInsertSettings } from "./settings/types";
+export { DEFAULT_SETTINGS } from "./settings/defaults";
 
 export class SampleSettingTab extends PluginSettingTab {
     plugin: MyPlugin;
     private settingsChanged: boolean = false;
     private activeTab: string = "basic";
+    private saveTimeout: number | null = null;
 
     constructor(app: App, plugin: MyPlugin) {
         super(app, plugin);
@@ -639,9 +34,21 @@ export class SampleSettingTab extends PluginSettingTab {
         
         // 根据活动标签渲染内容
         this.renderTabContent(contentEl);
+    }
 
-        // 监听设置页面关闭事件
-        this.registerEvents();
+    private scheduleSave() {
+        this.settingsChanged = true;
+        if (this.saveTimeout !== null) {
+            window.clearTimeout(this.saveTimeout);
+        }
+        this.saveTimeout = window.setTimeout(async () => {
+            this.saveTimeout = null;
+            if (this.settingsChanged) {
+                this.settingsChanged = false;
+                await this.plugin.saveSettings();
+                this.plugin.updateAllViews();
+            }
+        }, 1000);
     }
 
     private createTabs(containerEl: HTMLElement): void {
@@ -706,32 +113,32 @@ export class SampleSettingTab extends PluginSettingTab {
             case "notes":
                 this.renderNoteSettings("闪念设置", this.plugin.settings.fleetingNote, (newSettings) => {
                     this.plugin.settings.fleetingNote = newSettings;
-                    this.settingsChanged = true;
+                    this.scheduleSave();
                 }, contentEl);
                 
                 this.renderNoteSettings("日记设置", this.plugin.settings.dailyNote, (newSettings) => {
                     this.plugin.settings.dailyNote = newSettings;
-                    this.settingsChanged = true;
+                    this.scheduleSave();
                 }, contentEl);
                 
                 this.renderNoteSettings("周报设置", this.plugin.settings.weeklyNote, (newSettings) => {
                     this.plugin.settings.weeklyNote = newSettings;
-                    this.settingsChanged = true;
+                    this.scheduleSave();
                 }, contentEl);
                 
                 this.renderNoteSettings("月报设置", this.plugin.settings.monthlyNote, (newSettings) => {
                     this.plugin.settings.monthlyNote = newSettings;
-                    this.settingsChanged = true;
+                    this.scheduleSave();
                 }, contentEl);
                 
                 this.renderNoteSettings("季报设置", this.plugin.settings.quarterlyNote, (newSettings) => {
                     this.plugin.settings.quarterlyNote = newSettings;
-                    this.settingsChanged = true;
+                    this.scheduleSave();
                 }, contentEl);
                 
                 this.renderNoteSettings("年报设置", this.plugin.settings.yearlyNote, (newSettings) => {
                     this.plugin.settings.yearlyNote = newSettings;
-                    this.settingsChanged = true;
+                    this.scheduleSave();
                 }, contentEl);
                 break;
             case "custom":
@@ -1201,7 +608,7 @@ export class SampleSettingTab extends PluginSettingTab {
                 .setValue(labelSettings.enabled)
                 .onChange(value => {
                     labelSettings.enabled = value;
-                    this.settingsChanged = true;
+                    this.scheduleSave();
                 }));
 
         new Setting(labelSection)
@@ -1212,7 +619,7 @@ export class SampleSettingTab extends PluginSettingTab {
                 .setValue(labelSettings.labelText)
                 .onChange(value => {
                     labelSettings.labelText = value;
-                    this.settingsChanged = true;
+                    this.scheduleSave();
                 }));
 
         new Setting(labelSection)
@@ -1224,7 +631,7 @@ export class SampleSettingTab extends PluginSettingTab {
                 .setValue(labelSettings.actionType)
                 .onChange(value => {
                     labelSettings.actionType = value as "systemCommand" | "openFile";
-                    this.settingsChanged = true;
+                    this.scheduleSave();
                     this.display();
                 }));
 
@@ -1239,7 +646,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     text.setValue(labelSettings.systemCommand)
                     .onChange(value => {
                         labelSettings.systemCommand = value;
-                        this.settingsChanged = true;
+                        this.scheduleSave();
                     });
                 });
             
@@ -1255,7 +662,7 @@ export class SampleSettingTab extends PluginSettingTab {
                             commandInputTextComponent.setValue(commandId);
                         }
                         labelSettings.systemCommand = commandId;
-                        this.settingsChanged = true;
+                        this.scheduleSave();
                     }
                 }).open();
             });
@@ -1270,7 +677,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     text.setValue(labelSettings.filePath)
                     .onChange(value => {
                         labelSettings.filePath = value;
-                        this.settingsChanged = true;
+                        this.scheduleSave();
                     });
                 });
             
@@ -1285,51 +692,10 @@ export class SampleSettingTab extends PluginSettingTab {
                         filePathTextComponent.setValue(filePath);
                     }
                     labelSettings.filePath = filePath;
-                    this.settingsChanged = true;
+                    this.scheduleSave();
                 }).open();
             });
         }
-    }
-
-    // 添加一个变量来存储 MutationObserver 实例
-    private observer: MutationObserver | null = null;
-
-    private registerEvents() {
-        // 如果已经有 Observer，先断开连接
-        if (this.observer) {
-            this.observer.disconnect();
-        }
-        
-        // 创建新的 Observer
-        this.observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'childList' && this.containerEl.parentElement === null) {
-                    // 设置页面已关闭，检查是否需要保存设置
-                    if (this.settingsChanged) {
-                        this.saveSettings().then(() => {
-                            this.settingsChanged = false;
-                        });
-                    }
-                    // 断开连接
-                    if (this.observer) {
-                        this.observer.disconnect();
-                        this.observer = null;
-                    }
-                }
-            });
-        });
-
-        this.observer.observe(this.containerEl.parentElement || document.body, {
-            childList: true,
-            subtree: true
-        });
-    }
-
-    private async saveSettings() {
-        await this.plugin.saveSettings();
-        // 保存设置后刷新视图
-        this.plugin.updateAllViews();
-        new Notice("设置已保存并刷新视图");
     }
 
     private renderTaskFilterSettings(contentEl: HTMLElement): void {
@@ -1346,7 +712,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.taskFilter.customFilter)
                     .onChange((value: string) => {
                         this.plugin.settings.taskFilter.customFilter = value;
-                        this.settingsChanged = true;
+                        this.scheduleSave();
                     });
                 // 设置文本域属性
                 textArea.inputEl.rows = 4;
@@ -1373,7 +739,7 @@ export class SampleSettingTab extends PluginSettingTab {
                             this.plugin.settings.taskSettings.recurrenceSettings = { newTaskPosition: "below" };
                         }
                         this.plugin.settings.taskSettings.recurrenceSettings.newTaskPosition = value as "above" | "below";
-                        this.settingsChanged = true;
+                        this.scheduleSave();
                     });
             });
     }
@@ -1396,7 +762,7 @@ export class SampleSettingTab extends PluginSettingTab {
                 .setValue(captureSettings.enabled)
                 .onChange((value) => {
                     this.plugin.settings.taskSettings.captureToSettings.enabled = value;
-                    this.settingsChanged = true;
+                    this.scheduleSave();
                 }));
 
         // 闪念标签配置
@@ -1410,7 +776,7 @@ export class SampleSettingTab extends PluginSettingTab {
                 dropdown.setValue(captureSettings.fleetingNoteConfigId)
                     .onChange((value) => {
                         this.plugin.settings.taskSettings.captureToSettings.fleetingNoteConfigId = value;
-                        this.settingsChanged = true;
+                        this.scheduleSave();
                     });
             });
 
@@ -1425,7 +791,7 @@ export class SampleSettingTab extends PluginSettingTab {
                 dropdown.setValue(captureSettings.recordConfigId)
                     .onChange((value) => {
                         this.plugin.settings.taskSettings.captureToSettings.recordConfigId = value;
-                        this.settingsChanged = true;
+                        this.scheduleSave();
                     });
             });
 
@@ -1440,7 +806,7 @@ export class SampleSettingTab extends PluginSettingTab {
                 dropdown.setValue(captureSettings.taskConfigId)
                     .onChange((value) => {
                         this.plugin.settings.taskSettings.captureToSettings.taskConfigId = value;
-                        this.settingsChanged = true;
+                        this.scheduleSave();
                     });
             });
 
@@ -1529,7 +895,7 @@ export class SampleSettingTab extends PluginSettingTab {
                             const [draggedConfig] = configs.splice(dragStartIndex, 1);
                             if (draggedConfig) {
                                 configs.splice(dragEndIndex, 0, draggedConfig);
-                                this.settingsChanged = true;
+                                this.scheduleSave();
                                 // 重新渲染设置页面
                                 this.display();
                             }
@@ -1576,7 +942,7 @@ export class SampleSettingTab extends PluginSettingTab {
                 if (this.plugin.settings.taskSettings.captureToSettings.configs && 
                     this.plugin.settings.taskSettings.captureToSettings.configs[index]) {
                     this.plugin.settings.taskSettings.captureToSettings.configs[index].enabled = !config.enabled;
-                    this.settingsChanged = true;
+                    this.scheduleSave();
                     // 重新渲染设置页面
                     this.display();
                 }
@@ -1608,7 +974,7 @@ export class SampleSettingTab extends PluginSettingTab {
                             const configIndex = this.plugin.settings.taskSettings.captureToSettings.configs.findIndex(c => c.id === updatedConfig.id);
                             if (configIndex !== -1) {
                                 this.plugin.settings.taskSettings.captureToSettings.configs[configIndex] = updatedConfig;
-                                this.settingsChanged = true;
+                                this.scheduleSave();
                                 // 重新渲染设置页面
                                 this.display();
                             }
@@ -1641,7 +1007,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     
                     // 添加到配置列表
                     this.plugin.settings.taskSettings.captureToSettings.configs.push(duplicatedConfig);
-                    this.settingsChanged = true;
+                    this.scheduleSave();
                     // 重新渲染设置页面
                     this.display();
                 }
@@ -1683,7 +1049,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     if (this.plugin.settings.taskSettings.captureToSettings.configs) {
                         // 替换当前配置为默认配置
                         this.plugin.settings.taskSettings.captureToSettings.configs[index] = defaultConfig!;
-                        this.settingsChanged = true;
+                        this.scheduleSave();
                         // 重新渲染设置页面
                         this.display();
                         // 显示恢复成功提示
@@ -1710,7 +1076,7 @@ export class SampleSettingTab extends PluginSettingTab {
             renameButton.addEventListener("click", async () => {
                 // 重命名模态框
                 const newName = await new Promise<string | null>((resolve) => {
-                    const modal = new (require('obsidian').Modal)(this.app);
+                    const modal = new Modal(this.app);
                     modal.titleEl.setText("重命名配置");
                     modal.contentEl.createEl("p", {
                         text: `请输入新的配置名称：`
@@ -1774,7 +1140,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     if (this.plugin.settings.taskSettings.captureToSettings.configs && 
                         this.plugin.settings.taskSettings.captureToSettings.configs[index]) {
                         this.plugin.settings.taskSettings.captureToSettings.configs[index].name = newName;
-                        this.settingsChanged = true;
+                        this.scheduleSave();
                         // 重新渲染设置页面
                         this.display();
                     }
@@ -1814,7 +1180,7 @@ export class SampleSettingTab extends PluginSettingTab {
                 deleteButton.addEventListener("click", async () => {
                     // 确认删除
                     const confirmed = await new Promise<boolean>((resolve) => {
-                        const modal = new (require('obsidian').Modal)(this.app);
+                        const modal = new Modal(this.app);
                         modal.titleEl.setText("确认删除");
                         modal.contentEl.createEl("p", {
                             text: `确定要删除配置 "${config.name}" 吗？`
@@ -1852,7 +1218,7 @@ export class SampleSettingTab extends PluginSettingTab {
                         if (this.plugin.settings.taskSettings.captureToSettings.configs) {
                             this.plugin.settings.taskSettings.captureToSettings.configs.splice(index, 1);
                             
-                            this.settingsChanged = true;
+                            this.scheduleSave();
                             // 重新渲染设置页面
                             this.display();
                         }
@@ -1949,7 +1315,7 @@ export class SampleSettingTab extends PluginSettingTab {
             // 添加到配置列表
             if (this.plugin.settings.taskSettings.captureToSettings.configs) {
                 this.plugin.settings.taskSettings.captureToSettings.configs.push(newConfig);
-                this.settingsChanged = true;
+                this.scheduleSave();
                 
                 // 清空输入框
                 nameInput.value = "";
@@ -2047,7 +1413,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     const newSettings = { ...currentSettings, fileNameFormat: value };
                     currentSettings = newSettings;
                     onChange(newSettings);
-                    this.settingsChanged = true;
+                    this.scheduleSave();
                     // 更新预览
                     updatePreview();
                 }));
@@ -2065,7 +1431,7 @@ export class SampleSettingTab extends PluginSettingTab {
                         const newSettings = { ...currentSettings, savePath: value };
                         currentSettings = newSettings;
                         onChange(newSettings);
-                        this.settingsChanged = true;
+                        this.scheduleSave();
                         // 更新预览
                         updatePreview();
                     });
@@ -2077,7 +1443,7 @@ export class SampleSettingTab extends PluginSettingTab {
                         const newSettings = { ...currentSettings, savePath: folder.path };
                         currentSettings = newSettings;
                         onChange(newSettings);
-                        this.settingsChanged = true;
+                        this.scheduleSave();
                         // 更新输入框的值
                         if (savePathInputEl) {
                             savePathInputEl.value = folder.path;
@@ -2101,7 +1467,7 @@ export class SampleSettingTab extends PluginSettingTab {
                         const newSettings = { ...currentSettings, templatePath: value };
                         currentSettings = newSettings;
                         onChange(newSettings);
-                        this.settingsChanged = true;
+                        this.scheduleSave();
                     });
             })
             .addButton(button => button
@@ -2111,7 +1477,7 @@ export class SampleSettingTab extends PluginSettingTab {
                         const newSettings = { ...currentSettings, templatePath: file.path };
                         currentSettings = newSettings;
                         onChange(newSettings);
-                        this.settingsChanged = true;
+                        this.scheduleSave();
                         // 更新输入框的值
                         if (templatePathInputEl) {
                             templatePathInputEl.value = file.path;

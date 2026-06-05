@@ -5,6 +5,7 @@ import { formatDate } from '../utils/dateUtils';
 import { generateTaskDateMarkers, generateTaskCompletionMarker } from '../utils/taskUtils';
 import type { IChoiceExecutor } from '../IChoiceExecutor';
 import { ChoiceType } from '../types/choices/choiceType';
+import type MyPlugin from '../main';
 
 /**
  * 解析重复规则并计算下一个任务的日期
@@ -848,7 +849,8 @@ export async function updateTaskInNote(app: App, task: Task, completed: boolean,
 
 // 在笔记中创建任务
 export async function createTaskInNote(
-    app: App, 
+    app: App,
+    plugin: MyPlugin,
     taskText: string, 
     date: Date, 
     settings: MyPluginSettings,
@@ -859,11 +861,9 @@ export async function createTaskInNote(
     try {
         // 使用 capture to 功能
         const { CaptureChoiceEngine } = await import('../engine/CaptureChoiceEngine');
-        const MyPlugin = (window as any).jiujiuObsidianCalendarPlugin;
-        
-        if (MyPlugin && MyPlugin.instance) {
-            // 创建 choice executor
-            const choiceExecutor: IChoiceExecutor = {
+
+        // 创建 choice executor
+        const choiceExecutor: IChoiceExecutor = {
                 variables: new Map(),
             };
             
@@ -1055,12 +1055,9 @@ export async function createTaskInNote(
             };
             
             // 创建并运行 CaptureChoiceEngine
-            const engine = new CaptureChoiceEngine(app, MyPlugin.instance, captureChoice, choiceExecutor);
+            const engine = new CaptureChoiceEngine(app, plugin, captureChoice, choiceExecutor);
             await engine.run();
-        } else {
-            throw new Error("MyPlugin instance not found");
-        }
-    } catch (error) {
+        } catch (error) {
         console.error(`Failed to create task in note:`, error);
         throw error;
     }

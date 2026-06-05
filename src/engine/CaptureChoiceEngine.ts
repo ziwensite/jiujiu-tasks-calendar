@@ -13,8 +13,6 @@ export class CaptureChoiceEngine {
 	choice: ICaptureChoice;
 	private formatter: CaptureChoiceFormatter;
 	private readonly plugin: MyPlugin;
-	private templatePropertyVars?: Map<string, unknown>;
-	private capturePropertyVars: Map<string, unknown> = new Map();
 
 	constructor(
 		app: App,
@@ -73,8 +71,6 @@ export class CaptureChoiceEngine {
 
 	async run(): Promise<void> {
 		try {
-			// Reset any pending structured values before starting a new capture run
-			this.capturePropertyVars.clear();
 			const linkOptions = normalizeAppendLinkOptions(this.choice.appendLink);
 			this.formatter.setLinkToCurrentFileBehavior(
 				linkOptions.enabled && !linkOptions.requireActiveFile
@@ -141,7 +137,6 @@ export class CaptureChoiceEngine {
 				if (this.choice.templater?.afterCapture === "wholeFile") {
 					await overwriteTemplaterOnce(this.plugin.app, file);
 				}
-				await this.applyCapturePropertyVars(file);
 			}
 
 			// Show success notification
@@ -271,7 +266,6 @@ export class CaptureChoiceEngine {
 
 		// First format pass...
 		const formatted = await this.formatter.formatContentOnly(content);
-		this.mergeCapturePropertyVars(this.formatter.getAndClearTemplatePropertyVars());
 
 		const fileContent: string = await this.plugin.app.vault.read(file);
 		// Second format pass, with the file content...
@@ -281,7 +275,6 @@ export class CaptureChoiceEngine {
 			fileContent,
 			file,
 		);
-		this.mergeCapturePropertyVars(this.formatter.getAndClearTemplatePropertyVars());
 
 		return { file, newFileContent: formattedFileContent, captureContent: formatted };
 	}
@@ -307,7 +300,6 @@ export class CaptureChoiceEngine {
 
 		// First formatting pass: resolve placeholders and prompt for user input
 		const formattedCaptureContent: string = await this.formatter.formatContentOnly(captureContent);
-		this.mergeCapturePropertyVars(this.formatter.getAndClearTemplatePropertyVars());
 
 		let fileContent = "";
 		if (this.choice.createFileIfItDoesntExist.createWithTemplate) {
@@ -358,7 +350,6 @@ export class CaptureChoiceEngine {
 			updatedFileContent,
 			file,
 		);
-		this.mergeCapturePropertyVars(this.formatter.getAndClearTemplatePropertyVars());
 
 		return { file, newFileContent, captureContent: formattedCaptureContent };
 	}
@@ -390,24 +381,5 @@ export class CaptureChoiceEngine {
 			throw new Error(`File not found: ${path}`);
 		}
 		return file;
-	}
-
-	private mergeCapturePropertyVars(vars: Map<string, unknown>): void {
-		if (!vars || vars.size === 0) {
-			return;
-		}
-
-		for (const [key, value] of vars) {
-			this.capturePropertyVars.set(key, value);
-		}
-	}
-
-	private async applyCapturePropertyVars(file: TFile): Promise<void> {
-		if (this.capturePropertyVars.size === 0) {
-			return;
-		}
-
-		// In a full implementation, you would handle frontmatter property updates
-		this.capturePropertyVars.clear();
 	}
 }

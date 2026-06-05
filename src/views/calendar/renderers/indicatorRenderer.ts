@@ -333,20 +333,10 @@ export class IndicatorRenderer {
             const weeklySettings = this.plugin.settings.weeklyNote;
             const weeklyFileName = formatDate(weekStartDate, weeklySettings.fileNameFormat);
             
-            // 检查多种可能的周报路径
-            const possiblePaths = [
-                `${weeklySettings.savePath}/${weeklyFileName}.md`,
-                `00-周期笔记/2-周报/${weeklyFileName}.md`,
-                `00-周期笔记/2-周报/${formatDate(weekStartDate, "YYYY-wWW")}.md`,
-                `00-周期笔记/2-周报/${formatDate(weekStartDate, "YYYY-WW")}.md`
-            ];
-            
             // 检查是否存在周报
-            for (const path of possiblePaths) {
-                if (await noteExists(this.plugin.app, path)) {
-                    hasWeeklyNote = true;
-                    break;
-                }
+            const weeklyNotePath = `${weeklySettings.savePath}/${weeklyFileName}.md`;
+            if (await noteExists(this.plugin.app, weeklyNotePath)) {
+                hasWeeklyNote = true;
             }
             
             // 检查本周内是否有截止任务
