@@ -31,11 +31,18 @@ export class SampleSettingTab extends PluginSettingTab {
             this.createTabs(containerEl);
             this.contentEl = containerEl.createEl("div", { cls: "tab-content" });
         } else {
+            // 锁定当前高度防止清空时内容区坍缩闪烁
+            this.contentEl.style.minHeight = this.contentEl.offsetHeight + 'px';
             this.contentEl.empty();
         }
-        
+
         this.renderTabContent(this.contentEl);
         this.updateActiveTabStyles();
+        
+        // 渲染完成后解除高度锁定
+        if (this.contentEl) {
+            this.contentEl.style.minHeight = '';
+        }
     }
 
     private scheduleSave() {
