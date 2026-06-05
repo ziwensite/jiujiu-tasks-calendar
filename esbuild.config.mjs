@@ -1,11 +1,14 @@
 import esbuild from "esbuild";
 import process from "process";
 import { builtinModules } from 'node:module';
+import { readFileSync } from 'fs';
+
+const manifest = JSON.parse(readFileSync('./manifest.json', 'utf8'));
 
 const banner =
 `/*
 久久任务日历 (JiuJiu Tasks Calendar)
-Version: 1.0.2
+Version: ${manifest.version}
 Author: JiuJiu
 Description: 综合性日历插件，支持农历、节假日、任务管理、笔记管理等功能
 
