@@ -27,12 +27,10 @@ export class SampleSettingTab extends PluginSettingTab {
         const {containerEl} = this;
 
         if (!this.contentEl) {
-            // 首次渲染：创建完整结构
             containerEl.empty();
             this.createTabs(containerEl);
             this.contentEl = containerEl.createEl("div", { cls: "tab-content" });
         } else {
-            // 后续渲染：只清空内容区域，保留导航栏
             this.contentEl.empty();
         }
         
@@ -159,7 +157,6 @@ export class SampleSettingTab extends PluginSettingTab {
     }
 
     private renderPluginInfo(contentEl: HTMLElement): void {
-        // 插件信息
         const pluginInfoSection = contentEl.createEl("div", { cls: "setting-section" });
         pluginInfoSection.createEl("h4", { text: "插件信息" });
 
@@ -167,13 +164,28 @@ export class SampleSettingTab extends PluginSettingTab {
             .setName("插件名称")
             .setDesc(this.plugin.manifest.name);
 
-        new Setting(pluginInfoSection)
+        const versionSetting = new Setting(pluginInfoSection)
             .setName("版本号")
             .setDesc(this.plugin.manifest.version);
 
         new Setting(pluginInfoSection)
             .setName("作者")
             .setDesc("JiuJiu");
+
+        // 异步从磁盘读取 manifest.json 替换缓存值（重载插件后缓存不会刷新）
+        (async () => {
+            try {
+                const pluginId = this.plugin.manifest.id;
+                const basePath = this.app.vault.configDir + '/plugins/' + pluginId;
+                const content = await this.app.vault.adapter.read(basePath + '/manifest.json');
+                const diskVersion = JSON.parse(content).version;
+                if (diskVersion && diskVersion !== this.plugin.manifest.version) {
+                    versionSetting.setDesc(diskVersion);
+                }
+            } catch {
+                // 静默失败，使用缓存值
+            }
+        })();
 
         new Setting(pluginInfoSection)
             .setName("描述")
