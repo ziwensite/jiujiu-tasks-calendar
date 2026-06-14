@@ -457,9 +457,14 @@ export class CaptureToConfigModal extends Modal {
 
         const variables = [
             { var: '{{VALUE}}', desc: '选中的文本或手动输入的内容', example: '写周报' },
-            { var: '{{TITLE}}', desc: '目标文件名（不含后缀）', example: '2026-06-15' },
-            { var: '{{DATE}}', desc: '目标日期 (YYYY-MM-DD)', example: '2026-06-15' },
-            { var: '{{DATE:format}}', desc: '自定义日期格式', example: '{{DATE:YYYY年MM月DD日}}' },
+            { var: '{{TITLE}}', desc: '目标文件名', example: '2026-06-15' },
+            { var: '{{DATE}}', desc: '默认 YYYY-MM-DD', example: '2026-06-15' },
+            { var: '{{DATE:MM-DD}}', desc: '月-日', example: '06-15' },
+            { var: '{{DATE:YYYY年MM月DD日}}', desc: '年月日', example: '2026年06月15日' },
+            { var: '{{DATE:YYYY-MM-DD HH:mm}}', desc: '日期+时间', example: '2026-06-15 14:30' },
+            { var: '{{DATE:dddd}}', desc: '星期', example: '星期一' },
+            { var: '{{DATE:Q}}', desc: '季度', example: '2' },
+            { var: '{{DATE:WW}}', desc: 'ISO周数', example: '25' },
         ];
 
         for (const v of variables) {
