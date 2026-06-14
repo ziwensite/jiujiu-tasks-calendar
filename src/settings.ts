@@ -293,10 +293,36 @@ export class SampleSettingTab extends PluginSettingTab {
 
     private renderTaskFilterSettings(contentEl: HTMLElement): void {
         const section = contentEl.createEl("div", {cls: "setting-section"});
-        section.createEl("h4", {text: "任务列表设置"});
+        section.createEl("h4", {text: "侧边栏设置"});
+
+        new Setting(section)
+            .setName("自动打开侧栏")
+            .setDesc("插件启动时自动打开日历侧栏视图")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.autoOpenSidebar)
+                .onChange((value) => {
+                    this.plugin.settings.autoOpenSidebar = value;
+                    this.scheduleSave();
+                }));
+
+        new Setting(section)
+            .setName("侧栏位置")
+            .setDesc("选择日历视图显示在左侧还是右侧边栏")
+            .addDropdown(dropdown => dropdown
+                .addOption("left", "左侧边栏")
+                .addOption("right", "右侧边栏")
+                .setValue(this.plugin.settings.sidebarPosition)
+                .onChange((value) => {
+                    this.plugin.settings.sidebarPosition = value as 'left' | 'right';
+                    this.scheduleSave();
+                    this.plugin.moveViewToSidebar();
+                }));
+
+        const taskSection = contentEl.createEl("div", {cls: "setting-section"});
+        taskSection.createEl("h4", {text: "任务列表设置"});
 
         // 自定义筛选设置
-        new Setting(section)
+        new Setting(taskSection)
             .setName("自定义筛选")
             .setDesc("规则：使用路径或标签，!表示排除，and、or、()逻辑组合。例如：(A or B) and #C - 路径A或B中包含标签#C的任务")
             .addTextArea(textArea => {
@@ -315,7 +341,7 @@ export class SampleSettingTab extends PluginSettingTab {
             });
         
         // 重复任务设置
-        new Setting(section)
+        new Setting(taskSection)
             .setName("重复任务新任务位置")
             .setDesc("设置重复任务完成后，新任务的添加位置")
             .addDropdown(dropdown => {

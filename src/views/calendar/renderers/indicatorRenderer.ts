@@ -430,25 +430,15 @@ export class IndicatorRenderer {
      * 根据日期获取对应的单元格
      */
     private getDayCellByDate(container: any, date: Date): any | null {
-        const year = date.getFullYear();
-        const month = date.getMonth();
-        const day = date.getDate();
+        const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
         
-        // 查找对应日期的单元格
-        const dayCells = Array.from(container.querySelectorAll('.day-cell:not(.other-month)'));
-        
-        for (const cell of dayCells) {
-            const cellEl = cell as any;
-            const dayNumberEl = cellEl.querySelector('.day-number');
-            if (!dayNumberEl) continue;
-            
-            const dayNumber = parseInt(dayNumberEl.textContent || '0');
-            if (dayNumber === day) {
-                return cellEl;
-            }
+        const cell = container.querySelector(`.day-cell[data-date="${dateStr}"]`) as HTMLElement;
+        if (cell && !cell.hasClass('other-month')) {
+            return cell;
         }
         
-        return null;
+        // 如果找不到精确匹配（可能是其他月份的日期），回退到包含匹配
+        return container.querySelector(`.day-cell[data-date="${dateStr}"]`) as HTMLElement;
     }
 
     /**

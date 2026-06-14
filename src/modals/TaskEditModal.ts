@@ -2,6 +2,8 @@ import { App, Modal, Notice } from 'obsidian';
 import { Task } from '../services/taskService';
 import { generateTaskDateMarkers, generateTaskCompletionMarker } from '../utils/taskUtils';
 import { InputSuggest } from './PromptModal';
+import { parseDateLabel, DATE_OPTIONS, PRIORITY_OPTIONS, getRecurrenceSuggestions, getPriorityDisplay } from '../suggest/taskProperties';
+import { parseRelativeDate } from '../suggest/dateCalculator';
 
 interface TaskEditModalOptions {
     app: App;
@@ -183,11 +185,7 @@ export class TaskEditModal extends Modal {
 
         const priorityOptions = [
             { value: '', label: '无' },
-            { value: 'lowest', label: '最低⏬️' },
-            { value: 'low', label: '低🔽' },
-            { value: 'medium', label: '中🔼' },
-            { value: 'high', label: '高⏫' },
-            { value: 'highest', label: '最高🔺' },
+            ...PRIORITY_OPTIONS.map(o => ({ value: o.value, label: getPriorityDisplay(o) })),
         ];
 
         priorityOptions.forEach(option => {
@@ -579,7 +577,7 @@ export class TaskEditModal extends Modal {
         defaultOption.textContent = '';
 
         // Add date options
-        const dateOptions = ['无', '今天', '明天', '后天', '周末', '下周', '月末', '下月', '年末'];
+        const dateOptions = ['无', ...DATE_OPTIONS.map(o => o.label)];
         dateOptions.forEach(optionText => {
             const option = textInput.createEl('option', { value: optionText });
             option.textContent = optionText;
@@ -654,45 +652,13 @@ export class TaskEditModal extends Modal {
     }
 
     private parseDateInput(input: string): Date | null {
-        const lowerInput = input.toLowerCase().trim();
-
-        switch (lowerInput) {
-            case '无':
-                return null;
-            case '今天':
-                return new Date();
-            case '明天':
-                const tomorrow = new Date();
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                return tomorrow;
-            case '后天':
-                const dayAfterTomorrow = new Date();
-                dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
-                return dayAfterTomorrow;
-            case '周末':
-                const weekend = new Date();
-                const daysToWeekend = 6 - weekend.getDay();
-                weekend.setDate(weekend.getDate() + (daysToWeekend === 0 ? 7 : daysToWeekend));
-                return weekend;
-            case '下周':
-                const nextWeek = new Date();
-                nextWeek.setDate(nextWeek.getDate() + 7);
-                return nextWeek;
-            case '月末':
-                const monthEnd = new Date();
-                monthEnd.setMonth(monthEnd.getMonth() + 1, 0);
-                return monthEnd;
-            case '下月':
-                const nextMonth = new Date();
-                nextMonth.setMonth(nextMonth.getMonth() + 1);
-                return nextMonth;
-            case '年末':
-                const yearEnd = new Date();
-                yearEnd.setMonth(11, 31);
-                return yearEnd;
-            default:
-                return null;
-        }
+        const lower = input.trim();
+        if (!lower) return null;
+        const result = parseDateLabel(lower);
+        if (result !== undefined) return result;
+        const parsed = parseRelativeDate(lower);
+        if (parsed) return new Date(parsed);
+        return null;
     }
 
     private formatDate(date: Date): string {
@@ -703,69 +669,7 @@ export class TaskEditModal extends Modal {
     }
 
     private getRecurrenceSuggestions(input: string): string[] {
-        const suggestions = [
-            // 基础规则
-            'every day',
-            'every day when done',
-            'every week',
-            'every week when done',
-            'every month',
-            'every month when done',
-            'every year',
-            'every year when done',
-            
-            // 带间隔的规则
-            'every 2 days',
-            'every 2 days when done',
-            'every 3 days',
-            'every 3 days when done',
-            'every 2 weeks',
-            'every 2 weeks when done',
-            'every 3 weeks',
-            'every 3 weeks when done',
-            'every 2 months',
-            'every 2 months when done',
-            'every 3 months',
-            'every 3 months when done',
-            'every 6 months',
-            'every 6 months when done',
-            'every 2 years',
-            'every 2 years when done',
-            
-            // 带星期几的规则
-            'every monday',
-            'every monday when done',
-            'every tuesday',
-            'every tuesday when done',
-            'every wednesday',
-            'every wednesday when done',
-            'every thursday',
-            'every thursday when done',
-            'every friday',
-            'every friday when done',
-            'every saturday',
-            'every saturday when done',
-            'every sunday',
-            'every sunday when done',
-            
-            // 带多个星期几的规则
-            'every monday, wednesday, friday',
-            'every monday, wednesday, friday when done',
-            'every tuesday, thursday',
-            'every tuesday, thursday when done',
-            'every monday, tuesday, wednesday, thursday, friday',
-            'every monday, tuesday, wednesday, thursday, friday when done',
-            'every saturday, sunday',
-            'every saturday, sunday when done',
-        ];
-
-        if (!input) {
-            return suggestions;
-        }
-
-        return suggestions.filter(suggestion => 
-            suggestion.toLowerCase().includes(input.toLowerCase())
-        );
+        return getRecurrenceSuggestions(input);
     }
 
     private validateRecurrence(input: string): { isValid: boolean; parsedRecurrence: string } {

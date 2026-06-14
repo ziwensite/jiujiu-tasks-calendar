@@ -11,7 +11,7 @@ export class CalendarDataManager {
     // 任务数据缓存
     private tasks: Task[] = [];
     private lastTaskUpdateTime: number = 0;
-    private taskUpdateInterval: number = 5000; // 任务数据缓存时间，5秒
+    private taskUpdateInterval: number = 30000; // 任务数据缓存时间，30秒
     
     // 日历月份数据缓存
     private calendarMonthCache: Map<string, { data: any; timestamp: number }> = new Map();
@@ -54,8 +54,8 @@ export class CalendarDataManager {
         
         // 如果距离上次更新时间超过缓存时间，或者强制刷新，则重新提取任务
         if (forceRefresh || now - this.lastTaskUpdateTime > this.taskUpdateInterval) {
-            this.tasks = await extractTasks(this.plugin.app, this.plugin.settings);
-            this.lastTaskUpdateTime = now;
+            this.tasks = await extractTasks(this.plugin.app);
+        this.lastTaskUpdateTime = now;
         }
         
         return this.tasks;
@@ -98,7 +98,7 @@ export class CalendarDataManager {
      */
     public async refreshTasks(): Promise<void> {
         clearTaskCache();
-        this.tasks = await extractTasks(this.plugin.app, this.plugin.settings);
+        this.tasks = await extractTasks(this.plugin.app);
         this.lastTaskUpdateTime = Date.now();
     }
 

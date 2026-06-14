@@ -3,6 +3,28 @@ import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
 import {CalendarView} from "./views/CalendarView";
 import { CalendarViewController } from './core/CalendarViewController';
 import { CalendarDataManager } from './core/CalendarDataManager';
+import { TaskSuggester } from './suggest/TaskSuggester';
+
+function deepMerge(target: Record<string, any>, source: Record<string, any>): Record<string, any> {
+    const result = { ...target };
+    for (const key of Object.keys(source)) {
+        const targetVal = target[key];
+        const sourceVal = source[key];
+        if (
+            sourceVal !== undefined &&
+            targetVal !== null &&
+            typeof targetVal === 'object' &&
+            !Array.isArray(targetVal) &&
+            typeof sourceVal === 'object' &&
+            !Array.isArray(sourceVal)
+        ) {
+            result[key] = deepMerge(targetVal, sourceVal);
+        } else if (sourceVal !== undefined) {
+            result[key] = sourceVal;
+        }
+    }
+    return result;
+}
 
 export class MyPlugin extends Plugin {
     settings: MyPluginSettings = DEFAULT_SETTINGS;
@@ -49,15 +71,24 @@ async onload() {
             // 加载设置页
             this.addSettingTab(new SampleSettingTab(this.app, this));
             
+            // 注册编辑器自动补全
+            this.registerEditorSuggest(new TaskSuggester(this.app));
+
             // 一次性注册捕获插入快捷键命令
             this.registerCaptureToHotkeys();
             
-            // 插件启用时自动打开默认视图（等待 workspace 布局就绪后一次性激活）
-            const layoutHandler = () => {
-                this.app.workspace.off('layout-change', layoutHandler);
-                this.activateView();
-            };
-            this.registerEvent(this.app.workspace.on('layout-change', layoutHandler));
+            // 插件启用时自动打开默认视图
+            if (this.settings.autoOpenSidebar) {
+                if (this.app.workspace.layoutReady || this.app.workspace.containerEl.children.length > 1) {
+                    this.activateView();
+                } else {
+                    const layoutHandler = () => {
+                        this.app.workspace.off('layout-change', layoutHandler);
+                        this.activateView();
+                    };
+                    this.registerEvent(this.app.workspace.on('layout-change', layoutHandler));
+                }
+            }
         } catch (error) {
             console.error("[JiuJiu Calendar] Plugin load error:", error);
             new Notice(`JiuJiu Calendar plugin failed to load: ${(error as Error).message}`);
@@ -80,7 +111,11 @@ async onload() {
                 leaf = leaves[0];
             } else {
                 try {
-                    leaf = workspace.getRightLeaf(false);
+                    if (this.settings.sidebarPosition === 'left') {
+                        leaf = workspace.getLeftLeaf(false);
+                    } else {
+                        leaf = workspace.getRightLeaf(false);
+                    }
                 } catch (e) {
                     leaf = null;
                 }
@@ -107,45 +142,38 @@ async onload() {
         }
     }
 
+    async moveViewToSidebar() {
+        const existingLeaves = this.app.workspace.getLeavesOfType("jiujiu-calendar-view");
+        if (existingLeaves.length === 0) {
+            await this.activateView();
+            return;
+        }
+        const targetLeaf = this.settings.sidebarPosition === 'left'
+            ? this.app.workspace.getLeftLeaf(false)
+            : this.app.workspace.getRightLeaf(false);
+        if (!targetLeaf) return;
+        this.app.workspace.detachLeavesOfType("jiujiu-calendar-view");
+        await targetLeaf.setViewState({
+            type: "jiujiu-calendar-view",
+            active: true,
+        });
+        this.app.workspace.revealLeaf(targetLeaf);
+    }
+
     async loadSettings() {
         try {
             const savedSettings = await this.loadData() as Partial<MyPluginSettings>;
-            
-            // 确保savedSettings不是null
+
             const safeSavedSettings = savedSettings || {};
-            
-            // 深度合并设置，确保嵌套对象也能正确合并
-            this.settings = {
-                ...DEFAULT_SETTINGS,
-                ...safeSavedSettings,
-                // 确保taskSettings包含所有必需的嵌套属性
-                taskSettings: {
-                    ...DEFAULT_SETTINGS.taskSettings,
-                    ...(safeSavedSettings.taskSettings || {}),
-                    // 确保captureToSettings包含所有必需的嵌套属性
-                    captureToSettings: {
-                        ...DEFAULT_SETTINGS.taskSettings.captureToSettings,
-                        ...safeSavedSettings.taskSettings?.captureToSettings,
-                        // 确保configs始终是数组，即使savedSettings中没有或为undefined
-                        configs: safeSavedSettings.taskSettings?.captureToSettings?.configs || DEFAULT_SETTINGS.taskSettings.captureToSettings.configs
-                    }
-                },
-                // 确保moreLabelSettings包含所有必需的属性
-                moreLabelSettings: {
-                    ...DEFAULT_SETTINGS.moreLabelSettings,
-                    ...(safeSavedSettings.moreLabelSettings || {})
-                }
-            };
-            
-            // 如果是第一次加载插件（没有savedSettings），自动保存默认设置到data.json文件
+
+            this.settings = deepMerge(DEFAULT_SETTINGS as any, safeSavedSettings as any) as MyPluginSettings;
+
             if (!savedSettings) {
                 await this.saveSettings();
             }
         } catch (error) {
             console.error("[JiuJiu Calendar] Error loading settings:", error);
-            // 如果加载设置失败，使用默认设置
             this.settings = DEFAULT_SETTINGS;
-            // 保存默认设置到data.json文件
             await this.saveSettings();
         }
     }

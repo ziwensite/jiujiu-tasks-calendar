@@ -2,7 +2,6 @@ import { TFile } from 'obsidian';
 import { CalendarView } from '../CalendarView';
 import { formatDate, getWeekInfo } from '../../utils/dateUtils';
 import { noteExists } from '../../services/noteService';
-import { extractTasks } from '../../services/taskService';
 
 export async function updateDaySelection(view: CalendarView): Promise<void> {
     const container = view.containerEl;
@@ -12,24 +11,10 @@ export async function updateDaySelection(view: CalendarView): Promise<void> {
 
     if (!selectedDate) return;
 
-    const dayCells = container.querySelectorAll(".day-cell");
-    for (const cell of Array.from(dayCells)) {
-        const dateContainer = cell.querySelector('.date-container');
-        if (!dateContainer) continue;
-
-        const dayNumber = dateContainer.querySelector('.day-number');
-        if (!dayNumber) continue;
-
-        const cellDay = parseInt(dayNumber.textContent || '0');
-        if (isNaN(cellDay)) continue;
-
-        const cellMonth = cell.hasClass('other-month') ? 'other' : 'current';
-        if (cellMonth === 'other') continue;
-
-        const isSelected = cellDay === selectedDate.getDate();
-        if (isSelected) {
-            cell.addClass('selected-day');
-        }
+    const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+    const targetCell = container.querySelector(`.day-cell[data-date="${dateStr}"]:not(.other-month)`);
+    if (targetCell) {
+        targetCell.addClass('selected-day');
     }
 
     const currentToday = new Date();
@@ -147,7 +132,7 @@ export async function addDayIndicators(container: HTMLElement, view: CalendarVie
 
     if (!hasTask) {
         try {
-            const allTasks = await extractTasks(view.app, view.plugin.settings);
+            const allTasks = await view.plugin.calendarDataManager.getTasks();
             const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
             const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 
@@ -259,7 +244,7 @@ export async function checkWeekNoteAndTasks(view: CalendarView, weekStartDate: D
     }
 
     if (!hasWeeklyTask) {
-        const allTasks = await extractTasks(view.app, view.plugin.settings);
+        const allTasks = await view.plugin.calendarDataManager.getTasks();
         for (const task of allTasks) {
             if (task.dueDate && task.dueDate >= weekStartDate && task.dueDate <= weekEndDate) {
                 hasWeeklyTask = true;
@@ -295,7 +280,7 @@ export async function checkMonthNoteAndTasks(view: CalendarView, monthIndex: num
         hasMonthlyNote = true;
     }
 
-    const allTasks = await extractTasks(view.app, view.plugin.settings);
+    const allTasks = await view.plugin.calendarDataManager.getTasks();
     for (const task of allTasks) {
         if (task.dueDate && task.dueDate >= monthStartDate && task.dueDate <= monthEndDate) {
             if (task.status === "x" || task.status === "-") {
@@ -329,7 +314,7 @@ export async function checkQuarterNoteAndTasks(view: CalendarView, quarter: numb
         hasQuarterlyNote = true;
     }
 
-    const allTasks = await extractTasks(view.app, view.plugin.settings);
+    const allTasks = await view.plugin.calendarDataManager.getTasks();
     for (const task of allTasks) {
         if (task.dueDate && task.dueDate >= quarterStartDate && task.dueDate <= quarterEndDate) {
             if (task.status === "x" || task.status === "-") {

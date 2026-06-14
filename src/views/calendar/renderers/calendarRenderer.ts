@@ -290,6 +290,10 @@ export class CalendarRenderer {
         // 日期容器
         const dateContainer = dayCell.createEl("div", { cls: "date-container" });
         
+        // 设置 data-date 属性，方便通过日期查找单元格
+        const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        dayCell.dataset.date = dateStr;
+        
         // 日期数字
         const dayNumber = dateContainer.createEl("span", { 
             text: `${date.getDate()}`,
@@ -414,6 +418,10 @@ export class CalendarRenderer {
                         isOtherMonth = true;
                     }
                     
+                    // 更新 data-date 属性
+                    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                    cell.dataset.date = dateStr;
+                    
                     if (isOtherMonth) {
                         cell.addClass('other-month');
                     }
@@ -475,8 +483,7 @@ export class CalendarRenderer {
     /**
      * 更新日历头部显示
      */
-    private updateCalendarHeader(container: HTMLElement, currentDate: Date) {
-        // 更新年份显示
+    public updateCalendarHeader(container: HTMLElement, currentDate: Date) {
         const yearContent = container.querySelector('.calendar-header-block-year .calendar-header-content');
         if (yearContent) {
             const yearSpan = yearContent.querySelector('span');
@@ -484,15 +491,41 @@ export class CalendarRenderer {
                 yearSpan.textContent = `${currentDate.getFullYear()}年`;
             }
         }
-        
-        
-        // 更新月份显示
+
         const monthContent = container.querySelector('.calendar-header-block-month .calendar-header-content');
         if (monthContent) {
             const monthSpan = monthContent.querySelector('span');
             if (monthSpan) {
-                monthSpan.textContent = `${currentDate.getMonth() + 1}月`;
+                monthSpan.textContent = `${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月`;
             }
         }
+
+        this.updateCustomLabels(container);
+    }
+
+    private updateCustomLabels(container: HTMLElement) {
+        const singleRow = container.querySelector('.calendar-header-row');
+        if (!singleRow) return;
+
+        const updateLabel = (key: 'lb1' | 'lb2', className: string) => {
+            const settings = this.plugin.settings.moreLabelSettings[key];
+            const existing = singleRow.querySelector(`.${className}`);
+
+            if (settings.enabled) {
+                if (existing) {
+                    existing.textContent = settings.labelText;
+                } else {
+                    singleRow.createEl('div', {
+                        text: settings.labelText,
+                        cls: `${className} today-unselected`
+                    });
+                }
+            } else if (existing) {
+                existing.remove();
+            }
+        };
+
+        updateLabel('lb1', 'calendar-header-label-lb1');
+        updateLabel('lb2', 'calendar-header-label-lb2');
     }
 }

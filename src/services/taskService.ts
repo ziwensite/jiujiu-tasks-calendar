@@ -1,5 +1,5 @@
-import { App, MarkdownView, TFile } from 'obsidian';
-import { taskRegex, dueDateRegex, createdAtRegex, startDateRegex, cancelledDateRegex, completedDateRegex, plannedDateRegex, fullDayRegex, timeRangeRegex, singleTimeRegex, priorityRegex, recurrenceRegex, escapeRegExp } from '../utils/regexUtils';
+import { App, TFile } from 'obsidian';
+import { dueDateRegex, createdAtRegex, startDateRegex, cancelledDateRegex, completedDateRegex, plannedDateRegex, fullDayRegex, timeRangeRegex, singleTimeRegex, priorityRegex, recurrenceRegex, escapeRegExp } from '../utils/regexUtils';
 import { MyPluginSettings } from '../settings';
 import { formatDate } from '../utils/dateUtils';
 import { generateTaskDateMarkers, generateTaskCompletionMarker } from '../utils/taskUtils';
@@ -7,414 +7,44 @@ import type { IChoiceExecutor } from '../IChoiceExecutor';
 import { ChoiceType } from '../types/choices/choiceType';
 import type MyPlugin from '../main';
 
+export { extractTasks, clearTaskCache } from './taskExtractor';
+export type { Task } from '../types/task';
+import type { Task } from '../types/task';
+
 /**
  * 解析重复规则并计算下一个任务的日期
  * @param recurrenceRule 重复规则
  * @param currentDate 当前任务的日期
  * @returns 下一个任务的日期
  */
+type RecurrenceHandler = (date: Date) => void;
+
+const RECURRENCE_RULES: [string[], RecurrenceHandler][] = [
+    [['every day', 'daily'], (d) => d.setDate(d.getDate() + 1)],
+    [['every week', 'weekly'], (d) => d.setDate(d.getDate() + 7)],
+    [['every month', 'monthly'], (d) => d.setMonth(d.getMonth() + 1)],
+    [['every year', 'yearly'], (d) => d.setFullYear(d.getFullYear() + 1)],
+    [['every 2 days'], (d) => d.setDate(d.getDate() + 2)],
+    [['every 3 days'], (d) => d.setDate(d.getDate() + 3)],
+    [['every 2 weeks', 'biweekly'], (d) => d.setDate(d.getDate() + 14)],
+    [['every 2 months'], (d) => d.setMonth(d.getMonth() + 2)],
+    [['every quarter', 'quarterly'], (d) => d.setMonth(d.getMonth() + 3)],
+    [['every 6 months', 'semiannual'], (d) => d.setMonth(d.getMonth() + 6)],
+];
+
 function calculateNextRecurrenceDate(recurrenceRule: string, currentDate: Date): Date {
     const nextDate = new Date(currentDate);
-    
-    // 更全面的重复规则解析
     const ruleLower = recurrenceRule.toLowerCase();
-    
-    // 处理每天重复
-    if (ruleLower.includes('every day') || ruleLower.includes('daily')) {
-        nextDate.setDate(nextDate.getDate() + 1);
-    }
-    // 处理每周重复
-    else if (ruleLower.includes('every week') || ruleLower.includes('weekly')) {
-        nextDate.setDate(nextDate.getDate() + 7);
-    }
-    // 处理每月重复
-    else if (ruleLower.includes('every month') || ruleLower.includes('monthly')) {
-        nextDate.setMonth(nextDate.getMonth() + 1);
-    }
-    // 处理每年重复
-    else if (ruleLower.includes('every year') || ruleLower.includes('yearly')) {
-        nextDate.setFullYear(nextDate.getFullYear() + 1);
-    }
-    // 处理每两天重复
-    else if (ruleLower.includes('every 2 days')) {
-        nextDate.setDate(nextDate.getDate() + 2);
-    }
-    // 处理每三天重复
-    else if (ruleLower.includes('every 3 days')) {
-        nextDate.setDate(nextDate.getDate() + 3);
-    }
-    // 处理每两周重复
-    else if (ruleLower.includes('every 2 weeks')) {
-        nextDate.setDate(nextDate.getDate() + 14);
-    }
-    // 处理每两周重复（简写）
-    else if (ruleLower.includes('biweekly')) {
-        nextDate.setDate(nextDate.getDate() + 14);
-    }
-    // 处理每两个月重复
-    else if (ruleLower.includes('every 2 months')) {
-        nextDate.setMonth(nextDate.getMonth() + 2);
-    }
-    // 处理每季度重复
-    else if (ruleLower.includes('every quarter') || ruleLower.includes('quarterly')) {
-        nextDate.setMonth(nextDate.getMonth() + 3);
-    }
-    // 处理每半年重复
-    else if (ruleLower.includes('every 6 months') || ruleLower.includes('semiannual')) {
-        nextDate.setMonth(nextDate.getMonth() + 6);
-    }
-    // 默认情况：如果没有匹配的重复规则，默认每天重复
-    else {
-        nextDate.setDate(nextDate.getDate() + 1);
-    }
-    
-    return nextDate;
-}
 
-export interface Task {
-    text: string;
-    completed: boolean;
-    status?: string;
-    priority?: string;
-    recurrenceRule?: string;
-    filePath: string;
-    dueDate?: Date;
-    createdAt?: Date;
-    startDate?: Date;
-    plannedDate?: Date;
-    cancelledDate?: Date;
-    completedDate?: Date;
-    rawText: string;
-    fullDay?: boolean;
-    timeRange?: {
-        startTime: string;
-        endTime: string;
-    };
-    location?: string;
-    line?: number;
-    lineCount?: number;
-    position?: {
-        start: {
-            line: number;
-            col: number;
-        };
-        end: {
-            line: number;
-            col: number;
-        };
-    };
-}
-
-// 文件修改时间缓存
-interface FileCache {
-    mtime: number;
-    tasks: Task[];
-}
-
-// 全局缓存
-let fileCacheMap: Map<string, FileCache> = new Map();
-
-// 从笔记中提取任务
-export async function extractTasks(app: App, settings: MyPluginSettings): Promise<Task[]> {
-    // 直接使用优化后的任务提取逻辑
-    return await extractBasicTasks(app);
-}
-
-// 优化后的任务提取逻辑
-export async function extractBasicTasks(app: App): Promise<Task[]> {
-    const allFiles = app.vault.getMarkdownFiles();
-    const tasks: Task[] = [];
-    
-    // 并行处理文件，提高读取速度
-    const filePromises = allFiles.map(async (file) => {
-        try {
-            // 检查文件是否是TFile类型
-            if (!(file instanceof TFile)) return [];
-            
-            // 获取文件修改时间（使用TFile对象的stat属性）
-            const fileStat = file.stat;
-            if (!fileStat) return [];
-            
-            // 检查缓存
-            const cacheKey = file.path;
-            const cache = fileCacheMap.get(cacheKey);
-            
-            // 如果缓存存在且文件未修改，直接返回缓存的任务
-            if (cache && cache.mtime === fileStat.mtime) {
-                return cache.tasks;
-            }
-            
-            // 读取文件内容
-            const content = await app.vault.read(file);
-            
-            // 提取任务
-            const fileTasks: Task[] = [];
-            let match;
-            
-            // 重置正则表达式的lastIndex，避免影响其他匹配
-            taskRegex.lastIndex = 0;
-            
-            while ((match = taskRegex.exec(content)) !== null) {
-                if (match[1] && match[2]) {
-                    const status = match[1];
-                    const completed = status.toLowerCase() === 'x';
-                    const rawText = match[2].trim();
-                    
-                    // 计算任务位置信息
-                    const matchStart = match.index;
-                    const matchEnd = match.index + match[0].length;
-                    
-                    // 计算起始行号和列号
-                    const beforeMatch = content.substring(0, matchStart);
-                    const lines = beforeMatch.split('\n');
-                    const startLine = lines.length - 1;
-                    const startCol = lines[startLine]?.length || 0;
-                    
-                    // 计算结束行号和列号
-                    const afterMatch = content.substring(0, matchEnd);
-                    const endLines = afterMatch.split('\n');
-                    const endLine = endLines.length - 1;
-                    const endCol = endLines[endLine]?.length || 0;
-                    
-                    // 计算任务跨越的行数
-                    const lineCount = endLine - startLine + 1;
-                    
-                    // 提取截止日期
-                    const dateMatch = rawText.match(dueDateRegex);
-                    let dueDate: Date | undefined;
-                    if (dateMatch && dateMatch[1]) {
-                        dueDate = new Date(dateMatch[1]);
-                    }
-                    
-                    // 提取创建日期，但不在任务列表中显示
-                    const createdAtMatch = rawText.match(createdAtRegex);
-                    let createdAt: Date | undefined;
-                    if (createdAtMatch && createdAtMatch[1]) {
-                        createdAt = new Date(createdAtMatch[1]);
-                    }
-                    
-                    // 提取开始日期
-                    const startDateMatch = rawText.match(startDateRegex);
-                    let startDate: Date | undefined;
-                    if (startDateMatch && startDateMatch[1]) {
-                        startDate = new Date(startDateMatch[1]);
-                    }
-                    
-                    // 提取计划日期
-                    const plannedDateMatch = rawText.match(plannedDateRegex);
-                    let plannedDate: Date | undefined;
-                    if (plannedDateMatch && plannedDateMatch[1]) {
-                        plannedDate = new Date(plannedDateMatch[1]);
-                    }
-                    
-                    // 提取取消日期
-                    const cancelledDateMatch = rawText.match(cancelledDateRegex);
-                    let cancelledDate: Date | undefined;
-                    if (cancelledDateMatch && cancelledDateMatch[1]) {
-                        cancelledDate = new Date(cancelledDateMatch[1]);
-                    }
-                    
-                    // 提取完成日期
-                    const completedDateMatch = rawText.match(completedDateRegex);
-                    let completedDate: Date | undefined;
-                    if (completedDateMatch && completedDateMatch[1]) {
-                        completedDate = new Date(completedDateMatch[1]);
-                    }
-                    
-                    // 提取优先级
-                    const priorityMatch = rawText.match(priorityRegex);
-                    let priority: string | undefined;
-                    if (priorityMatch && priorityMatch[1]) {
-                        switch (priorityMatch[1]) {
-                            case '🔺':
-                                priority = 'highest';
-                                break;
-                            case '⏫':
-                                priority = 'high';
-                                break;
-                            case '🔼':
-                                priority = 'medium';
-                                break;
-                            case '🔽':
-                                priority = 'low';
-                                break;
-                            case '⏬️':
-                                priority = 'lowest';
-                                break;
-                        }
-                    }
-                    
-                    // 提取重复规则
-                    const recurrenceMatch = rawText.match(recurrenceRegex);
-                    let recurrenceRule: string | undefined;
-                    if (recurrenceMatch && recurrenceMatch[1]) {
-                        // 提取 🔁 后面的重复规则内容
-                        recurrenceRule = recurrenceMatch[1].trim();
-                    }
-                    
-                    // 提取全天标记
-                    const fullDayMatch = rawText.match(fullDayRegex);
-                    const fullDay = !!fullDayMatch;
-                    
-                    // 提取时间范围
-                    let timeRange = undefined;
-                    let timeText = rawText;
-                    
-                    // 先尝试匹配完整的时间范围
-                    const timeRangeMatch = rawText.match(timeRangeRegex);
-                    let singleTimeMatch = null;
-                    
-                    if (timeRangeMatch && timeRangeMatch[1] && timeRangeMatch[2]) {
-                        timeRange = {
-                            startTime: timeRangeMatch[1],
-                            endTime: timeRangeMatch[2]
-                        };
-                    }
-                    
-                    // 如果没有完整的时间范围，尝试匹配单独的时间点
-                    else {
-                        singleTimeMatch = rawText.match(singleTimeRegex);
-                        if (singleTimeMatch) {
-                            // 处理两种捕获组：HH:MM 格式或 H点/点钟格式
-                            let startTime = '';
-                            if (singleTimeMatch[1]) {
-                                // HH:MM 格式
-                                startTime = singleTimeMatch[1];
-                            } else if (singleTimeMatch[2]) {
-                                // H点/点钟格式，转换为 HH:00
-                                startTime = `${singleTimeMatch[2]}:00`;
-                            }
-                            
-                            if (startTime) {
-                                timeRange = {
-                                    startTime: startTime,
-                                    endTime: ''
-                                };
-                            }
-                        }
-                    }
-                    
-                    // 提取任务描述（去除日期、时间、全天、标签等标记）
-                    let taskDescription = rawText;
-                    
-                    // 移除日期标记
-                    if (dateMatch) {
-                        taskDescription = taskDescription.replace(dueDateRegex, '').trim();
-                    }
-                    
-                    // 移除创建日期标记，确保它不会出现在任务描述中
-                    if (createdAtMatch) {
-                        taskDescription = taskDescription.replace(createdAtRegex, '').trim();
-                    }
-                    
-                    // 移除开始日期标记
-                    if (startDateMatch) {
-                        taskDescription = taskDescription.replace(startDateRegex, '').trim();
-                    }
-                    
-                    // 移除计划日期标记
-                    if (plannedDateMatch) {
-                        taskDescription = taskDescription.replace(plannedDateRegex, '').trim();
-                    }
-                    
-                    // 移除取消日期标记
-                    if (cancelledDateMatch) {
-                        taskDescription = taskDescription.replace(cancelledDateRegex, '').trim();
-                    }
-                    
-                    // 移除完成日期标记
-                    if (completedDateMatch) {
-                        taskDescription = taskDescription.replace(completedDateRegex, '').trim();
-                    }
-                    
-                    // 移除优先级标记
-                    if (priorityMatch) {
-                        taskDescription = taskDescription.replace(priorityRegex, '').trim();
-                    }
-                    
-                    // 移除重复规则
-                    if (recurrenceMatch) {
-                        taskDescription = taskDescription.replace(recurrenceRegex, '').trim();
-                    }
-                    
-                    // 移除全天标记
-                    if (fullDayMatch) {
-                        taskDescription = taskDescription.replace(fullDayRegex, '').trim();
-                    }
-                    
-                    // 移除时间范围
-                    if (timeRangeMatch) {
-                        taskDescription = taskDescription.replace(timeRangeRegex, '').trim();
-                    } else if (singleTimeMatch) {
-                        taskDescription = taskDescription.replace(singleTimeRegex, '').trim();
-                    }
-                    
-                    // 保留标签在任务内容中
-                    // 移除多余的空格
-                    taskDescription = taskDescription.replace(/\s+/g, ' ').trim();
-                    
-                    // 去除多余的空格
-                    taskDescription = taskDescription.replace(/\s+/g, ' ').trim();
-                    
-                    fileTasks.push({
-                        text: taskDescription, // 只显示任务描述，不包含日期和时间
-                        completed: completed,
-                        status: status,
-                        priority: priority,
-                        recurrenceRule: recurrenceRule,
-                        filePath: file.path,
-                        dueDate: dueDate,
-                        createdAt: createdAt, // 存储创建日期，但不在任务列表中显示
-                        startDate: startDate,
-                        plannedDate: plannedDate,
-                        cancelledDate: cancelledDate,
-                        completedDate: completedDate,
-                        rawText: rawText,
-                        fullDay: fullDay,
-                        timeRange: timeRange,
-                        line: startLine,
-                        lineCount: lineCount,
-                        position: {
-                            start: {
-                                line: startLine,
-                                col: startCol
-                            },
-                            end: {
-                                line: endLine,
-                                col: endCol
-                            }
-                        }
-                    });
-                }
-            }
-            
-            // 更新缓存
-            fileCacheMap.set(cacheKey, {
-                mtime: fileStat.mtime,
-                tasks: fileTasks
-            });
-            
-            return fileTasks;
-        } catch (error) {
-            console.error(`Failed to read file ${file.path}:`, error);
-            return [];
+    for (const [keywords, handler] of RECURRENCE_RULES) {
+        if (keywords.some(k => ruleLower.includes(k))) {
+            handler(nextDate);
+            return nextDate;
         }
-    });
-    
-    // 等待所有文件处理完成
-    const results = await Promise.all(filePromises);
-    
-    // 合并结果
-    for (const fileTasks of results) {
-        tasks.push(...fileTasks);
     }
 
-    return tasks;
-}
-
-// 清除任务缓存
-export function clearTaskCache(): void {
-    fileCacheMap.clear();
+    nextDate.setDate(nextDate.getDate() + 1);
+    return nextDate;
 }
 
 // 定义筛选规则的类型

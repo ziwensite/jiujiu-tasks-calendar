@@ -8,7 +8,8 @@ import { extractTasks, filterTasks, updateTaskInNote, Task, parseCustomFilter, e
 import { CalendarRenderer, TaskListRenderer, IndicatorRenderer, EventHandler } from './calendar';
 import { CommandSelectModal } from '../modals/CommandSelectModal';
 import { updateDaySelection, updateIndicators, updateYearViewMonthIndicators, updateAllDayIndicators, updateWeekIndicators, checkWeekNoteAndTasks, checkQuarterNoteAndTasks, checkMonthNoteAndTasks, addDayIndicators } from './CalendarView/indicators';
-import { installNavigationListeners, installCellListeners } from './CalendarView/eventListeners';
+import { installNavigationListeners, installCellListeners, installLabelListeners } from './CalendarView/eventListeners';
+import { adjustTaskListHeight, toggleCalendarView } from './CalendarView/layout';
 
 const VIEW_TYPE_CALENDAR = "jiujiu-calendar-view";
 
@@ -339,8 +340,9 @@ export class CalendarView extends ItemView {
      * 更新日历头部显示
      */
     private updateCalendarHeader() {
-        // 日历头部更新已由calendarRenderer处理
-        // 此方法保留以确保兼容性
+        const targetDate = this.selectedDate || this.currentDate;
+        this.calendarRenderer.updateCalendarHeader(this.containerEl, targetDate);
+        installLabelListeners(this);
     }
 
     private async buildCalendarStructure(container: HTMLElement) {
@@ -920,142 +922,11 @@ export class CalendarView extends ItemView {
         await updateYearViewMonthIndicators(this);
     }
 
-    /**
-     * 计算并调整任务列表高度，使其占据剩余空间
-     */
     adjustTaskListHeight() {
-        // 获取整个视图容器
-        const viewContainer = this.containerEl.children[1] as HTMLElement;
-        if (!viewContainer) return;
-        
-        // 获取视图容器的总高度
-        const viewHeight = viewContainer.offsetHeight;
-        
-        // 计算任务列表上方所有元素的高度
-        let totalHeightAboveTaskList = 0;
-        
-        // 日历头部
-        const calendarHeader = viewContainer.querySelector('.calendar-header') as HTMLElement;
-        if (calendarHeader) {
-            totalHeightAboveTaskList += calendarHeader.offsetHeight;
-        }
-        
-        // 日历表格（月视图）
-        const calendarTable = viewContainer.querySelector('.calendar-table') as HTMLElement;
-        if (calendarTable) {
-            totalHeightAboveTaskList += calendarTable.offsetHeight;
-        }
-        
-        // 年视图容器
-        const yearViewContainer = viewContainer.querySelector('.year-view-container') as HTMLElement;
-        if (yearViewContainer) {
-            totalHeightAboveTaskList += yearViewContainer.offsetHeight;
-        }
-        
-        // 任务列表容器（包括其边距和内边距）
-        const taskListContainer = viewContainer.querySelector('.task-list-container') as HTMLElement;
-        if (taskListContainer) {
-            // 获取任务列表容器的计算样式
-            const taskListContainerStyle = window.getComputedStyle(taskListContainer);
-            // 添加任务列表容器的外边距
-            totalHeightAboveTaskList += parseFloat(taskListContainerStyle.marginTop) || 0;
-            totalHeightAboveTaskList += parseFloat(taskListContainerStyle.marginBottom) || 0;
-            // 添加任务列表容器的内边距
-            totalHeightAboveTaskList += parseFloat(taskListContainerStyle.paddingTop) || 0;
-            totalHeightAboveTaskList += parseFloat(taskListContainerStyle.paddingBottom) || 0;
-            
-            // 任务列表头部
-            const taskListHeader = taskListContainer.querySelector('.task-list-header') as HTMLElement;
-            if (taskListHeader) {
-                totalHeightAboveTaskList += taskListHeader.offsetHeight;
-            }
-        }
-        
-        // 计算剩余空间高度，减去状态栏高度，防止任务被遮挡
-        const remainingHeight = Math.max(0, viewHeight - totalHeightAboveTaskList - 60); // 减去60px作为状态栏空间，增加空间以避免遮挡
-        
-        // 设置任务列表的高度
-        if (taskListContainer) {
-            const taskList = taskListContainer.querySelector('.task-list') as HTMLElement;
-            if (taskList) {
-                taskList.style.height = `${remainingHeight}px`;
-            }
-        }
+        adjustTaskListHeight(this);
     }
 
-    /**
-     * 切换日历视图的展开和收缩状态
-     */
     toggleCalendarView() {
-        // 月视图的收缩/展开逻辑
-        if (this.viewType === 'month') {
-            const calendarTable = this.containerEl.querySelector('.calendar-table') as HTMLElement;
-            if (calendarTable) {
-                const tbody = calendarTable.querySelector('tbody');
-                const rows = tbody ? Array.from(tbody.querySelectorAll('tr')) : [];
-                
-                if (rows.length > 0) {
-                    // 检查是否已经是收缩状态
-                    const isCollapsed = rows.some(row => row.style.display === 'none');
-                    
-                    if (isCollapsed) {
-                        // 展开视图
-                        rows.forEach(row => {
-                            row.style.display = '';
-                        });
-                    } else {
-                        // 收缩视图，只保留选中日期所在的行
-                        let selectedRowIndex = -1;
-                        if (this.selectedDate) {
-                            // 计算选中日期所在的行索引
-                            const firstDayOfMonth = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), 1);
-                            const startDayOfWeek = firstDayOfMonth.getDay();
-                            const prevMonthDaysToShow = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
-                            
-                            const selectedDay = this.selectedDate.getDate();
-                            selectedRowIndex = Math.floor((prevMonthDaysToShow + selectedDay - 1) / 7);
-                        }
-                        
-                        // 隐藏所有行
-                        rows.forEach(row => {
-                            row.style.display = 'none';
-                        });
-                        
-                        // 显示选中日期所在的行（如果有选中日期）
-                        const selectedRow = rows[selectedRowIndex];
-                        if (selectedRowIndex >= 0 && selectedRowIndex < rows.length && selectedRow) {
-                            selectedRow.style.display = '';
-                        } else if (rows.length > 0 && rows[0]) {
-                            // 如果没有选中日期，显示第一行
-                            rows[0].style.display = '';
-                        }
-                    }
-                }
-            }
-        } else if (this.viewType === 'year') {
-            // 年视图的收缩/展开逻辑
-            const yearViewContainer = this.containerEl.querySelector('.year-view-container') as HTMLElement;
-            if (yearViewContainer) {
-                if (yearViewContainer.style.maxHeight) {
-                    // 展开视图
-                    yearViewContainer.style.maxHeight = "30em";
-                    yearViewContainer.style.overflow = "hidden";
-                    
-                    setTimeout(() => {
-                        yearViewContainer.style.maxHeight = "";
-                        yearViewContainer.style.overflow = "";
-                    }, 300);
-                } else {
-                    // 收缩视图
-                    yearViewContainer.style.maxHeight = "8em";
-                    yearViewContainer.style.overflow = "hidden";
-                }
-            }
-        }
-        
-        // 强制重新计算布局并调整任务列表高度
-        setTimeout(() => {
-            this.adjustTaskListHeight();
-        }, 100);
+        toggleCalendarView(this);
     }
 }

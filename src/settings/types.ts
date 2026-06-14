@@ -110,4 +110,6 @@ export interface MyPluginSettings {
     taskFilter: TaskFilterSettings;
     taskSettings: TaskSettings;
     moreLabelSettings: MoreLabelSettings;
+    autoOpenSidebar: boolean;
+    sidebarPosition: 'left' | 'right';
 }

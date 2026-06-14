@@ -2,6 +2,27 @@ import { CalendarView } from '../CalendarView';
 import { getWeekInfo } from '../../utils/dateUtils';
 import { checkWeekNoteAndTasks, checkQuarterNoteAndTasks, checkMonthNoteAndTasks, addDayIndicators } from './indicators';
 
+function handleLabelAction(view: CalendarView, key: 'lb1' | 'lb2') {
+    const cfg = view.plugin.settings.moreLabelSettings[key];
+    if (!cfg.enabled) return;
+    if (cfg.actionType === 'systemCommand' && cfg.systemCommand) {
+        (view.app as any).commands.executeCommandById(cfg.systemCommand);
+    } else if (cfg.actionType === 'openFile' && cfg.filePath) {
+        view.app.workspace.openLinkText(cfg.filePath, '');
+    }
+}
+
+export function installLabelListeners(view: CalendarView) {
+    const lb1Btn = view.containerEl.querySelector(".calendar-header .calendar-header-label-lb1");
+    if (lb1Btn) {
+        lb1Btn.addEventListener("click", () => handleLabelAction(view, 'lb1'));
+    }
+    const lb2Btn = view.containerEl.querySelector(".calendar-header .calendar-header-label-lb2");
+    if (lb2Btn) {
+        lb2Btn.addEventListener("click", () => handleLabelAction(view, 'lb2'));
+    }
+}
+
 export function installNavigationListeners(view: CalendarView) {
     // 月份导航按钮
     const prevMonthBtn = view.containerEl.querySelector(".calendar-header-block-month .prev-btn");
@@ -169,24 +190,9 @@ export function installNavigationListeners(view: CalendarView) {
             }
         });
     }
-    
-    // 设置按钮
-    const settingsBtn = view.containerEl.querySelector(".calendar-header .calendar-header-label-settings");
-    if (settingsBtn) {
-        settingsBtn.addEventListener("click", () => {
-            const captureModal = new (require('../calendar/modals/CaptureToConfigModal').CaptureToConfigModal)(view.plugin);
-            captureModal.open();
-        });
-    }
-    
-    // 周选择设置按钮（任务列表头部的齿轮图标）
-    const taskSettingsBtn = view.containerEl.querySelector(".task-list-header .settings-btn");
-    if (taskSettingsBtn) {
-        taskSettingsBtn.addEventListener("click", () => {
-            const captureModal = new (require('../calendar/modals/CaptureToConfigModal').CaptureToConfigModal)(view.plugin);
-            captureModal.open();
-        });
-    }
+
+    // 安装自定义标签点击监听器
+    installLabelListeners(view);
     
     // 任务列表头部的配置按钮
     const taskListContainer = view.containerEl.querySelector(".task-list-container");

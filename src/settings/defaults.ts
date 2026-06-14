@@ -467,5 +467,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
             systemCommand: "",
             filePath: ""
         }
-    }
+    },
+    autoOpenSidebar: true,
+    sidebarPosition: 'right'
 };
