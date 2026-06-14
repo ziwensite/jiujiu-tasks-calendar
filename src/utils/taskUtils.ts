@@ -1,73 +1,38 @@
 import type { Task } from '../services/taskService';
+import { PROPERTY_EMOJI_ORDER } from '../suggest/taskProperties';
 
-/**
- * 生成任务的日期标记
- * @param task 任务对象
- * @returns 带有日期标记的任务文本
- */
+const PRIORITY_MAP: Record<string, string> = {
+    '⏬️': 'lowest',
+    '🔽': 'low',
+    '🔼': 'medium',
+    '⏫': 'high',
+    '🔺': 'highest',
+};
+
 export function generateTaskDateMarkers(task: Task): string {
-    let result = '';
-    
-    // 添加优先级标记
-    if (task.priority) {
-        switch (task.priority) {
-            case 'lowest':
-                result += ' ⏬️';
-                break;
-            case 'low':
-                result += ' 🔽';
-                break;
-            case 'medium':
-                result += ' 🔼';
-                break;
-            case 'high':
-                result += ' ⏫';
-                break;
-            case 'highest':
-                result += ' 🔺';
-                break;
+    const parts: string[] = [];
+
+    for (const emoji of PROPERTY_EMOJI_ORDER) {
+        if (emoji === '✅' && task.completedDate) {
+            parts.push(`✅ ${formatLocalDate(task.completedDate)}`);
+        } else if (emoji === '❌' && !task.completedDate && task.cancelledDate) {
+            parts.push(`❌ ${formatLocalDate(task.cancelledDate)}`);
+        } else if (emoji === '🔁' && task.recurrenceRule) {
+            parts.push(`🔁 ${task.recurrenceRule}`);
+        } else if (emoji === '📅' && task.dueDate) {
+            parts.push(`📅 ${formatLocalDate(task.dueDate)}`);
+        } else if (emoji === '⏳' && task.plannedDate) {
+            parts.push(`⏳ ${formatLocalDate(task.plannedDate)}`);
+        } else if (emoji === '🛫' && task.startDate) {
+            parts.push(`🛫 ${formatLocalDate(task.startDate)}`);
+        } else if (emoji === '➕' && task.createdAt) {
+            parts.push(`➕ ${formatLocalDate(task.createdAt)}`);
+        } else if (PRIORITY_MAP[emoji] && task.priority === PRIORITY_MAP[emoji]) {
+            parts.push(emoji);
         }
     }
-    
-    // 添加重复规则标记
-    if (task.recurrenceRule) {
-        result += ` 🔁 ${task.recurrenceRule}`;
-    }
-    
-    // 添加创建日期标记
-    if (task.createdAt) {
-        const createdAtStr = formatLocalDate(task.createdAt);
-        result += ` ➕ ${createdAtStr}`;
-    }
-    
-    // 添加开始日期标记
-    if (task.startDate) {
-        const startDateStr = formatLocalDate(task.startDate);
-        result += ` 🛫 ${startDateStr}`;
-    }
-    
-    // 添加计划日期标记
-    if (task.plannedDate) {
-        const plannedDateStr = formatLocalDate(task.plannedDate);
-        result += ` ⏳ ${plannedDateStr}`;
-    }
-    
-    // 添加截止日期标记
-    if (task.dueDate) {
-        const dueDateStr = formatLocalDate(task.dueDate);
-        result += ` 📅 ${dueDateStr}`;
-    }
-    
-    // 添加完成日期或取消日期标记（排在最后）
-    if (task.completedDate) {
-        const completedDateStr = formatLocalDate(task.completedDate);
-        result += ` ✅ ${completedDateStr}`;
-    } else if (task.cancelledDate) {
-        const cancelledDateStr = formatLocalDate(task.cancelledDate);
-        result += ` ❌ ${cancelledDateStr}`;
-    }
-    
-    return result;
+
+    return parts.length ? ' ' + parts.join(' ') : '';
 }
 
 /**

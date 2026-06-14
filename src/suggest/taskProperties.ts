@@ -1,11 +1,4 @@
-import { addDays, getWeekend, getMonthEnd, getNextMonth, getYearEnd } from './dateCalculator';
-
-function formatLocalDate(date: Date): string {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-}
+import { addDays, getWeekend, getMonthEnd, getNextMonth, getYearEnd, formatLocalDate } from './dateCalculator';
 
 // ===== 日期 =====
 export const DATE_OPTIONS = [
@@ -80,7 +73,18 @@ export function getRecurrenceSuggestions(input?: string): string[] {
 }
 
 // ===== Emoji 菜单属性顺序 =====
-export const PROPERTY_EMOJI_ORDER = ['📅', '⏳', '🛫', '➕', '🔁', '⏬️', '🔽', '🔼', '⏫', '🔺'] as const;
+export const PROPERTY_EMOJI_ORDER = ['📅', '⏳', '🛫', '➕', '🔁', '⏬️', '🔽', '🔼', '⏫', '🔺', '✅', '❌'] as const;
+
+const PRIORITY_EMOJIS = new Set(['⏬️', '🔽', '🔼', '⏫', '🔺']);
+const DATE_EMOJIS = new Set(['📅', '⏳', '🛫', '➕', '✅', '❌']);
+
+export function isPriorityEmoji(emoji: string): boolean {
+    return PRIORITY_EMOJIS.has(emoji);
+}
+
+export function chainingEmoji(value: string): boolean {
+    return ['📅', '⏳', '🛫', '➕', '🔁'].includes(value);
+}
 
 const PROPERTY_EMOJI_LABELS: Record<string, string> = {
     '📅': '截止日期',
@@ -88,6 +92,13 @@ const PROPERTY_EMOJI_LABELS: Record<string, string> = {
     '🛫': '开始日期',
     '➕': '创建日期',
     '🔁': '重复规则',
+    '⏬️': '最低',
+    '🔽': '低',
+    '🔼': '中',
+    '⏫': '高',
+    '🔺': '最高',
+    '✅': '完成日期',
+    '❌': '取消日期',
 };
 
 export interface SuggesterItem {
@@ -95,19 +106,77 @@ export interface SuggesterItem {
     value: string;
 }
 
-export function getEmojiMenuItems(): SuggesterItem[] {
+export function getEmojiMenuItems(input?: string): SuggesterItem[] {
     const priorityMap: Record<string, string> = {};
     PRIORITY_OPTIONS.forEach(o => { priorityMap[o.emoji] = o.label; });
 
-    return PROPERTY_EMOJI_ORDER.map(emoji => ({
+    let items = PROPERTY_EMOJI_ORDER.map(emoji => ({
         label: `${emoji} ${priorityMap[emoji] || PROPERTY_EMOJI_LABELS[emoji] || ''}`,
         value: emoji,
     }));
+
+    if (input) {
+        const lower = input.toLowerCase();
+        items = items.filter(item => item.label.toLowerCase().includes(lower) || item.value.includes(lower));
+    }
+    return items;
 }
 
-export function getRecurrenceMenuItems(): SuggesterItem[] {
-    return RECURRENCE_OPTIONS.map(r => ({
+export function getRecurrenceMenuItems(input?: string): SuggesterItem[] {
+    let items = RECURRENCE_OPTIONS.map(r => ({
         label: `🔁 ${r}`,
         value: r,
     }));
+    if (input) {
+        const lower = input.toLowerCase();
+        items = items.filter(item => item.label.toLowerCase().includes(lower) || item.value.toLowerCase().includes(lower));
+    }
+    return items;
+}
+
+// ===== 标记提取与排序 =====
+const EMOJI_PATTERN = '(' + PROPERTY_EMOJI_ORDER.join('|') + ')';
+
+function extractDateValue(text: string, emoji: string): string | null {
+    const re = new RegExp(`${emoji}\\s*(\\d{4}-\\d{2}-\\d{2})`);
+    const m = text.match(re);
+    return m ? (m[1] ?? null) : null;
+}
+
+export function extractMarkers(text: string): Map<string, string> {
+    const markers = new Map<string, string>();
+
+    for (const emoji of [...DATE_EMOJIS]) {
+        const val = extractDateValue(text, emoji);
+        if (val) markers.set(emoji, val);
+    }
+
+    const recurRe = new RegExp(`🔁\\s+(.+?)(?=\\s*(?:${EMOJI_PATTERN}|$))`);
+    const rm = text.match(recurRe);
+    if (rm && rm[1]) markers.set('🔁', rm[1].trim());
+
+    for (const emoji of [...PRIORITY_EMOJIS]) {
+        if (text.includes(emoji)) markers.set(emoji, '');
+    }
+
+    return markers;
+}
+
+export function removeMarkersFromText(text: string): string {
+    let result = text;
+    result = result.replace(new RegExp(`[📅⏳🛫➕✅❌]\\s*\\d{4}-\\d{2}-\\d{2}\\s*`, 'g'), '');
+    // prettier-ignore
+    result = result.replace(new RegExp(`🔁\\s+.+?(?=\\s*(?:${EMOJI_PATTERN}|$))`, 'g'), '');
+    result = result.replace(new RegExp(`(?:⏬️|🔽|🔼|⏫|🔺)\\s*`, 'g'), '');
+    return result.trim();
+}
+
+export function buildSortedMarkers(markers: Map<string, string>): string {
+    const parts: string[] = [];
+    for (const emoji of PROPERTY_EMOJI_ORDER) {
+        if (!markers.has(emoji)) continue;
+        const val = markers.get(emoji)!;
+        parts.push(val ? `${emoji} ${val}` : emoji);
+    }
+    return parts.join(' ');
 }

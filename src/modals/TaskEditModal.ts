@@ -48,6 +48,8 @@ export class TaskEditModal extends Modal {
     private tagSuggestionsContainer: HTMLElement;
     private validationFeedback: HTMLElement;
     private inputSuggest: InputSuggest;
+    private selectedSuggestionIndex: number = -1;
+    private currentSuggestions: string[] = [];
 
     constructor(options: TaskEditModalOptions) {
         super(options.app);
@@ -80,19 +82,8 @@ export class TaskEditModal extends Modal {
 
         // Tag suggestions container
         this.tagSuggestionsContainer = contentContainer.createDiv();
-        this.tagSuggestionsContainer.style.position = 'absolute';
-        this.tagSuggestionsContainer.style.top = '100%';
-        this.tagSuggestionsContainer.style.left = '0';
-        this.tagSuggestionsContainer.style.right = '0';
-        this.tagSuggestionsContainer.style.zIndex = '1000';
-        this.tagSuggestionsContainer.style.maxHeight = '150px';
-        this.tagSuggestionsContainer.style.overflowY = 'auto';
-        this.tagSuggestionsContainer.style.border = '1px solid var(--background-modifier-border)';
-        this.tagSuggestionsContainer.style.borderRadius = '4px';
-        this.tagSuggestionsContainer.style.backgroundColor = 'var(--background-primary)';
+        this.tagSuggestionsContainer.className = 'task-suggestions-container';
         this.tagSuggestionsContainer.style.display = 'none';
-        this.tagSuggestionsContainer.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
-        this.tagSuggestionsContainer.style.marginTop = '2px';
 
         // Status dropdown
         const statusContainer = contentEl.createDiv();
@@ -229,31 +220,21 @@ export class TaskEditModal extends Modal {
 
         // Suggestions container
         this.recurrenceSuggestionsContainer = recurrenceContainer.createDiv();
-        this.recurrenceSuggestionsContainer.style.position = 'absolute';
-        this.recurrenceSuggestionsContainer.style.top = '100%';
+        this.recurrenceSuggestionsContainer.className = 'task-suggestions-container';
         this.recurrenceSuggestionsContainer.style.left = '48px';
-        this.recurrenceSuggestionsContainer.style.right = '0';
-        this.recurrenceSuggestionsContainer.style.zIndex = '1000';
-        this.recurrenceSuggestionsContainer.style.maxHeight = '150px';
-        this.recurrenceSuggestionsContainer.style.overflowY = 'auto';
-        this.recurrenceSuggestionsContainer.style.border = '1px solid var(--background-modifier-border)';
-        this.recurrenceSuggestionsContainer.style.borderRadius = '4px';
-        this.recurrenceSuggestionsContainer.style.backgroundColor = 'var(--background-primary)';
         this.recurrenceSuggestionsContainer.style.display = 'none';
-        this.recurrenceSuggestionsContainer.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
-        this.recurrenceSuggestionsContainer.style.marginTop = '2px';
 
-        let selectedSuggestionIndex = -1;
-        let currentSuggestions: string[] = [];
+        this.selectedSuggestionIndex = -1;
+        this.currentSuggestions = [];
 
         // Update recurrence rule
         this.recurrenceInput.addEventListener('input', (e) => {
             const value = (e.target as HTMLInputElement).value;
-            selectedSuggestionIndex = -1;
+            this.selectedSuggestionIndex = -1;
             
             // Show suggestions
             const suggestions = this.getRecurrenceSuggestions(value);
-            currentSuggestions = suggestions;
+            this.currentSuggestions = suggestions;
             if (suggestions.length > 0) {
                 this.showSuggestions(suggestions);
             } else {
@@ -264,7 +245,7 @@ export class TaskEditModal extends Modal {
         this.recurrenceInput.addEventListener('focus', () => {
             const value = this.recurrenceInput.value;
             const suggestions = this.getRecurrenceSuggestions(value);
-            currentSuggestions = suggestions;
+            this.currentSuggestions = suggestions;
             if (suggestions.length > 0) {
                 this.showSuggestions(suggestions);
             }
@@ -285,18 +266,18 @@ export class TaskEditModal extends Modal {
                 switch (e.key) {
                     case 'ArrowDown':
                         e.preventDefault();
-                        selectedSuggestionIndex = (selectedSuggestionIndex + 1) % currentSuggestions.length;
-                        this.updateSelectedSuggestion(suggestionElements, selectedSuggestionIndex);
+                        this.selectedSuggestionIndex = (this.selectedSuggestionIndex + 1) % this.currentSuggestions.length;
+                        this.updateSelectedSuggestion(suggestionElements, this.selectedSuggestionIndex);
                         break;
                     case 'ArrowUp':
                         e.preventDefault();
-                        selectedSuggestionIndex = selectedSuggestionIndex <= 0 ? currentSuggestions.length - 1 : selectedSuggestionIndex - 1;
-                        this.updateSelectedSuggestion(suggestionElements, selectedSuggestionIndex);
+                        this.selectedSuggestionIndex = this.selectedSuggestionIndex <= 0 ? this.currentSuggestions.length - 1 : this.selectedSuggestionIndex - 1;
+                        this.updateSelectedSuggestion(suggestionElements, this.selectedSuggestionIndex);
                         break;
                     case 'Enter':
                         e.preventDefault();
-                        if (selectedSuggestionIndex >= 0 && selectedSuggestionIndex < currentSuggestions.length) {
-                            const selectedSuggestion = currentSuggestions[selectedSuggestionIndex];
+                        if (this.selectedSuggestionIndex >= 0 && this.selectedSuggestionIndex < this.currentSuggestions.length) {
+                            const selectedSuggestion = this.currentSuggestions[this.selectedSuggestionIndex];
                             if (selectedSuggestion) {
                                 this.recurrenceInput.value = selectedSuggestion;
                                 this.hideSuggestions();
@@ -737,9 +718,7 @@ export class TaskEditModal extends Modal {
         suggestions.forEach((suggestion, index) => {
             const suggestionEl = this.recurrenceSuggestionsContainer.createEl('div');
             suggestionEl.textContent = suggestion;
-            suggestionEl.style.padding = '4px 8px';
-            suggestionEl.style.cursor = 'pointer';
-            suggestionEl.style.borderBottom = '1px solid var(--background-modifier-border)';
+            suggestionEl.className = 'task-suggestion-item';
             
             suggestionEl.addEventListener('click', () => {
                 this.recurrenceInput.value = suggestion;

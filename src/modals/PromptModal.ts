@@ -1,5 +1,5 @@
-import { Modal, App, Notice, EditorSuggest } from 'obsidian';
-import { TagManager, TagInfo } from '../services/tagManager';
+import { Modal, App, Notice } from 'obsidian';
+import { TagManager } from '../services/tagManager';
 
 interface PromptModalOptions {
     app: App;
@@ -32,10 +32,14 @@ export class InputSuggest {
     private suggestionsEl: HTMLElement | null = null;
     private completionItems: CompletionItem[] = [];
     private selectedIndex: number = -1;
-    private isOpen: boolean = false;
+    private _isOpen: boolean = false;
     private debounceTimer: number | null = null;
     private lastQuery: string = '';
     private tagManager: TagManager;
+
+    get isOpen(): boolean {
+        return this._isOpen;
+    }
 
     constructor(app: App) {
         this.app = app;
@@ -47,13 +51,11 @@ export class InputSuggest {
         this.inputEl = inputEl;
         
         // 添加输入事件监听，带防抖
-        inputEl.addEventListener('input', (e) => this.handleInput(e));
-        
-        // 添加键盘事件监听
-        inputEl.addEventListener('keydown', (e) => this.handleKeydown(e as KeyboardEvent));
-        
-        // 添加点击外部关闭事件
-        document.addEventListener('mousedown', (e) => this.handleClickOutside(e));
+inputEl.addEventListener('input', this.handleInput);
+
+        inputEl.addEventListener('keydown', this.handleKeydown);
+
+        document.addEventListener('mousedown', this.handleClickOutside);
         
         // 添加无障碍属性
         inputEl.setAttribute('aria-autocomplete', 'list');
@@ -63,18 +65,18 @@ export class InputSuggest {
     // 移除绑定
     unbind() {
         if (this.inputEl) {
-            this.inputEl.removeEventListener('input', (e) => this.handleInput(e));
-            this.inputEl.removeEventListener('keydown', (e) => this.handleKeydown(e as KeyboardEvent));
+            this.inputEl.removeEventListener('input', this.handleInput);
+            this.inputEl.removeEventListener('keydown', this.handleKeydown);
             this.inputEl.removeAttribute('aria-autocomplete');
             this.inputEl.removeAttribute('aria-expanded');
         }
-        document.removeEventListener('mousedown', (e) => this.handleClickOutside(e));
+        document.removeEventListener('mousedown', this.handleClickOutside);
         this.close();
         this.inputEl = null;
     }
 
     // 防抖处理输入事件
-    private handleInput(e: Event) {
+    private handleInput = (e: Event) => {
         const input = e.target as HTMLInputElement | HTMLTextAreaElement;
         const value = input.value;
         const cursorPos = input.selectionStart || 0;
@@ -92,8 +94,8 @@ export class InputSuggest {
     }
 
     // 处理键盘事件
-    private handleKeydown(e: KeyboardEvent) {
-        if (!this.isOpen) return;
+    private handleKeydown = (e: KeyboardEvent) => {
+        if (!this._isOpen) return;
         
         switch (e.key) {
             case 'ArrowDown':
@@ -119,8 +121,8 @@ export class InputSuggest {
     }
 
     // 处理点击外部事件
-    private handleClickOutside(e: MouseEvent) {
-        if (this.isOpen && this.suggestionsEl && !this.suggestionsEl.contains(e.target as Node)) {
+    private handleClickOutside = (e: MouseEvent) => {
+        if (this._isOpen && this.suggestionsEl && !this.suggestionsEl.contains(e.target as Node)) {
             this.close();
         }
     }
@@ -173,15 +175,6 @@ export class InputSuggest {
         // 创建建议容器
         this.suggestionsEl = document.createElement('div');
         this.suggestionsEl.className = 'prompt-suggestions';
-        this.suggestionsEl.style.position = 'absolute';
-        this.suggestionsEl.style.backgroundColor = 'var(--background-primary)';
-        this.suggestionsEl.style.border = '1px solid var(--background-modifier-border)';
-        this.suggestionsEl.style.borderRadius = '4px';
-        this.suggestionsEl.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
-        this.suggestionsEl.style.zIndex = '1000';
-        this.suggestionsEl.style.padding = '4px 0';
-        this.suggestionsEl.style.maxHeight = '200px';
-        this.suggestionsEl.style.overflowY = 'auto';
         this.suggestionsEl.style.minWidth = `${this.inputEl.offsetWidth}px`;
         
         // 设置无障碍属性
@@ -197,10 +190,6 @@ export class InputSuggest {
         suggestions.forEach((item, index) => {
             const suggestionItem = document.createElement('div');
             suggestionItem.className = 'prompt-suggestion-item';
-            suggestionItem.style.padding = '8px 12px';
-            suggestionItem.style.cursor = 'pointer';
-            suggestionItem.style.display = 'flex';
-            suggestionItem.style.alignItems = 'center';
             
             // 无障碍属性
             suggestionItem.setAttribute('role', 'option');
@@ -260,7 +249,7 @@ export class InputSuggest {
         
         // 添加到文档
         document.body.appendChild(this.suggestionsEl);
-        this.isOpen = true;
+        this._isOpen = true;
         
         // 更新输入框的无障碍属性
         this.inputEl.setAttribute('aria-expanded', 'true');
@@ -308,7 +297,7 @@ export class InputSuggest {
             this.suggestionsEl = null;
         }
         
-        this.isOpen = false;
+        this._isOpen = false;
         this.selectedIndex = -1;
         
         // 更新输入框的无障碍属性
@@ -319,7 +308,7 @@ export class InputSuggest {
 
     // 选择下一个建议
     private selectNext() {
-        if (!this.isOpen || !this.suggestionsEl) return;
+        if (!this._isOpen || !this.suggestionsEl) return;
         
         this.selectedIndex = (this.selectedIndex + 1) % this.completionItems.length;
         this.updateSelection();
@@ -327,7 +316,7 @@ export class InputSuggest {
 
     // 选择上一个建议
     private selectPrevious() {
-        if (!this.isOpen || !this.suggestionsEl) return;
+        if (!this._isOpen || !this.suggestionsEl) return;
         
         this.selectedIndex = (this.selectedIndex - 1 + this.completionItems.length) % this.completionItems.length;
         this.updateSelection();
@@ -335,7 +324,7 @@ export class InputSuggest {
 
     // 更新选择状态
     private updateSelection() {
-        if (!this.isOpen || !this.suggestionsEl) return;
+        if (!this._isOpen || !this.suggestionsEl) return;
         
         const items = this.suggestionsEl.querySelectorAll('.prompt-suggestion-item');
         items.forEach((item, index) => {
@@ -358,7 +347,7 @@ export class InputSuggest {
 
     // 选择建议项
     private selectSuggestion() {
-        if (!this.inputEl || !this.isOpen || this.selectedIndex < 0 || this.selectedIndex >= this.completionItems.length) return;
+        if (!this.inputEl || !this._isOpen || this.selectedIndex < 0 || this.selectedIndex >= this.completionItems.length) return;
         
         const item = this.completionItems[this.selectedIndex];
         if (!item) return;
@@ -483,6 +472,7 @@ export class PromptModal extends Modal {
     private onSubmit: (value: string) => void;
     private inputEl: HTMLInputElement | HTMLTextAreaElement | null = null;
     private inputSuggest: InputSuggest;
+    private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 
     constructor(options: PromptModalOptions) {
         super(options.app);
@@ -609,9 +599,9 @@ export class PromptModal extends Modal {
 
         // Handle Enter key
         if (this.inputEl) {
-            this.inputEl.addEventListener('keydown', (event: KeyboardEvent) => {
+            this.keydownHandler = (event: KeyboardEvent) => {
                 // 检查是否有标签建议显示，如果有，则不触发提交
-                if (this.inputSuggest['isOpen']) {
+                if (this.inputSuggest.isOpen) {
                     return;
                 }
                 
@@ -626,7 +616,8 @@ export class PromptModal extends Modal {
                         this.handleSubmit();
                     }
                 }
-            });
+            };
+            this.inputEl.addEventListener('keydown', this.keydownHandler);
         }
 
         // Focus input
@@ -654,6 +645,12 @@ export class PromptModal extends Modal {
         
         // 解绑补全功能
         this.inputSuggest.unbind();
+        
+        // 移除keydown事件监听
+        if (this.inputEl && this.keydownHandler) {
+            this.inputEl.removeEventListener('keydown', this.keydownHandler);
+            this.keydownHandler = null;
+        }
         
         contentEl.empty();
     }

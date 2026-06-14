@@ -1,9 +1,4 @@
-export interface DateSuggestion {
-    label: string;
-    value: string;
-}
-
-function formatLocalDate(date: Date): string {
+export function formatLocalDate(date: Date): string {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const d = String(date.getDate()).padStart(2, '0');
@@ -60,7 +55,11 @@ export function parseRelativeDate(text: string): string | null {
     if (plusWeeks && plusWeeks[1]) return formatLocalDate(addDays(today, parseInt(plusWeeks[1]) * 7));
 
     const plusMonths = lower.match(/^\+(\d+)m(?:onth)?s?$/);
-    if (plusMonths && plusMonths[1]) return formatLocalDate(new Date(today.getFullYear(), today.getMonth() + parseInt(plusMonths[1]), 1));
+    if (plusMonths && plusMonths[1]) {
+        const result = new Date(today);
+        result.setMonth(result.getMonth() + parseInt(plusMonths[1]));
+        return formatLocalDate(result);
+    }
 
     const nextWeekday = lower.match(/^next\s+(mon(?:day)?|tue(?:sday)?|wed(?:nesday)?|thu(?:rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)$/i);
     if (nextWeekday && nextWeekday[1]) {

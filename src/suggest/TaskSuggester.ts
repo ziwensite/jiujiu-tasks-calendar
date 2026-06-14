@@ -1,5 +1,5 @@
 import { Editor, EditorPosition, EditorSuggest, EditorSuggestContext, EditorSuggestTriggerInfo, TFile } from 'obsidian';
-import { getDateSuggestions, getRecurrenceMenuItems, getEmojiMenuItems } from './taskProperties';
+import { getDateSuggestions, getRecurrenceMenuItems, getEmojiMenuItems, isPriorityEmoji, extractMarkers, removeMarkersFromText, buildSortedMarkers } from './taskProperties';
 import type { SuggesterItem } from './taskProperties';
 import { parseRelativeDate } from './dateCalculator';
 
@@ -18,17 +18,8 @@ const TRIGGER_PATTERNS: { regex: RegExp; type: string }[] = [
 export class TaskSuggester extends EditorSuggest<SuggesterItem> {
     private triggerType: string = '';
     private triggerStart: EditorPosition = { line: 0, ch: 0 };
-    private pendingChain: { type: string; line: number; ch: number } | null = null;
 
     onTrigger(cursor: EditorPosition, editor: Editor, file: TFile): EditorSuggestTriggerInfo | null {
-        if (this.pendingChain && cursor.line === this.pendingChain.line && cursor.ch === this.pendingChain.ch) {
-            const pending = this.pendingChain;
-            this.pendingChain = null;
-            this.triggerType = pending.type;
-            this.triggerStart = cursor;
-            return { start: cursor, end: cursor, query: '' };
-        }
-
         const line = editor.getLine(cursor.line);
         const linePrefix = line.substring(0, cursor.ch);
 
@@ -75,11 +66,16 @@ export class TaskSuggester extends EditorSuggest<SuggesterItem> {
                 return suggestions;
             }
             case 'recurrence':
-                return getRecurrenceMenuItems();
+                return getRecurrenceMenuItems(query);
             case 'tag':
                 return this.getTagSuggestions(query);
-            case 'emoji':
-                return getEmojiMenuItems();
+            case 'emoji': {
+                const line = context.editor.getLine(context.start.line);
+                const taskMatch = line.match(/^\s*-\s*\[(.)\]\s*/);
+                const afterPrefix = taskMatch ? line.substring(taskMatch[0].length) : '';
+                const used = extractMarkers(afterPrefix);
+                return getEmojiMenuItems(query).filter(item => !used.has(item.value));
+            }
             default:
                 return [];
         }
@@ -96,19 +92,28 @@ export class TaskSuggester extends EditorSuggest<SuggesterItem> {
         const endPos = { line: this.triggerStart.line, ch: line.length };
 
         if (this.triggerType === 'emoji') {
-            const canChain = ['📅', '⏳', '🛫', '➕', '🔁'].includes(value.value);
-            const insertText = ` ${value.value} `;
-            const newCh = endPos.ch + insertText.length;
-            editor.replaceRange(insertText, endPos);
-            editor.setCursor({ line: endPos.line, ch: newCh });
-            if (canChain) {
-                this.pendingChain = {
-                    type: value.value === '🔁' ? 'recurrence' : 'date',
-                    line: endPos.line,
-                    ch: newCh,
-                };
+            const taskMatch = line.match(/^\s*-\s*\[(.)\]\s*/);
+            const prefixLen = taskMatch ? taskMatch[0].length : 0;
+            const afterPrefix = line.substring(prefixLen);
+
+            const existing = extractMarkers(afterPrefix);
+            const content = removeMarkersFromText(afterPrefix);
+            existing.set(value.value, '');
+
+            const sorted = buildSortedMarkers(existing);
+            const gap = content && sorted ? ' ' : '';
+            const newAfterPrefix = content + gap + sorted;
+            const newCursorCh = prefixLen + content.length + gap.length + sorted.indexOf(value.value) + value.value.length;
+
+            editor.replaceRange(newAfterPrefix, { line: endPos.line, ch: prefixLen }, endPos);
+
+            if (isPriorityEmoji(value.value)) {
+                editor.setCursor({ line: endPos.line, ch: newCursorCh });
+                this.close();
+                return;
             }
-            this.close();
+
+            editor.setCursor({ line: endPos.line, ch: newCursorCh });
             return;
         }
 
@@ -119,8 +124,11 @@ export class TaskSuggester extends EditorSuggest<SuggesterItem> {
             return;
         }
 
-        editor.replaceRange(value.value, this.triggerStart);
-        editor.setCursor({ line: this.triggerStart.line, ch: this.triggerStart.ch + value.value.length });
+        const prefix = editor.getLine(this.triggerStart.line).substring(0, this.triggerStart.ch);
+        const needsLeadingSpace = prefix.length > 0 && !/\s$/.test(prefix);
+        const insertValue = needsLeadingSpace ? ` ${value.value}` : value.value;
+        editor.replaceRange(insertValue, this.triggerStart);
+        editor.setCursor({ line: this.triggerStart.line, ch: this.triggerStart.ch + insertValue.length });
         this.close();
     }
 

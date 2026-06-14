@@ -1378,3 +1378,55 @@ li.task-highlighted {
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 102, 204, 0.2);
 }
+
+/* ===== 补全建议容器样式 ===== */
+.prompt-suggestions {
+    position: absolute;
+    background-color: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    padding: 4px 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.prompt-suggestion-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.prompt-suggestion-item:hover,
+.prompt-suggestion-item.selected {
+    background-color: var(--background-modifier-hover);
+}
+
+/* ===== 任务编辑模态框建议容器 ===== */
+.task-suggestions-container {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background-color: var(--background-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    margin-top: 2px;
+}
+
+.task-suggestion-item {
+    padding: 4px 8px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.task-suggestion-item:hover,
+.task-suggestion-item.selected {
+    background-color: var(--background-modifier-hover);
+}

@@ -1,19 +1,24 @@
 import { App } from 'obsidian';
 
-// 标签信息接口
 export interface TagInfo {
-    name: string; // 标签名称（包含#前缀）
-    count: number; // 使用次数
+    name: string;
+    count: number;
 }
 
 export class TagManager {
     private app: App;
     private tags: TagInfo[];
+    private initialized: boolean = false;
 
     constructor(app: App) {
         this.app = app;
         this.tags = [];
+    }
+
+    private ensureInitialized(): void {
+        if (this.initialized) return;
         this.updateTags();
+        this.initialized = true;
     }
 
     /**
@@ -82,6 +87,7 @@ export class TagManager {
      * @returns 匹配的标签列表
      */
     public getTagsByPrefix(prefix: string): TagInfo[] {
+        this.ensureInitialized();
         if (!prefix) return [];
 
         const lowerPrefix = prefix.toLowerCase();
@@ -122,15 +128,12 @@ export class TagManager {
      * @returns 所有标签列表
      */
     public getAllTags(): TagInfo[] {
+        this.ensureInitialized();
         return [...this.tags];
     }
 
-    /**
-     * 获取标签使用次数
-     * @param tagName 标签名称
-     * @returns 使用次数
-     */
-    public getTagCount(tagName: string): number {
+public getTagCount(tagName: string): number {
+        this.ensureInitialized();
         const tag = this.tags.find(tag => tag.name === tagName);
         return tag ? tag.count : 0;
     }
