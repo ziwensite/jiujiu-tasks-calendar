@@ -1,4 +1,4 @@
-import { MarkdownView, type TFile } from "obsidian";
+import { MarkdownView, Notice, type TFile } from "obsidian";
 import type { App } from "obsidian";
 import type { IChoiceExecutor } from "../IChoiceExecutor";
 import type ICaptureChoice from "../types/choices/ICaptureChoice";
@@ -60,16 +60,12 @@ export class CaptureChoiceFormatter {
 
 	public async formatContentOnly(input: string): Promise<string> {
 		let formatted = input;
-		// Replace {{VALUE}} or {{TASK_TEXT}} with selected text or user input
+		// Replace {{VALUE}} with selected text or user input
 		let taskText = "";
 		if (formatted.includes("{{VALUE}}")) {
 			const selectedText = await this.getSelectedText();
 			taskText = selectedText.trim() || "";
 			formatted = formatted.replace(/\{\{VALUE\}\}/g, taskText);
-		} else if (formatted.includes("{{TASK_TEXT}}")) {
-			const selectedText = await this.getSelectedText();
-			taskText = selectedText.trim() || "";
-			formatted = formatted.replace(/\{\{TASK_TEXT\}\}/g, taskText);
 		}
 		// Replace {{TITLE}} with file title
 		if (formatted.includes("{{TITLE}}")) {
@@ -137,9 +133,9 @@ export class CaptureChoiceFormatter {
 				dateString += ` 📅 ${dueDateStr}`;
 			}
 			
-			// 如果需要添加日期，将其插入到任务文本后面
+			// 如果需要添加日期，将其追加到格式化内容末尾
 			if (dateString) {
-				formatted = formatted.replace(taskText, `${taskText}${dateString}`);
+				formatted += dateString;
 			}
 		}
 		
@@ -279,6 +275,12 @@ export class CaptureChoiceFormatter {
 			
 			// 替换 {{闪念模板}} 为 ${fleetingNoteSettings.templatePath}
 			fileName = fileName.replace(/\{\{闪念模板\}\}/g, fleetingNoteSettings.templatePath);
+		}
+		
+		// 检查是否有未解析的路径变量
+		const unresolved = fileName.match(/\{\{[^}]+\}\}/g);
+		if (unresolved) {
+			new Notice(`未解析的模板变量: ${unresolved.join(', ')}，请检查设置`, 5000);
 		}
 		
 		return fileName;

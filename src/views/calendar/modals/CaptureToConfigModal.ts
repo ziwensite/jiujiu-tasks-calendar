@@ -376,7 +376,7 @@ export class CaptureToConfigModal extends Modal {
         // Format
         new Setting(container)
             .setName('捕获格式')
-            .setDesc('内容的格式，支持 {{TASK_TEXT}} 等变量');
+            .setDesc('内容的格式，支持 {{VALUE}} 等变量');
         
         // 预览区域
         const previewSection = container.createEl('div', {
@@ -415,14 +415,14 @@ export class CaptureToConfigModal extends Modal {
         if (!this.config.format) {
             this.config.format = {
                 enabled: true,
-                format: "{{TASK_TEXT}}\n"
+                format: "{{VALUE}}\n"
             };
         } else if (!this.config.format.format) {
-            this.config.format.format = "{{TASK_TEXT}}\n";
+            this.config.format.format = "{{VALUE}}\n";
         }
         
         const textArea = formatSetting.createEl('textarea', {
-            placeholder: '输入捕获格式，例如：{{TASK_TEXT}}'
+            placeholder: '输入捕获格式，例如：{{VALUE}}'
         });
         
         // 显式设置值，确保默认内容显示出来
@@ -435,6 +435,9 @@ export class CaptureToConfigModal extends Modal {
         textArea.style.fontFamily = 'var(--font-editor)';
         textArea.style.fontSize = '14px';
         
+        // 变量参考面板
+        this.renderVariableReference(formatSetting, textArea);
+        
         // 初始化预览
         this.updatePreview(textArea, previewEl);
         
@@ -446,11 +449,44 @@ export class CaptureToConfigModal extends Modal {
         
     }
 
+    private renderVariableReference(container: HTMLElement, textArea: HTMLTextAreaElement) {
+        const details = container.createEl('details');
+        details.createEl('summary', { text: '📖 可用变量' });
+        details.style.marginBottom = '8px';
+        details.style.cursor = 'pointer';
+
+        const variables = [
+            { var: '{{VALUE}}', desc: '选中的文本或手动输入的内容', example: '写周报' },
+            { var: '{{TITLE}}', desc: '目标文件名（不含后缀）', example: '2026-06-15' },
+            { var: '{{DATE}}', desc: '目标日期 (YYYY-MM-DD)', example: '2026-06-15' },
+            { var: '{{DATE:format}}', desc: '自定义日期格式', example: '{{DATE:YYYY年MM月DD日}}' },
+        ];
+
+        for (const v of variables) {
+            const row = details.createEl('div', { cls: 'variable-ref-row' });
+            const codeEl = row.createEl('code', { text: v.var });
+            row.createSpan({ text: `  ${v.desc}  ` });
+            const exampleEl = row.createSpan({ text: `(例: ${v.example})`, cls: 'variable-ref-example' });
+            const btn = row.createEl('button', { text: '插入', cls: 'variable-insert-btn' });
+            btn.addEventListener('click', () => {
+                const start = textArea.selectionStart;
+                const end = textArea.selectionEnd;
+                const before = textArea.value.substring(0, start);
+                const after = textArea.value.substring(end);
+                textArea.value = before + v.var + after;
+                const newCursor = start + v.var.length;
+                textArea.selectionStart = textArea.selectionEnd = newCursor;
+                textArea.focus();
+                textArea.dispatchEvent(new Event('input'));
+            });
+        }
+    }
+
     /**
      * 更新预览效果
      */
     private updatePreview(textArea: HTMLTextAreaElement, previewEl: HTMLElement) {
-        const format = textArea.value || "{{TASK_TEXT}}\n";
+        const format = textArea.value || "{{VALUE}}\n";
         const previewText = format
             .replace(/\{\{TASK_TEXT\}\}/g, "示例任务内容")
             .replace(/\{\{DATE\}\}/g, new Date().toLocaleString());

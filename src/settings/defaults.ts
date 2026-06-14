@@ -57,7 +57,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     },
                     format: {
                         enabled: true,
-                        format: "-   ==💡{{DATE:YYYY-MM-DD HH:mm}}==  {{TASK_TEXT}}  \n"
+                        format: "-   ==💡{{DATE:YYYY-MM-DD HH:mm}}==  {{VALUE}}  \n"
                     },
                     prepend: false,
                     appendLink: false,
@@ -102,7 +102,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     },
                     format: {
                         enabled: true,
-                        format: "-   📝  {{TASK_TEXT}}  \n"
+                        format: "-   📝  {{VALUE}}  \n"
                     },
                     prepend: false,
                     appendLink: false,
@@ -147,7 +147,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     },
                     format: {
                         enabled: true,
-                        format: "⏰  {{TASK_TEXT}}  \n"
+                        format: "⏰  {{VALUE}}  \n"
                     },
                     prepend: false,
                     appendLink: false,
@@ -192,7 +192,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     },
                     format: {
                         enabled: true,
-                        format: "{{TASK_TEXT}}\n"
+                        format: "{{VALUE}}\n"
                     },
                     prepend: false,
                     appendLink: false,
@@ -237,7 +237,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     },
                     format: {
                         enabled: true,
-                        format: "## {{TASK_TEXT}}\n\n- 本周工作: \n- 下周计划: \n- 遇到问题: \n\n"
+                        format: "## {{VALUE}}\n\n- 本周工作: \n- 下周计划: \n- 遇到问题: \n\n"
                     },
                     prepend: false,
                     appendLink: false,
@@ -282,7 +282,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     },
                     format: {
                         enabled: true,
-                        format: "## {{TASK_TEXT}}\n\n- 本月工作: \n- 下月计划: \n- 总结反思: \n\n"
+                        format: "## {{VALUE}}\n\n- 本月工作: \n- 下月计划: \n- 总结反思: \n\n"
                     },
                     prepend: false,
                     appendLink: false,
@@ -327,7 +327,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     },
                     format: {
                         enabled: true,
-                        format: "## {{TASK_TEXT}}\n\n- 本季工作: \n- 下季计划: \n- 季度反思: \n\n"
+                        format: "## {{VALUE}}\n\n- 本季工作: \n- 下季计划: \n- 季度反思: \n\n"
                     },
                     prepend: false,
                     appendLink: false,
@@ -372,7 +372,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     },
                     format: {
                         enabled: true,
-                        format: "## {{TASK_TEXT}}\n\n- 本年工作: \n- 明年计划: \n- 年度反思: \n- 目标达成: \n\n"
+                        format: "## {{VALUE}}\n\n- 本年工作: \n- 明年计划: \n- 年度反思: \n- 目标达成: \n\n"
                     },
                     prepend: false,
                     appendLink: false,
@@ -417,7 +417,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     },
                     format: {
                         enabled: true,
-                        format: "## {{TASK_TEXT}}\n\n- 时间: {{DATE}}\n- 地点: \n- 参与人员: \n- 内容: \n- 行动项: \n\n"
+                        format: "## {{VALUE}}\n\n- 时间: {{DATE}}\n- 地点: \n- 参与人员: \n- 内容: \n- 行动项: \n\n"
                     },
                     prepend: false,
                     appendLink: false,

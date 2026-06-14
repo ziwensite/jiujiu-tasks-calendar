@@ -1430,3 +1430,38 @@ li.task-highlighted {
 .task-suggestion-item.selected {
     background-color: var(--background-modifier-hover);
 }
+
+/* ===== 变量参考面板 ===== */
+.variable-ref-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    font-size: 13px;
+}
+.variable-ref-row:hover {
+    background-color: var(--background-modifier-hover);
+}
+.variable-ref-row code {
+    min-width: 140px;
+    font-family: var(--font-monospace);
+    color: var(--text-accent);
+}
+.variable-ref-example {
+    color: var(--text-muted);
+    font-size: 12px;
+    flex: 1;
+}
+.variable-insert-btn {
+    font-size: 12px;
+    padding: 2px 10px;
+    cursor: pointer;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 3px;
+    background-color: var(--background-secondary);
+    color: var(--text-normal);
+}
+.variable-insert-btn:hover {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}

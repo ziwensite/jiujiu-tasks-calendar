@@ -819,7 +819,7 @@ export class SampleSettingTab extends PluginSettingTab {
                 },
                 format: {
                     enabled: true,
-                    format: "{{TASK_TEXT}}\n"
+                    format: "{{VALUE}}\n"
                 },
                 prepend: false,
                 appendLink: false,

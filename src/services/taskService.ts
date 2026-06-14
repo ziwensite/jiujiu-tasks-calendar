@@ -539,7 +539,7 @@ export async function createTaskInNote(
                 },
                 format: {
                     enabled: true,
-                    format: "{{TASK_TEXT}}\n"
+                    format: "{{VALUE}}\n"
                 },
                 autoAddCreatedDate: true,
                 autoAddDueDate: false,
@@ -653,7 +653,7 @@ export async function createTaskInNote(
                 },
                 format: {
                     enabled: configToUse.format.enabled,
-                    format: configToUse.format.format.replace("{{TASK_TEXT}}", finalTaskText).replace("{{DATE}}", formatDate(date, "YYYY-MM-DD")),
+                    format: configToUse.format.format.replace(/\{\{VALUE\}\}/g, finalTaskText).replace(/\{\{DATE\}\}/g, formatDate(date, "YYYY-MM-DD")),
                 },
                 prepend: configToUse.prepend,
                 appendLink: configToUse.appendLink,

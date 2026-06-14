@@ -267,9 +267,9 @@ async onload() {
                 createFileIfItDoesntExist: config.createFileIfItDoesntExist,
                 format: {
                     enabled: config.format.enabled,
-                    format: config.format.format.includes("{{TASK_TEXT}}") 
+                    format: config.format.format.includes("{{VALUE}}") 
                         ? config.format.format 
-                        : config.format.format + " {{TASK_TEXT}}"
+                        : config.format.format + " {{VALUE}}"
                 },
                 prepend: config.prepend,
                 appendLink: config.appendLink,
