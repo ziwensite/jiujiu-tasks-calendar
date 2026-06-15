@@ -342,13 +342,15 @@ export class SampleSettingTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.taskFilter.customFilter)
                     .onChange((value: string) => {
                         this.plugin.settings.taskFilter.customFilter = value;
-                        this.scheduleSave();
                     });
                 // 设置文本域属性
                 textArea.inputEl.rows = 4;
                 textArea.inputEl.wrap = "soft";
                 textArea.inputEl.style.resize = "vertical";
                 textArea.inputEl.style.maxHeight = "100px";
+                textArea.inputEl.addEventListener('blur', () => {
+                    this.scheduleSave();
+                });
             });
         
         // 重复任务设置
