@@ -2,7 +2,7 @@ import { App, TFile } from 'obsidian';
 import { dueDateRegex, createdAtRegex, startDateRegex, cancelledDateRegex, completedDateRegex, plannedDateRegex, fullDayRegex, timeRangeRegex, singleTimeRegex, priorityRegex, recurrenceRegex, escapeRegExp } from '../utils/regexUtils';
 import { MyPluginSettings } from '../settings';
 import { formatDate } from '../utils/dateUtils';
-import { generateTaskDateMarkers, generateTaskCompletionMarker } from '../utils/taskUtils';
+import { generateTaskDateMarkers } from '../utils/taskUtils';
 import type { IChoiceExecutor } from '../IChoiceExecutor';
 import { ChoiceType } from '../types/choices/choiceType';
 import type MyPlugin from '../main';
@@ -431,18 +431,13 @@ export async function updateTaskInNote(app: App, task: Task, completed: boolean,
                         
                         // 根据Tasks插件格式，处理完成日期和取消日期
                         if (completed) {
-                            // 如果任务已完成，添加完成日期标记 ✅ YYYY-MM-DD
-                            const today = new Date().toISOString().split('T')[0];
+                            const today = formatDate(new Date(), "YYYY-MM-DD");
                             updatedTaskText += ` ✅ ${today}`;
-                            // 移除取消日期标记
                             updatedTaskText = updatedTaskText.replace(/\s*❌\s*\d{4}-\d{2}-\d{2}/g, '').trim();
                         } else if (task.cancelledDate) {
-                            // 移除重复的取消日期标记
                             updatedTaskText = updatedTaskText.replace(/\s*❌\s*\d{4}-\d{2}-\d{2}/g, '').trim();
-                            // 移除完成日期标记
                             updatedTaskText = updatedTaskText.replace(/\s*✅\s*\d{4}-\d{2}-\d{2}/g, '').trim();
-                            // 添加取消日期标记
-                            const cancelledDateStr = task.cancelledDate.toISOString().split('T')[0];
+                            const cancelledDateStr = formatDate(task.cancelledDate, "YYYY-MM-DD");
                             updatedTaskText += ` ❌ ${cancelledDateStr}`;
                         } else {
                             // 如果任务未完成也未取消，确保移除完成日期和取消日期标记

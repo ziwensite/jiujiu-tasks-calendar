@@ -227,15 +227,13 @@ export function installNavigationListeners(view: CalendarView) {
                 });
             }
         }
-        
-        const taskList = taskListContainer.createEl("div", {cls: "task-list"});
     }
 }
 
 export async function installCellListeners(view: CalendarView) {
     if (view.viewType === 'month') {
         const weekNumberCells = view.containerEl.querySelectorAll(".week-number-cell");
-        weekNumberCells.forEach((cell, index) => {
+        weekNumberCells.forEach(async (cell, index) => {
             const currentYear = view.currentDate.getFullYear();
             const currentMonth = view.currentDate.getMonth();
             const firstDay = new Date(currentYear, currentMonth, 1);
@@ -255,7 +253,7 @@ export async function installCellListeners(view: CalendarView) {
             
             const weekIndicators = cell.querySelector(".week-indicators");
             if (weekIndicators) {
-                checkWeekNoteAndTasks(view, adjustedDate, weekNumber, weekIndicators as HTMLElement);
+                await checkWeekNoteAndTasks(view, adjustedDate, weekNumber, weekIndicators as HTMLElement);
             }
             
             cell.addEventListener("click", async () => {

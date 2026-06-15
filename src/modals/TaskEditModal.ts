@@ -1,6 +1,6 @@
 import { App, Modal, Notice } from 'obsidian';
 import { Task } from '../services/taskService';
-import { generateTaskDateMarkers, generateTaskCompletionMarker } from '../utils/taskUtils';
+import { generateTaskDateMarkers } from '../utils/taskUtils';
 import { InputSuggest } from './PromptModal';
 import { parseDateLabel, DATE_OPTIONS, PRIORITY_OPTIONS, getRecurrenceSuggestions, getPriorityDisplay } from '../suggest/taskProperties';
 import { parseRelativeDate } from '../suggest/dateCalculator';
@@ -510,7 +510,6 @@ export class TaskEditModal extends Modal {
         // 更新 rawText，确保下次匹配时能够正确找到任务
         this.task.rawText = this.task.text;
         this.task.rawText += generateTaskDateMarkers(this.task);
-        this.task.rawText += generateTaskCompletionMarker(this.task.completed);
         
 
         this.onSubmit(this.task);

@@ -8,6 +8,13 @@ import type MyPlugin from "../main";
 import { PromptModal } from "../modals/PromptModal";
 import { formatDate } from "../utils/dateUtils";
 
+function localDateStr(date: Date): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
 export class CaptureChoiceFormatter {
 	private app: App;
 	private plugin: MyPlugin;
@@ -84,11 +91,11 @@ export class CaptureChoiceFormatter {
 						return formatDate(targetDate, format);
 					} catch (error) {
 						// Fallback to ISO date if format is invalid
-						return targetDate.toISOString().split('T')[0];
+						return localDateStr(targetDate);
 					}
 				} else {
 					// Default format: YYYY-MM-DD
-					return targetDate.toISOString().split('T')[0];
+					return localDateStr(targetDate);
 				}
 			});
 		}
@@ -99,7 +106,7 @@ export class CaptureChoiceFormatter {
 			
 			// 自动添加创建日期
 			if (this.choice.autoAddCreatedDate) {
-				const createdDate = new Date().toISOString().split('T')[0];
+				const createdDate = localDateStr(new Date());
 				dateString += ` ➕ ${createdDate}`;
 			}
 			
@@ -129,7 +136,7 @@ export class CaptureChoiceFormatter {
 						dueDate = new Date(dueDate.getFullYear(), 11, 31);
 						break;
 				}
-				const dueDateStr = dueDate.toISOString().split('T')[0];
+				const dueDateStr = localDateStr(dueDate);
 				dateString += ` 📅 ${dueDateStr}`;
 			}
 			

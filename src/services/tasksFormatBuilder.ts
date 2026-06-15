@@ -210,9 +210,10 @@ export class TaskTextBuilder {
     }
     
     private formatDate(date: Date): string {
-        // Tasks插件标准日期格式：YYYY-MM-DD
-        const isoString = date.toISOString().split('T')[0];
-        return isoString || '';
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
     }
     
     /**

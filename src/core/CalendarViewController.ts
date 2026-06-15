@@ -19,22 +19,20 @@ export class CalendarViewController {
     /**
      * 立即刷新所有日历视图
      */
-    public forceFlush(): void {
-        // 清除可能存在的定时器
+    public async forceFlush(): Promise<void> {
         if (this.flushTimeoutId !== null) {
             window.clearTimeout(this.flushTimeoutId);
             this.flushTimeoutId = null;
         }
 
-        // 重置计数器和时间
         this.requestCounter = 0;
         this.lastRequestTime = 0;
 
-        // 刷新所有日历视图
-        this.plugin.app.workspace.getLeavesOfType("jiujiu-calendar-view").forEach(leaf => {
+        const leaves = this.plugin.app.workspace.getLeavesOfType("jiujiu-calendar-view");
+        for (const leaf of leaves) {
             const view = leaf.view as CalendarView;
-            view.renderCalendar();
-        });
+            await view.renderCalendar();
+        }
     }
 
     /**
@@ -67,10 +65,11 @@ export class CalendarViewController {
     /**
      * 请求刷新任务列表，单独处理，避免影响整个日历视图
      */
-    public requestRefreshTaskList(): void {
-        this.plugin.app.workspace.getLeavesOfType("jiujiu-calendar-view").forEach(leaf => {
+    public async requestRefreshTaskList(): Promise<void> {
+        const leaves = this.plugin.app.workspace.getLeavesOfType("jiujiu-calendar-view");
+        for (const leaf of leaves) {
             const view = leaf.view as CalendarView;
-            view.refreshTaskList();
-        });
+            await view.refreshTaskList();
+        }
     }
 }
