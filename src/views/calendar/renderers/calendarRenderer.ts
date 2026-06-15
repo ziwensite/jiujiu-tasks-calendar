@@ -471,13 +471,24 @@ export class CalendarRenderer {
                     }
                     
                     // 更新农历日期
+                    const existingLunar = cell.querySelector('.lunar-date');
                     if (this.plugin.settings.showLunarCalendar) {
-                        const lunarDate = cell.querySelector('.lunar-date');
-                        if (lunarDate) {
-                            const lunarDateResult = getLunarDate(date);
-                            lunarDate.textContent = lunarDateResult.text;
-                            lunarDate.className = `lunar-date lunar-${lunarDateResult.type}`;
+                        const lunarDateResult = getLunarDate(date);
+                        if (existingLunar) {
+                            existingLunar.textContent = lunarDateResult.text;
+                            existingLunar.className = `lunar-date lunar-${lunarDateResult.type}`;
+                        } else {
+                            const dayNumber = cell.querySelector('.day-number');
+                            const lunarEl = cell.createEl("div", {
+                                text: lunarDateResult.text,
+                                cls: `lunar-date lunar-${lunarDateResult.type}`
+                            });
+                            if (dayNumber?.nextSibling) {
+                                cell.insertBefore(lunarEl, dayNumber.nextSibling);
+                            }
                         }
+                    } else if (existingLunar) {
+                        existingLunar.remove();
                     }
                 }
             }

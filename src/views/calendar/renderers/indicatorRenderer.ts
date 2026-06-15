@@ -488,11 +488,23 @@ export class IndicatorRenderer {
             }
             
             // 更新农历日期
-            const lunarDate = cellEl.querySelector('.lunar-date');
-            if (lunarDate) {
+            const existingLunar = cellEl.querySelector('.lunar-date');
+            if (this.plugin.settings.showLunarCalendar) {
                 const lunarDateResult = getLunarDate(date);
-                lunarDate.textContent = lunarDateResult.text;
-                lunarDate.className = `lunar-date lunar-${lunarDateResult.type}`;
+                if (existingLunar) {
+                    existingLunar.textContent = lunarDateResult.text;
+                    existingLunar.className = `lunar-date lunar-${lunarDateResult.type}`;
+                } else {
+                    const lunarEl = cellEl.createEl("div", {
+                        text: lunarDateResult.text,
+                        cls: `lunar-date lunar-${lunarDateResult.type}`
+                    });
+                    if (dayNumberEl?.nextSibling) {
+                        cellEl.insertBefore(lunarEl, dayNumberEl.nextSibling);
+                    }
+                }
+            } else if (existingLunar) {
+                existingLunar.remove();
             }
         }
     }
