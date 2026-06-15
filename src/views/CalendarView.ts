@@ -322,11 +322,20 @@ export class CalendarView extends ItemView {
                     }
                     
                     // 更新农历日期
-                    const lunarDate = cell.querySelector('.lunar-date');
-                    if (lunarDate) {
+                    const existingLunar = cell.querySelector('.lunar-date');
+                    if (this.plugin.settings.showLunarCalendar) {
                         const lunarDateResult = getLunarDate(date);
-                        lunarDate.textContent = lunarDateResult.text;
-                        lunarDate.className = `lunar-date lunar-${lunarDateResult.type}`;
+                        if (existingLunar) {
+                            existingLunar.textContent = lunarDateResult.text;
+                            existingLunar.className = `lunar-date lunar-${lunarDateResult.type}`;
+                        } else {
+                            cell.createEl("div", {
+                                text: lunarDateResult.text,
+                                cls: `lunar-date lunar-${lunarDateResult.type}`
+                            });
+                        }
+                    } else if (existingLunar) {
+                        existingLunar.remove();
                     }
                 }
             }
