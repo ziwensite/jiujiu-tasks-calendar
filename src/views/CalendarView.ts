@@ -322,20 +322,25 @@ export class CalendarView extends ItemView {
                     }
                     
                     // 更新农历日期
-                    const existingLunar = cell.querySelector('.lunar-date');
+                    const existingLunar = cell.querySelector('.lunar-date') as HTMLElement | null;
                     if (this.plugin.settings.showLunarCalendar) {
                         const lunarDateResult = getLunarDate(date);
                         if (existingLunar) {
                             existingLunar.textContent = lunarDateResult.text;
                             existingLunar.className = `lunar-date lunar-${lunarDateResult.type}`;
+                            existingLunar.style.display = '';
                         } else {
-                            cell.createEl("div", {
+                            const indicators = cell.querySelector('.day-indicators');
+                            const lunarEl = cell.createEl("div", {
                                 text: lunarDateResult.text,
                                 cls: `lunar-date lunar-${lunarDateResult.type}`
                             });
+                            if (indicators) {
+                                cell.insertBefore(lunarEl, indicators);
+                            }
                         }
                     } else if (existingLunar) {
-                        existingLunar.remove();
+                        existingLunar.style.display = 'none';
                     }
                 }
             }
