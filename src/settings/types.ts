@@ -111,6 +111,7 @@ export interface MyPluginSettings {
     taskFilter: TaskFilterSettings;
     taskSettings: TaskSettings;
     moreLabelSettings: MoreLabelSettings;
+    showLunarCalendar: boolean;
     autoOpenSidebar: boolean;
     sidebarPosition: 'left' | 'right';
 }

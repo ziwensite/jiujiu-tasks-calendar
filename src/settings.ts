@@ -318,6 +318,17 @@ export class SampleSettingTab extends PluginSettingTab {
                     this.plugin.moveViewToSidebar();
                 }));
 
+        new Setting(section)
+            .setName("显示农历")
+            .setDesc("日历视图中显示农历日期、节气、节日")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.showLunarCalendar ?? true)
+                .onChange((value) => {
+                    this.plugin.settings.showLunarCalendar = value;
+                    this.scheduleSave();
+                    this.plugin.updateAllViews('full');
+                }));
+
         const taskSection = contentEl.createEl("div", {cls: "setting-section"});
         taskSection.createEl("h4", {text: "任务设置"});
 

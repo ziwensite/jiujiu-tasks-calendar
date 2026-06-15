@@ -469,6 +469,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
             filePath: ""
         }
     },
+    showLunarCalendar: true,
     autoOpenSidebar: true,
     sidebarPosition: 'right'
 };

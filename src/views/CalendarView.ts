@@ -725,8 +725,10 @@ export class CalendarView extends ItemView {
                     secondLine.className = 'selected-date-second-line';
                     
                     // 创建阴历部分
-                    const lunarSpan = secondLine.createEl('span', { text: lunarText });
-                    lunarSpan.className = 'lunar-part';
+                    if (this.plugin.settings.showLunarCalendar) {
+                        const lunarSpan = secondLine.createEl('span', { text: lunarText });
+                        lunarSpan.className = 'lunar-part';
+                    }
                 } else {
                     container.textContent = '未选择日期';
                 }

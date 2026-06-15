@@ -318,11 +318,13 @@ export class CalendarRenderer {
         }
 
         // 农历日期
-        const lunarDateResult = getLunarDate(date);
-        dayCell.createEl("div", { 
-            text: lunarDateResult.text,
-            cls: `lunar-date lunar-${lunarDateResult.type}`
-        });
+        if (this.plugin.settings.showLunarCalendar) {
+            const lunarDateResult = getLunarDate(date);
+            dayCell.createEl("div", { 
+                text: lunarDateResult.text,
+                cls: `lunar-date lunar-${lunarDateResult.type}`
+            });
+        }
 
         // 日期状态指示器容器
         dayCell.createEl("div", {cls: "day-indicators"});
@@ -469,11 +471,13 @@ export class CalendarRenderer {
                     }
                     
                     // 更新农历日期
-                    const lunarDate = cell.querySelector('.lunar-date');
-                    if (lunarDate) {
-                        const lunarDateResult = getLunarDate(date);
-                        lunarDate.textContent = lunarDateResult.text;
-                        lunarDate.className = `lunar-date lunar-${lunarDateResult.type}`;
+                    if (this.plugin.settings.showLunarCalendar) {
+                        const lunarDate = cell.querySelector('.lunar-date');
+                        if (lunarDate) {
+                            const lunarDateResult = getLunarDate(date);
+                            lunarDate.textContent = lunarDateResult.text;
+                            lunarDate.className = `lunar-date lunar-${lunarDateResult.type}`;
+                        }
                     }
                 }
             }
