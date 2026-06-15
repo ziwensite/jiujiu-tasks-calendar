@@ -7,7 +7,7 @@ import { noteExists } from '../services/noteService';
 import { extractTasks, filterTasks, updateTaskInNote, Task, parseCustomFilter, evaluateExpression } from '../services/taskService';
 import { CalendarRenderer, TaskListRenderer, IndicatorRenderer, EventHandler } from './calendar';
 import { CommandSelectModal } from '../modals/CommandSelectModal';
-import { updateDaySelection, updateIndicators, updateYearViewMonthIndicators, updateAllDayIndicators, updateWeekIndicators, checkWeekNoteAndTasks, checkQuarterNoteAndTasks, checkMonthNoteAndTasks, addDayIndicators } from './CalendarView/indicators';
+import { updateDaySelection, updateIndicators, updateYearViewMonthIndicators, updateAllDayIndicators, updateWeekIndicators } from './CalendarView/indicators';
 import { installNavigationListeners, installCellListeners } from './CalendarView/eventListeners';
 import { adjustTaskListHeight, toggleCalendarView } from './CalendarView/layout';
 
@@ -249,9 +249,6 @@ export class CalendarView extends ItemView {
         // 获取今天的日期
         const today = new Date();
         const todayStr = today.toDateString();
-        
-        // 使用DocumentFragment批量处理DOM更新，减少重排
-        const fragment = document.createDocumentFragment();
         
         // 遍历所有行，更新内容
         for (const row of rows) {
@@ -890,43 +887,7 @@ export class CalendarView extends ItemView {
             async (task) => {
                 await this.eventHandler.handleTaskDoubleClick(task);
             }
-        );
-    }
-
-    private async checkWeekNoteAndTasks(weekStartDate: Date, weekNumber: number, indicators: HTMLElement) {
-        await checkWeekNoteAndTasks(this, weekStartDate, weekNumber, indicators);
-    }
-
-    private async checkQuarterNoteAndTasks(quarter: number, indicators: HTMLElement) {
-        const result = await checkQuarterNoteAndTasks(this, quarter);
-        indicators.empty();
-        if (result.hasNote) {
-            indicators.createEl("div", { cls: "indicator-dot solid-dot" });
-        }
-        if (result.hasIncomplete) {
-            indicators.createEl("div", { cls: "indicator-dot hollow-dot" });
-        }
-        if (result.hasCompleted) {
-            indicators.createEl("div", { cls: "indicator-dot check-dot" });
-        }
-    }
-
-    private async checkMonthNoteAndTasks(monthIndex: number, indicators: HTMLElement) {
-        const result = await checkMonthNoteAndTasks(this, monthIndex);
-        indicators.empty();
-        if (result.hasNote) {
-            indicators.createEl("div", { cls: "indicator-dot solid-dot" });
-        }
-        if (result.hasIncomplete) {
-            indicators.createEl("div", { cls: "indicator-dot hollow-dot" });
-        }
-        if (result.hasCompleted) {
-            indicators.createEl("div", { cls: "indicator-dot check-dot" });
-        }
-    }
-
-    private async addDayIndicators(container: HTMLElement, date: Date) {
-        await addDayIndicators(container, this, date);
+                );
     }
 
     private async updateIndicators() {

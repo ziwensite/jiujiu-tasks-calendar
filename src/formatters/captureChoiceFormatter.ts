@@ -2,7 +2,6 @@ import { MarkdownView, Notice, type TFile } from "obsidian";
 import type { App } from "obsidian";
 import type { IChoiceExecutor } from "../IChoiceExecutor";
 import type ICaptureChoice from "../types/choices/ICaptureChoice";
-import type { BlankLineAfterMatchMode } from "../types/choices/ICaptureChoice";
 import { templaterParseTemplate } from "../utilityObsidian";
 import type MyPlugin from "../main";
 import { PromptModal } from "../modals/PromptModal";
@@ -25,7 +24,6 @@ export class CaptureChoiceFormatter {
 	private sourcePath: string | null = null;
 	private useSelectionAsCaptureValue = true;
 	private templaterProcessed = false;
-	private templatePropertyVars: Map<string, unknown> = new Map();
 	private title: string = "";
 	private inputMethod: 'single-line' | 'multi-line' | 'none' = 'single-line';
 
@@ -51,10 +49,6 @@ export class CaptureChoiceFormatter {
 
 	public setUseSelectionAsCaptureValue(value: boolean): void {
 		this.useSelectionAsCaptureValue = value;
-	}
-
-	public setLinkToCurrentFileBehavior(behavior: "optional" | "required"): void {
-		// Implementation would go here
 	}
 
 	public setTitle(title: string): void {
@@ -293,11 +287,7 @@ export class CaptureChoiceFormatter {
 		return fileName;
 	}
 
-	public getAndClearTemplatePropertyVars(): Map<string, unknown> {
-		const vars = this.templatePropertyVars;
-		this.templatePropertyVars = new Map();
-		return vars;
-	}
+
 
 	private async getSelectedText(): Promise<string> {
 		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -452,47 +442,6 @@ export class CaptureChoiceFormatter {
 		}
 
 		return partialIndex;
-	}
-
-	private findInsertAfterPositionWithBlankLines(
-		lines: string[],
-		matchIndex: number,
-		body: string,
-		mode: BlankLineAfterMatchMode,
-	): number {
-		if (matchIndex < 0) return matchIndex;
-
-		const matchLine = lines[matchIndex] ?? "";
-		const shouldSkip = this.shouldSkipBlankLinesAfterMatch(mode, matchLine);
-		if (!shouldSkip) return matchIndex;
-
-		const scanLimit = body.endsWith("\n")
-			? Math.max(lines.length - 1, 0)
-			: lines.length;
-		let position = matchIndex;
-
-		for (let i = matchIndex + 1; i < scanLimit; i++) {
-			if (lines[i]?.trim().length === 0) {
-				position = i;
-				continue;
-			}
-			break;
-		}
-
-		return position;
-	}
-
-	private shouldSkipBlankLinesAfterMatch(
-		mode: BlankLineAfterMatchMode,
-		line: string,
-	): boolean {
-		if (mode === "skip") return true;
-		if (mode === "none") return false;
-		return this.isAtxHeading(line);
-	}
-
-	private isAtxHeading(line: string): boolean {
-		return /^\s{0,3}#{1,6}\s+\S/.test(line);
 	}
 
 	private findEndOfSection(lines: string[], startIndex: number): number {

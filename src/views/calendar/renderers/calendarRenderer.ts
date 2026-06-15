@@ -446,12 +446,6 @@ export class CalendarRenderer {
                         });
                         
                         // 检查是否是周末
-                        // 周一为第一天时，周六（i=6）和周日（i=7）为周末
-                        // 但只有法定节假日才改变颜色，非法定节假日的周末保持默认颜色
-                        // if (i === 6 || i === 7) {
-                        //     dayNumber.style.color = 'var(--interactive-accent)';
-                        // }
-                        
                         // 添加法定节假日状态标记（休/班）
                         const status = getHolidayStatus(date);
                         if (status) {

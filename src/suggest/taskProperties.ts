@@ -82,10 +82,6 @@ export function isPriorityEmoji(emoji: string): boolean {
     return PRIORITY_EMOJIS.has(emoji);
 }
 
-export function chainingEmoji(value: string): boolean {
-    return ['📅', '⏳', '🛫', '➕', '🔁'].includes(value);
-}
-
 const PROPERTY_EMOJI_LABELS: Record<string, string> = {
     '📅': '截止日期',
     '⏳': '计划日期',

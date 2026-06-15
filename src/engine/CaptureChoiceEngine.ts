@@ -72,11 +72,6 @@ export class CaptureChoiceEngine {
 	async run(): Promise<void> {
 		try {
 			const linkOptions = normalizeAppendLinkOptions(this.choice.appendLink);
-			this.formatter.setLinkToCurrentFileBehavior(
-				linkOptions.enabled && !linkOptions.requireActiveFile
-					? "optional"
-					: "required",
-			);
 			const useSelectionAsCaptureValue = this.choice.useSelectionAsCaptureValue ?? true;
 			this.formatter.setUseSelectionAsCaptureValue(useSelectionAsCaptureValue);
 

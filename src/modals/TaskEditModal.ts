@@ -620,7 +620,9 @@ export class TaskEditModal extends Modal {
         const updateDate = () => {
             const dateValue = dateInput.value;
 
+            // 用户从日期选择器选日期时，将下拉框设为默认选项
             if (dateValue) {
+                textInput.value = '';
                 onChange(dateValue);
             }
         };

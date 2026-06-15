@@ -123,18 +123,5 @@ export class TagManager {
             .slice(0, 10); // 限制为10个建议
     }
 
-    /**
-     * 获取所有标签
-     * @returns 所有标签列表
-     */
-    public getAllTags(): TagInfo[] {
-        this.ensureInitialized();
-        return [...this.tags];
-    }
-
-public getTagCount(tagName: string): number {
-        this.ensureInitialized();
-        const tag = this.tags.find(tag => tag.name === tagName);
-        return tag ? tag.count : 0;
-    }
+    
 }
