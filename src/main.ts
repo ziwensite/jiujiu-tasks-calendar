@@ -4,6 +4,7 @@ import {CalendarView} from "./views/CalendarView";
 import { CalendarViewController } from './core/CalendarViewController';
 import { CalendarDataManager } from './core/CalendarDataManager';
 import { TaskSuggester } from './suggest/TaskSuggester';
+import { registerTaskCommands } from './commands/taskCommands';
 
 function deepMerge(target: Record<string, any>, source: Record<string, any>): Record<string, any> {
     const result = { ...target };
@@ -73,6 +74,8 @@ async onload() {
             
             // 注册编辑器自动补全
             this.registerEditorSuggest(new TaskSuggester(this.app));
+
+registerTaskCommands(this);
 
             // 一次性注册捕获插入快捷键命令
             this.registerCaptureToHotkeys();
