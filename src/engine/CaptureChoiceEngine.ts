@@ -3,7 +3,7 @@ import type { IChoiceExecutor } from "../IChoiceExecutor";
 import { normalizeAppendLinkOptions, type AppendLinkOptions } from "../types/linkPlacement";
 import { getCaptureAction, type CaptureAction } from "./captureAction";
 import { CaptureChoiceFormatter } from "../formatters/captureChoiceFormatter";
-import { appendToCurrentLine, getMarkdownFilesInFolder, getMarkdownFilesWithTag, insertFileLinkToActiveView, insertOnNewLineAbove, insertOnNewLineBelow, isTemplaterTriggerOnCreateEnabled, jumpToNextTemplaterCursorIfPossible, isFolder, openExistingFileTab, openFile, overwriteTemplaterOnce, templaterParseTemplate, waitForTemplaterTriggerOnCreateToComplete } from "../utilityObsidian";
+import { appendToCurrentLine, getMarkdownFilesInFolder, getMarkdownFilesWithTag, getTemplaterPlugin, insertFileLinkToActiveView, insertOnNewLineAbove, insertOnNewLineBelow, isTemplaterTriggerOnCreateEnabled, jumpToNextTemplaterCursorIfPossible, isFolder, openExistingFileTab, openFile, overwriteTemplaterOnce, templaterParseTemplate, waitForTemplaterTriggerOnCreateToComplete } from "../utilityObsidian";
 import type ICaptureChoice from "../types/choices/ICaptureChoice";
 import type MyPlugin from "../main";
 
@@ -115,6 +115,9 @@ export class CaptureChoiceEngine {
 			// If the file was just created, we should use vault.modify instead of editor insertion
 			if (isEditorInsertionAction && fileAlreadyExists) {
 				// Parse Templater syntax in the capture content
+				if (captureContent.includes('<%') && !getTemplaterPlugin(this.plugin.app)) {
+					new Notice('模板包含 <% tp %> 语法，请安装 Templater 插件以启用完整模板功能', 5000);
+				}
 				const content = await templaterParseTemplate(
 					this.plugin.app,
 					captureContent,
@@ -336,6 +339,9 @@ export class CaptureChoiceEngine {
 			this.choice.createFileIfItDoesntExist.createWithTemplate &&
 			fileContent
 		) {
+			if (fileContent.includes('<%') && !getTemplaterPlugin(this.plugin.app)) {
+				new Notice('模板文件包含 <% tp %> 语法，请安装 Templater 插件以启用完整模板功能', 5000);
+			}
 			await overwriteTemplaterOnce(this.plugin.app, file);
 		} else if (isTemplaterTriggerOnCreateEnabled(this.plugin.app)) {
 			await waitForTemplaterTriggerOnCreateToComplete(this.plugin.app, file);
