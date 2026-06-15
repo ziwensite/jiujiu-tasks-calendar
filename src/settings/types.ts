@@ -81,6 +81,7 @@ export interface TaskSettings {
     recurrenceSettings: {
         newTaskPosition: "above" | "below";
     };
+    enableTaskPropertyHints: boolean;
 }
 
 export interface TaskFilterSettings {

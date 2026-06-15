@@ -35,6 +35,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
         customFilter: ""
     },
     taskSettings: {
+        enableTaskPropertyHints: false,
         captureToSettings: {
             enabled: true,
             fleetingNoteConfigId: "fleetingNote",

@@ -319,7 +319,7 @@ export class SampleSettingTab extends PluginSettingTab {
                 }));
 
         const taskSection = contentEl.createEl("div", {cls: "setting-section"});
-        taskSection.createEl("h4", {text: "任务列表设置"});
+        taskSection.createEl("h4", {text: "任务设置"});
 
         // 自定义筛选设置
         new Setting(taskSection)
@@ -352,7 +352,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     .onChange((value) => {
                         // 确保 recurrenceSettings 对象存在
                         if (!this.plugin.settings.taskSettings) {
-                            this.plugin.settings.taskSettings = { captureToSettings: { enabled: false, fleetingNoteConfigId: "", recordConfigId: "", taskConfigId: "", configs: [] }, recurrenceSettings: { newTaskPosition: "below" } };
+                            this.plugin.settings.taskSettings = { enableTaskPropertyHints: false, captureToSettings: { enabled: false, fleetingNoteConfigId: "", recordConfigId: "", taskConfigId: "", configs: [] }, recurrenceSettings: { newTaskPosition: "below" } };
                         }
                         if (!this.plugin.settings.taskSettings.recurrenceSettings) {
                             this.plugin.settings.taskSettings.recurrenceSettings = { newTaskPosition: "below" };
@@ -361,6 +361,20 @@ export class SampleSettingTab extends PluginSettingTab {
                         this.scheduleSave();
                     });
             });
+
+        // 任务属性提示
+        new Setting(taskSection)
+            .setName("任务属性提示")
+            .setDesc("编辑器中 emoji/日期/重复/标签 自动补全。使用 Tasks 插件时建议关闭以避免冲突（需重载插件生效）")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.taskSettings?.enableTaskPropertyHints ?? false)
+                .onChange((value) => {
+                    if (!this.plugin.settings.taskSettings) {
+                        this.plugin.settings.taskSettings = { enableTaskPropertyHints: false, captureToSettings: { enabled: false, fleetingNoteConfigId: "", recordConfigId: "", taskConfigId: "", configs: [] }, recurrenceSettings: { newTaskPosition: "below" } };
+                    }
+                    this.plugin.settings.taskSettings.enableTaskPropertyHints = value;
+                    this.scheduleSave();
+                }));
     }
 
     private renderCaptureToSettings(contentEl: HTMLElement): void {
@@ -869,6 +883,11 @@ export class SampleSettingTab extends PluginSettingTab {
             }
         });
 
+        // 模板提示
+        const hintSection = section.createEl("div", { cls: "setting-section" });
+        hintSection.createEl("h4", { text: "💡 模板说明" });
+        const hintDesc = hintSection.createEl("p", { cls: "setting-item-description" });
+        hintDesc.innerHTML = '捕获配置的「格式」和「模板路径」支持 <code>{{VALUE}}</code>、<code>{{DATE}}</code> 等内置变量。如果需要在模板中使用 <code>&lt;% tp.xxx %&gt;</code> 语法，需要安装 <a href="https://github.com/SilentVoid13/Templater">Templater</a> 插件，安装后自动生效，无需额外配置。';
 
     }
 
