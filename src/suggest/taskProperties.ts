@@ -164,7 +164,7 @@ export function extractMarkers(text: string): Map<string, string> {
 
 export function removeMarkersFromText(text: string): string {
     let result = text;
-    result = result.replace(new RegExp(`[📅⏳🛫➕✅❌]\\s*\\d{4}-\\d{2}-\\d{2}\\s*`, 'g'), '');
+    result = result.replace(new RegExp(`(?:📅|⏳|🛫|➕|✅|❌)\\s*\\d{4}-\\d{2}-\\d{2}\\s*`, 'g'), '');
     // prettier-ignore
     result = result.replace(new RegExp(`🔁\\s+.+?(?=\\s*(?:${EMOJI_PATTERN}|$))`, 'g'), '');
     result = result.replace(new RegExp(`(?:⏬️|🔽|🔼|⏫|🔺)\\s*`, 'g'), '');
