@@ -365,7 +365,7 @@ export class SampleSettingTab extends PluginSettingTab {
         // 任务属性提示
         new Setting(taskSection)
             .setName("任务属性提示")
-            .setDesc("编辑器中 emoji/日期/重复/标签 自动补全。使用 Tasks 插件时建议关闭以避免冲突（需重载插件生效）")
+            .setDesc("编辑器中 emoji/日期/重复/标签 自动补全。使用 Tasks 插件时建议关闭以避免冲突")
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.taskSettings?.enableTaskPropertyHints ?? false)
                 .onChange((value) => {

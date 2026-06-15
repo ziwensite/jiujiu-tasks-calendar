@@ -73,11 +73,8 @@ async onload() {
             this.addSettingTab(new SampleSettingTab(this.app, this));
             
             // 注册编辑器自动补全
-            if (this.settings.taskSettings?.enableTaskPropertyHints) {
-            this.registerEditorSuggest(new TaskSuggester(this.app));
-        }
-
-registerTaskCommands(this);
+            this.registerEditorSuggest(new TaskSuggester(this.app, this));
+            registerTaskCommands(this);
 
             // 一次性注册捕获插入快捷键命令
             this.registerCaptureToHotkeys();

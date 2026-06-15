@@ -2,6 +2,7 @@ import { Editor, EditorPosition, EditorSuggest, EditorSuggestContext, EditorSugg
 import { getDateSuggestions, getRecurrenceMenuItems, getEmojiMenuItems, isPriorityEmoji, extractMarkers, removeMarkersFromText, buildSortedMarkers } from './taskProperties';
 import type { SuggesterItem } from './taskProperties';
 import { parseRelativeDate } from './dateCalculator';
+import type MyPlugin from '../main';
 
 const TRIGGER_PATTERNS: { regex: RegExp; type: string }[] = [
     { regex: /📅\s{0,1}$/, type: 'date' },
@@ -16,10 +17,18 @@ const TRIGGER_PATTERNS: { regex: RegExp; type: string }[] = [
 ];
 
 export class TaskSuggester extends EditorSuggest<SuggesterItem> {
+    private plugin: MyPlugin;
     private triggerType: string = '';
     private triggerStart: EditorPosition = { line: 0, ch: 0 };
 
+    constructor(app: any, plugin: MyPlugin) {
+        super(app);
+        this.plugin = plugin;
+    }
+
     onTrigger(cursor: EditorPosition, editor: Editor, file: TFile): EditorSuggestTriggerInfo | null {
+        if (!this.plugin.settings.taskSettings?.enableTaskPropertyHints) return null;
+
         const line = editor.getLine(cursor.line);
         const linePrefix = line.substring(0, cursor.ch);
 
