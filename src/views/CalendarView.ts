@@ -8,7 +8,7 @@ import { extractTasks, filterTasks, updateTaskInNote, Task, parseCustomFilter, e
 import { CalendarRenderer, TaskListRenderer, IndicatorRenderer, EventHandler } from './calendar';
 import { CommandSelectModal } from '../modals/CommandSelectModal';
 import { updateDaySelection, updateIndicators, updateYearViewMonthIndicators, updateAllDayIndicators, updateWeekIndicators, checkWeekNoteAndTasks, checkQuarterNoteAndTasks, checkMonthNoteAndTasks, addDayIndicators } from './CalendarView/indicators';
-import { installNavigationListeners, installCellListeners, installLabelListeners } from './CalendarView/eventListeners';
+import { installNavigationListeners, installCellListeners } from './CalendarView/eventListeners';
 import { adjustTaskListHeight, toggleCalendarView } from './CalendarView/layout';
 
 const VIEW_TYPE_CALENDAR = "jiujiu-calendar-view";
@@ -351,7 +351,6 @@ export class CalendarView extends ItemView {
     private updateCalendarHeader() {
         const targetDate = this.selectedDate || this.currentDate;
         this.calendarRenderer.updateCalendarHeader(this.containerEl, targetDate);
-        installLabelListeners(this);
     }
 
     private async buildCalendarStructure(container: HTMLElement) {
