@@ -65,11 +65,11 @@ export class SampleSettingTab extends PluginSettingTab {
         const tabsContainer = containerEl.createEl("div", { cls: "setting-tabs" });
         
         const tabs = [
-            { id: "basic", name: "基本设置" },
-            { id: "capture", name: "捕获设置" },
-            { id: "notes", name: "笔记设置" },
-            { id: "custom", name: "自定义标签" },
-            { id: "about", name: "关于插件" }
+            { id: "basic", name: t("基本设置") },
+            { id: "capture", name: t("捕获设置") },
+            { id: "notes", name: t("笔记设置") },
+            { id: "custom", name: t("自定义标签") },
+            { id: "about", name: t("关于插件") }
         ];
 
         tabs.forEach(tab => {
