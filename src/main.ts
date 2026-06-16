@@ -5,6 +5,8 @@ import { CalendarViewController } from './core/CalendarViewController';
 import { CalendarDataManager } from './core/CalendarDataManager';
 import { TaskSuggester } from './suggest/TaskSuggester';
 import { registerTaskCommands } from './commands/taskCommands';
+import { loadEn } from './i18n';
+import { en } from './i18n/en';
 
 function deepMerge(target: Record<string, any>, source: Record<string, any>): Record<string, any> {
     const result = { ...target };
@@ -35,6 +37,9 @@ export class MyPlugin extends Plugin {
 async onload() {
         try {
             await this.loadSettings();
+
+            // 初始化 i18n
+            loadEn(en);
 
             // 从磁盘覆盖 Obsidian 缓存的 manifest（重载插件时缓存不会自动刷新）
             try {

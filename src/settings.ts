@@ -1,4 +1,5 @@
 import {App, Modal, PluginSettingTab, Setting, Notice, TextComponent} from "obsidian";
+import { t } from './i18n';
 import MyPlugin from "./main";
 import { formatDate } from "./utils/dateUtils";
 import { AddCaptureToConfigBox } from "./components";
@@ -124,32 +125,32 @@ export class SampleSettingTab extends PluginSettingTab {
                 this.renderCaptureToSettings(contentEl);
                 break;
             case "notes":
-                this.renderNoteSettings("闪念设置", this.plugin.settings.fleetingNote, (newSettings) => {
+                this.renderNoteSettings(t("闪念设置"), this.plugin.settings.fleetingNote, (newSettings) => {
                     this.plugin.settings.fleetingNote = newSettings;
                     this.scheduleSave();
                 }, contentEl);
                 
-                this.renderNoteSettings("日记设置", this.plugin.settings.dailyNote, (newSettings) => {
+                this.renderNoteSettings(t("日记设置"), this.plugin.settings.dailyNote, (newSettings) => {
                     this.plugin.settings.dailyNote = newSettings;
                     this.scheduleSave();
                 }, contentEl);
                 
-                this.renderNoteSettings("周报设置", this.plugin.settings.weeklyNote, (newSettings) => {
+                this.renderNoteSettings(t("周报设置"), this.plugin.settings.weeklyNote, (newSettings) => {
                     this.plugin.settings.weeklyNote = newSettings;
                     this.scheduleSave();
                 }, contentEl);
                 
-                this.renderNoteSettings("月报设置", this.plugin.settings.monthlyNote, (newSettings) => {
+                this.renderNoteSettings(t("月报设置"), this.plugin.settings.monthlyNote, (newSettings) => {
                     this.plugin.settings.monthlyNote = newSettings;
                     this.scheduleSave();
                 }, contentEl);
                 
-                this.renderNoteSettings("季报设置", this.plugin.settings.quarterlyNote, (newSettings) => {
+                this.renderNoteSettings(t("季报设置"), this.plugin.settings.quarterlyNote, (newSettings) => {
                     this.plugin.settings.quarterlyNote = newSettings;
                     this.scheduleSave();
                 }, contentEl);
                 
-                this.renderNoteSettings("年报设置", this.plugin.settings.yearlyNote, (newSettings) => {
+                this.renderNoteSettings(t("年报设置"), this.plugin.settings.yearlyNote, (newSettings) => {
                     this.plugin.settings.yearlyNote = newSettings;
                     this.scheduleSave();
                 }, contentEl);
@@ -165,24 +166,24 @@ export class SampleSettingTab extends PluginSettingTab {
 
     private renderPluginInfo(contentEl: HTMLElement): void {
         const pluginInfoSection = contentEl.createEl("div", { cls: "setting-section" });
-        pluginInfoSection.createEl("h4", { text: "插件信息" });
+        pluginInfoSection.createEl("h4", { text: t("插件信息") });
 
         new Setting(pluginInfoSection)
-            .setName("插件名称")
+            .setName(t("插件名称"))
             .setDesc(this.plugin.manifest.name);
 
         const versionSetting = new Setting(pluginInfoSection)
-            .setName("版本号")
+            .setName(t("版本号"))
             .setDesc(this.plugin.manifest.version);
 
         new Setting(pluginInfoSection)
-            .setName("描述")
-            .setDesc("综合性日历插件，支持农历、节假日、任务管理、笔记管理等功能");
+            .setName(t("描述"))
+            .setDesc(t("综合性日历插件，支持农历、节假日、任务管理、笔记管理等功能"));
     }
 
     private renderMoreLabelSettings(contentEl: HTMLElement): void {
         const section = contentEl.createEl("div", {cls: "setting-section"});
-        section.createEl("h4", {text: "自定义标签设置"});
+        section.createEl("h4", {text: t("自定义标签设置")});
 
         const moreSettings = this.plugin.settings.moreLabelSettings;
 
@@ -216,11 +217,11 @@ export class SampleSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(labelSection)
-            .setName("操作类型")
+            .setName(t("操作类型"))
             .setDesc(`选择点击${labelName}后执行的操作类型`)
             .addDropdown(dropdown => dropdown
-                .addOption("systemCommand", "系统命令")
-                .addOption("openFile", "打开文件")
+                .addOption("systemCommand", t("系统命令"))
+                .addOption("openFile", t("打开文件"))
                 .setValue(labelSettings.actionType)
                 .onChange(value => {
                     labelSettings.actionType = value as "systemCommand" | "openFile";
@@ -231,11 +232,11 @@ export class SampleSettingTab extends PluginSettingTab {
         if (labelSettings.actionType === "systemCommand") {
             let commandInputTextComponent: TextComponent | null = null;
             const commandInput = new Setting(labelSection)
-                .setName("系统命令")
-                .setDesc("输入要执行的Obsidian系统命令ID")
+                .setName(t("系统命令"))
+                .setDesc(t("输入要执行的Obsidian系统命令ID"))
                 .addText(text => {
                     commandInputTextComponent = text;
-                    text.setPlaceholder("例如：app:open-vault")
+                    text.setPlaceholder(t("例如：app:open-vault"))
                     text.setValue(labelSettings.systemCommand)
                     .onChange(value => {
                         labelSettings.systemCommand = value;
@@ -245,7 +246,7 @@ export class SampleSettingTab extends PluginSettingTab {
             
             const selectButton = commandInput.controlEl.createEl('button', {
                 cls: 'command-select-button',
-                text: '选择命令'
+                text: t('选择命令')
             });
             selectButton.addEventListener('click', () => {
                 new CommandSelectModal({
@@ -262,11 +263,11 @@ export class SampleSettingTab extends PluginSettingTab {
         } else if (labelSettings.actionType === "openFile") {
             let filePathTextComponent: TextComponent | null = null;
             const filePathInput = new Setting(labelSection)
-                .setName("文件路径")
-                .setDesc("输入要打开的文件路径")
+                .setName(t("文件路径"))
+                .setDesc(t("输入要打开的文件路径"))
                 .addText(text => {
                     filePathTextComponent = text;
-                    text.setPlaceholder("例如：日记/2024-01-01.md")
+                    text.setPlaceholder(t("例如：日记/2024-01-01.md"))
                     text.setValue(labelSettings.filePath)
                     .onChange(value => {
                         labelSettings.filePath = value;
@@ -276,7 +277,7 @@ export class SampleSettingTab extends PluginSettingTab {
             
             const selectFileButton = filePathInput.controlEl.createEl('button', {
                 cls: 'command-select-button',
-                text: '选择文件'
+                text: t('选择文件')
             });
             selectFileButton.addEventListener('click', () => {
                 new FileSelectModal(this.app, (file) => {
@@ -293,11 +294,11 @@ export class SampleSettingTab extends PluginSettingTab {
 
     private renderTaskFilterSettings(contentEl: HTMLElement): void {
         const section = contentEl.createEl("div", {cls: "setting-section"});
-        section.createEl("h4", {text: "侧边栏设置"});
+        section.createEl("h4", {text: t("侧边栏设置")});
 
         new Setting(section)
-            .setName("自动打开侧栏")
-            .setDesc("插件启动时自动打开日历侧栏视图")
+            .setName(t("自动打开侧栏"))
+            .setDesc(t("插件启动时自动打开日历侧栏视图"))
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.autoOpenSidebar)
                 .onChange((value) => {
@@ -306,11 +307,11 @@ export class SampleSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(section)
-            .setName("侧栏位置")
-            .setDesc("选择日历视图显示在左侧还是右侧边栏")
+            .setName(t("侧栏位置"))
+            .setDesc(t("选择日历视图显示在左侧还是右侧边栏"))
             .addDropdown(dropdown => dropdown
-                .addOption("left", "左侧边栏")
-                .addOption("right", "右侧边栏")
+                .addOption("left", t("左侧边栏"))
+                .addOption("right", t("右侧边栏"))
                 .setValue(this.plugin.settings.sidebarPosition)
                 .onChange((value) => {
                     this.plugin.settings.sidebarPosition = value as 'left' | 'right';
@@ -319,8 +320,8 @@ export class SampleSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(section)
-            .setName("显示农历")
-            .setDesc("日历视图中显示农历日期、节气、节日")
+            .setName(t("显示农历"))
+            .setDesc(t("日历视图中显示农历日期、节气、节日"))
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.showLunarCalendar ?? true)
                 .onChange((value) => {
@@ -330,15 +331,15 @@ export class SampleSettingTab extends PluginSettingTab {
                 }));
 
         const taskSection = contentEl.createEl("div", {cls: "setting-section"});
-        taskSection.createEl("h4", {text: "任务设置"});
+        taskSection.createEl("h4", {text: t("任务设置")});
 
         // 自定义筛选设置
         new Setting(taskSection)
-            .setName("自定义筛选")
-            .setDesc("规则：使用路径或标签，!表示排除，and、or、()逻辑组合。例如：(A or B) and #C - 路径A或B中包含标签#C的任务")
+            .setName(t("自定义筛选"))
+            .setDesc(t("规则：使用路径或标签，!表示排除，and、or、()逻辑组合。例如：(A or B) and #C - 路径A或B中包含标签#C的任务"))
             .addTextArea(textArea => {
                 textArea
-                    .setPlaceholder("输入筛选规则")
+                    .setPlaceholder(t("输入筛选规则"))
                     .setValue(this.plugin.settings.taskFilter.customFilter)
                     .onChange((value: string) => {
                         this.plugin.settings.taskFilter.customFilter = value;
@@ -355,12 +356,12 @@ export class SampleSettingTab extends PluginSettingTab {
         
         // 重复任务设置
         new Setting(taskSection)
-            .setName("重复任务新任务位置")
-            .setDesc("设置重复任务完成后，新任务的添加位置")
+            .setName(t("重复任务新任务位置"))
+            .setDesc(t("设置重复任务完成后，新任务的添加位置"))
             .addDropdown(dropdown => {
                 dropdown
-                    .addOption("below", "当前任务下方")
-                    .addOption("above", "当前任务上方")
+                    .addOption("below", t("当前任务下方"))
+                    .addOption("above", t("当前任务上方"))
                     .setValue(this.plugin.settings.taskSettings?.recurrenceSettings?.newTaskPosition || "below")
                     .onChange((value) => {
                         // 确保 recurrenceSettings 对象存在
@@ -377,8 +378,8 @@ export class SampleSettingTab extends PluginSettingTab {
 
         // 任务属性提示
         new Setting(taskSection)
-            .setName("任务属性提示")
-            .setDesc("编辑器中 emoji/日期/重复/标签 自动补全。使用 Tasks 插件时建议关闭以避免冲突")
+            .setName(t("任务属性提示"))
+            .setDesc(t("编辑器中 emoji/日期/重复/标签 自动补全。使用 Tasks 插件时建议关闭以避免冲突"))
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.taskSettings?.enableTaskPropertyHints ?? false)
                 .onChange((value) => {
@@ -392,14 +393,14 @@ export class SampleSettingTab extends PluginSettingTab {
 
     private renderCaptureToSettings(contentEl: HTMLElement): void {
         const section = contentEl.createEl("div", {cls: "setting-section"});
-        section.createEl("h4", {text: "捕获插入设置"});
+        section.createEl("h4", {text: t("捕获插入设置")});
 
         const captureSettings = this.plugin.settings.taskSettings.captureToSettings;
 
         // 启用/禁用设置
         new Setting(section)
-            .setName("启用捕获插入功能")
-            .setDesc("使用捕获插入功能进行任务和笔记的创建与插入")
+            .setName(t("启用捕获插入功能"))
+            .setDesc(t("使用捕获插入功能进行任务和笔记的创建与插入"))
             .addToggle(toggle => toggle
                 .setValue(captureSettings.enabled)
                 .onChange((value) => {
@@ -409,8 +410,8 @@ export class SampleSettingTab extends PluginSettingTab {
 
         // 闪念标签配置
         new Setting(section)
-            .setName("闪念标签配置")
-            .setDesc("选择任务显示区域头部闪念标签对应的配置")
+            .setName(t("闪念标签配置"))
+            .setDesc(t("选择任务显示区域头部闪念标签对应的配置"))
             .addDropdown(dropdown => {
                 captureSettings.configs.forEach(config => {
                     dropdown.addOption(config.id, config.name);
@@ -424,8 +425,8 @@ export class SampleSettingTab extends PluginSettingTab {
 
         // 记录标签配置
         new Setting(section)
-            .setName("记录标签配置")
-            .setDesc("选择任务显示区域头部记录标签对应的配置")
+            .setName(t("记录标签配置"))
+            .setDesc(t("选择任务显示区域头部记录标签对应的配置"))
             .addDropdown(dropdown => {
                 captureSettings.configs.forEach(config => {
                     dropdown.addOption(config.id, config.name);
@@ -439,8 +440,8 @@ export class SampleSettingTab extends PluginSettingTab {
 
         // 任务标签配置
         new Setting(section)
-            .setName("任务标签配置")
-            .setDesc("选择任务显示区域头部任务标签对应的配置")
+            .setName(t("任务标签配置"))
+            .setDesc(t("选择任务显示区域头部任务标签对应的配置"))
             .addDropdown(dropdown => {
                 captureSettings.configs.forEach(config => {
                     dropdown.addOption(config.id, config.name);
@@ -454,7 +455,7 @@ export class SampleSettingTab extends PluginSettingTab {
 
         // 配置列表
         const configsHeader = section.createEl("div", {cls: "setting-header"});
-        configsHeader.createEl("h4", {text: "配置列表"});
+        configsHeader.createEl("h4", {text: t("配置列表")});
 
         // 拖拽排序相关变量
         let draggedElement: HTMLElement | null = null;
@@ -553,7 +554,7 @@ export class SampleSettingTab extends PluginSettingTab {
             });
             toggleButton.style.color = config.enabled ? "var(--text-normal)" : "var(--text-muted)";
             toggleButton.textContent = config.enabled ? "⚡" : "🔴";
-            toggleButton.title = config.enabled ? "禁用配置" : "启用配置";
+            toggleButton.title = config.enabled ? t("禁用配置") : t("启用配置");
             toggleButton.addEventListener("click", () => {
                 if (this.plugin.settings.taskSettings.captureToSettings.configs && 
                     this.plugin.settings.taskSettings.captureToSettings.configs[index]) {
@@ -570,7 +571,7 @@ export class SampleSettingTab extends PluginSettingTab {
             });
             settingsButton.style.color = "var(--text-muted)";
             settingsButton.textContent = "⚙️";
-            settingsButton.title = "配置";
+            settingsButton.title = t("配置");
             settingsButton.addEventListener("click", () => {
                 // 打开详细配置对话框
                 new CaptureToConfigModal({
@@ -597,7 +598,7 @@ export class SampleSettingTab extends PluginSettingTab {
             });
             duplicateButton.style.color = "var(--text-muted)";
             duplicateButton.textContent = "📋";
-            duplicateButton.title = "复制";
+            duplicateButton.title = t("复制");
             duplicateButton.addEventListener("click", () => {
                 if (this.plugin.settings.taskSettings.captureToSettings.configs) {
                     // 创建配置副本
@@ -618,7 +619,7 @@ export class SampleSettingTab extends PluginSettingTab {
                 cls: "config-button"
             });
             resetButton.textContent = "🔄";
-            resetButton.title = "恢复默认";
+            resetButton.title = t("恢复默认");
             
             // 检查是否为新建配置项（ID格式为config-${Date.now()}）
             const isNewConfig = config.id.startsWith('config-');
@@ -630,13 +631,13 @@ export class SampleSettingTab extends PluginSettingTab {
                 resetButton.disabled = true;
                 resetButton.style.color = "var(--text-faint)";
                 resetButton.style.cursor = "not-allowed";
-                resetButton.title = "无默认配置可恢复";
+                resetButton.title = t("无默认配置可恢复");;
             } else {
                 // 预设配置，启用按钮
                 resetButton.disabled = false;
                 resetButton.style.color = "var(--text-muted)";
                 resetButton.style.cursor = "pointer";
-                resetButton.title = "恢复默认";
+resetButton.title = t("恢复默认");
                 
                 resetButton.addEventListener("click", () => {
                     if (this.plugin.settings.taskSettings.captureToSettings.configs) {
@@ -646,7 +647,7 @@ export class SampleSettingTab extends PluginSettingTab {
                         // 重新渲染设置页面
                         this.display();
                         // 显示恢复成功提示
-                        new Notice("配置已恢复默认");
+                        new Notice(t("配置已恢复默认"));
                     }
                 });
             }
@@ -657,14 +658,14 @@ export class SampleSettingTab extends PluginSettingTab {
             });
             renameButton.style.color = "var(--text-muted)";
             renameButton.textContent = "✏️";
-            renameButton.title = "重命名";
+            renameButton.title = t("重命名");
             renameButton.addEventListener("click", async () => {
                 // 重命名模态框
                 const newName = await new Promise<string | null>((resolve) => {
                     const modal = new Modal(this.app);
-                    modal.titleEl.setText("重命名配置");
+                    modal.titleEl.setText(t("重命名配置"));
                     modal.contentEl.createEl("p", {
-                        text: `请输入新的配置名称：`
+                        text: t("请输入新的配置名称：")
                     });
                     
                     const input = modal.contentEl.createEl("input", {
@@ -684,7 +685,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     buttonContainer.style.marginTop = "20px";
 
                     const cancelButton = buttonContainer.createEl("button", {
-                        text: "取消",
+                        text: t("取消"),
                         cls: "mod-button"
                     });
                     cancelButton.addEventListener("click", () => {
@@ -693,7 +694,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     });
 
                     const confirmButton = buttonContainer.createEl("button", {
-                        text: "确认",
+                        text: t("确认"),
                         cls: "mod-cta"
                     });
                     confirmButton.addEventListener("click", () => {
@@ -737,7 +738,7 @@ export class SampleSettingTab extends PluginSettingTab {
                 cls: "config-button"
             });
             deleteButton.textContent = "🗑️";
-            deleteButton.title = "删除";
+            deleteButton.title = t("删除");
             
             // 检查是否为默认配置项
             const isDefaultConfig = DEFAULT_SETTINGS.taskSettings.captureToSettings.configs.some(defaultCfg => defaultCfg.id === config.id);
@@ -747,19 +748,19 @@ export class SampleSettingTab extends PluginSettingTab {
                 deleteButton.disabled = true;
                 deleteButton.style.color = "var(--text-faint)";
                 deleteButton.style.cursor = "not-allowed";
-                deleteButton.title = "默认配置不可删除";
+                deleteButton.title = t("默认配置不可删除");;
             } else {
                 // 用户自定义配置项，启用删除按钮
                 deleteButton.disabled = false;
                 deleteButton.style.color = "var(--text-muted)";
                 deleteButton.style.cursor = "pointer";
-                deleteButton.title = "删除";
+                deleteButton.title = t("删除");
                 
                 deleteButton.addEventListener("click", async () => {
                     // 确认删除
                     const confirmed = await new Promise<boolean>((resolve) => {
                         const modal = new Modal(this.app);
-                        modal.titleEl.setText("确认删除");
+                        modal.titleEl.setText(t("确认删除"));
                         modal.contentEl.createEl("p", {
                             text: `确定要删除配置 "${config.name}" 吗？`
                         });
@@ -771,7 +772,7 @@ export class SampleSettingTab extends PluginSettingTab {
                         buttonContainer.style.marginTop = "20px";
 
                         const cancelButton = buttonContainer.createEl("button", {
-                            text: "取消",
+text: t("取消"),
                             cls: "mod-button"
                         });
                         cancelButton.addEventListener("click", () => {
@@ -780,7 +781,7 @@ export class SampleSettingTab extends PluginSettingTab {
                         });
 
                         const confirmButton = buttonContainer.createEl("button", {
-                            text: "删除",
+                            text: t("删除"),
                             cls: "mod-danger"
                         });
                         confirmButton.addEventListener("click", () => {
@@ -813,19 +814,19 @@ export class SampleSettingTab extends PluginSettingTab {
         // 名称输入框
         const nameInput = addConfigContainer.createEl("input", {
             type: "text",
-            placeholder: "名称",
+            placeholder: t("名称"),
             cls: "add-config-input"
         });
 
         // 添加按钮
         const addButton = addConfigContainer.createEl("button", {
-            text: "新建配置",
+            text: t("新建配置"),
             cls: "mod-cta add-config-button"
         });
         addButton.addEventListener("click", () => {
             const name = nameInput.value.trim();
             if (!name) {
-                new Notice("配置名称不能为空");
+                new Notice(t("配置名称不能为空"));
                 return;
             }
 
@@ -898,9 +899,9 @@ export class SampleSettingTab extends PluginSettingTab {
 
         // 模板提示
         const hintSection = section.createEl("div", { cls: "setting-section" });
-        hintSection.createEl("h4", { text: "💡 模板说明" });
+        hintSection.createEl("h4", { text: t("💡 模板说明") });
         const hintDesc = hintSection.createEl("p", { cls: "setting-item-description" });
-        hintDesc.innerHTML = '捕获配置的「格式」和「模板路径」支持 <code>{{VALUE}}</code>、<code>{{DATE}}</code> 等内置变量。如果需要在模板中使用 <code>&lt;% tp.xxx %&gt;</code> 语法，需要安装 <a href="https://github.com/SilentVoid13/Templater">Templater</a> 插件，安装后自动生效，无需额外配置。';
+        hintDesc.innerHTML = t('捕获配置的「格式」和「模板路径」支持 <code>{{VALUE}}</code>、<code>{{DATE}}</code> 等内置变量。如果需要在模板中使用 <code>&lt;% tp.xxx %&gt;</code> 语法，需要安装 <a href="https://github.com/SilentVoid13/Templater">Templater</a> 插件，安装后自动生效，无需额外配置。');
 
     }
 
@@ -966,17 +967,17 @@ export class SampleSettingTab extends PluginSettingTab {
                 fullPathPreviewText.textContent = fullPathPreview;
                 fullPathPreviewText.style.color = "var(--text-muted)";
             } catch (error) {
-                fullPathPreviewText.textContent = "格式错误";
+                fullPathPreviewText.textContent = t("格式错误");
                 fullPathPreviewText.style.color = "var(--text-error)";
             }
         };
 
         // 文件名格式设置
         new Setting(section)
-            .setName("文件名格式")
+            .setName(t("文件名格式"))
             .setDesc(`（年-YYYY、周所属年-GGGG、月-MM、日-DD、周数-WW、季-Q     例如： ${settings.fileNameFormat}）`)            
             .addText(text => text
-                .setPlaceholder("输入格式")
+                .setPlaceholder(t("输入格式"))
                 .setValue(settings.fileNameFormat)
                 .onChange((value) => {
                     const newSettings = { ...currentSettings, fileNameFormat: value };
@@ -990,12 +991,12 @@ export class SampleSettingTab extends PluginSettingTab {
         // 保存路径设置
         let savePathInputEl: HTMLInputElement | null = null;
         const savePathSetting = new Setting(section)
-            .setName("保存路径")
+            .setName(t("保存路径"))
             .addText(text => {
                 savePathInputEl = text.inputEl;
                 text
                     .setValue(settings.savePath)
-                    .setPlaceholder("例如：日记")
+                    .setPlaceholder(t("例如：日记"))
                     .onChange((value) => {
                         const newSettings = { ...currentSettings, savePath: value };
                         currentSettings = newSettings;
@@ -1006,7 +1007,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     });
             })
             .addButton(button => button
-                .setButtonText("选择")
+                .setButtonText(t("选择"))
                 .onClick(() => {
                     new FolderSelectModal(this.app, (folder) => {
                         const newSettings = { ...currentSettings, savePath: folder.path };
@@ -1025,13 +1026,13 @@ export class SampleSettingTab extends PluginSettingTab {
         // 模板路径设置
         let templatePathInputEl: HTMLInputElement | null = null;
         new Setting(section)
-            .setName("模板路径")
-            .setDesc("模板文件的路径")
+            .setName(t("模板路径"))
+            .setDesc(t("模板文件的路径"))
             .addText(text => {
                 templatePathInputEl = text.inputEl;
                 text
                     .setValue(settings.templatePath)
-                    .setPlaceholder("例如：模板/日记模板")
+                    .setPlaceholder(t("例如：模板/日记模板"))
                     .onChange((value) => {
                         const newSettings = { ...currentSettings, templatePath: value };
                         currentSettings = newSettings;
@@ -1040,7 +1041,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     });
             })
             .addButton(button => button
-                .setButtonText("选择")
+                .setButtonText(t("选择"))
                 .onClick(() => {
                     new FileSelectModal(this.app, (file) => {
                         const newSettings = { ...currentSettings, templatePath: file.path };
@@ -1057,7 +1058,7 @@ export class SampleSettingTab extends PluginSettingTab {
         // 添加完整路径预览
         const fullPathPreviewContainer = savePathSetting.descEl.createEl("div", { 
             cls: "fullPath-preview", 
-            text: "路径预览：" 
+            text: t("路径预览：") 
         });
         fullPathPreviewContainer.style.marginTop = "8px";
         fullPathPreviewContainer.style.color = "var(--text-muted)";
