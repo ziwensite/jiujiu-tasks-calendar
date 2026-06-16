@@ -1,4 +1,5 @@
 import { CalendarView } from '../CalendarView';
+import { t } from '../../i18n';
 import { getWeekInfo } from '../../utils/dateUtils';
 import { checkWeekNoteAndTasks, checkQuarterNoteAndTasks, checkMonthNoteAndTasks, addDayIndicators } from './indicators';
 
@@ -30,7 +31,7 @@ export function installNavigationListeners(view: CalendarView) {
     const monthContent = view.containerEl.querySelector(".calendar-header-block-month .calendar-header-content");
     
     if (prevMonthBtn) {
-        (prevMonthBtn as HTMLElement).title = "上一月";
+        (prevMonthBtn as HTMLElement).title = t('上一月');
         prevMonthBtn.addEventListener("click", () => {
             view.currentDate.setMonth(view.currentDate.getMonth() - 1);
             view.selectedDate = view.currentDate;
@@ -39,7 +40,7 @@ export function installNavigationListeners(view: CalendarView) {
     }
     
     if (nextMonthBtn) {
-        (nextMonthBtn as HTMLElement).title = "下一月";
+        (nextMonthBtn as HTMLElement).title = t('下一月');
         nextMonthBtn.addEventListener("click", () => {
             view.currentDate.setMonth(view.currentDate.getMonth() + 1);
             view.selectedDate = view.currentDate;
@@ -71,7 +72,7 @@ export function installNavigationListeners(view: CalendarView) {
     const yearContent = view.containerEl.querySelector(".calendar-header-block-year .calendar-header-content");
     
     if (prevYearBtn) {
-        (prevYearBtn as HTMLElement).title = "上一年";
+        (prevYearBtn as HTMLElement).title = t('上一年');
         prevYearBtn.addEventListener("click", () => {
             view.currentDate.setFullYear(view.currentDate.getFullYear() - 1);
             view.selectedDate = view.currentDate;
@@ -80,7 +81,7 @@ export function installNavigationListeners(view: CalendarView) {
     }
     
     if (nextYearBtn) {
-        (nextYearBtn as HTMLElement).title = "下一年";
+        (nextYearBtn as HTMLElement).title = t('下一年');
         nextYearBtn.addEventListener("click", () => {
             view.currentDate.setFullYear(view.currentDate.getFullYear() + 1);
             view.selectedDate = view.currentDate;
@@ -137,7 +138,7 @@ export function installNavigationListeners(view: CalendarView) {
     }
     
     if (yearBtn) {
-        yearBtn.textContent = view.viewType === 'month' ? "年" : "月";
+        yearBtn.textContent = view.viewType === 'month' ? t('年') : t('月');
         yearBtn.className = `calendar-header-label-year ${view.viewType === 'year' ? 'today-selected' : 'today-unselected'}`;
         yearBtn.addEventListener("click", async () => {
             view.viewType = view.viewType === 'month' ? 'year' : 'month';

@@ -2,6 +2,7 @@ import { Modal, App, Notice, Setting, TextComponent, ToggleComponent } from 'obs
 import { MyPlugin } from '../../../main';
 import { CaptureToConfig } from '../../../settings';
 import { FileSelectModal } from '../../../modals/FileSelectModal';
+import { t } from '../../../i18n';
 
 interface CaptureToConfigModalOptions {
     plugin: MyPlugin;
@@ -38,25 +39,25 @@ export class CaptureToConfigModal extends Modal {
         const content = contentEl.createEl('div', { cls: 'capture-to-config-content' });
 
         // Location Section
-        content.createEl('h4', { text: '文件' });
+        content.createEl('h4', { text: t('文件') });
         this.addLocationSettings(content);
 
         // Position Section
-        content.createEl('h4', { text: '插入位置' });
+        content.createEl('h4', { text: t('插入位置') });
         this.addPositionSettings(content);
 
         // Linking Section
-        content.createEl('h4', { text: '链接' });
+        content.createEl('h4', { text: t('链接') });
         this.addLinkingSettings(content);
 
         // Content Section
-        content.createEl('h4', { text: '内容' });   
+        content.createEl('h4', { text: t('内容') });   
         this.addInputMethodSettings(content);
         // 输入框选择
         this.addContentSettings(content);
 
         // Behavior Section
-        content.createEl('h4', { text: '行为' });
+        content.createEl('h4', { text: t('行为') });
         this.addBehaviorSettings(content);
 
     }
@@ -71,8 +72,8 @@ export class CaptureToConfigModal extends Modal {
     private addLocationSettings(container: HTMLElement) {
         // Capture to active file
         new Setting(container)
-            .setName('插入当前活动文件')
-            .setDesc('将内容插入到当前活动的文件中')
+            .setName(t('插入当前活动文件'))
+            .setDesc(t('将内容插入到当前活动的文件中'))
             .addToggle(toggle => toggle
                 .setValue(this.config.captureToActiveFile)
                 .onChange(value => {
@@ -85,19 +86,19 @@ export class CaptureToConfigModal extends Modal {
             // Default capture path
             let defaultCapturePathInputEl: HTMLInputElement | null = null;
             new Setting(container)
-                .setName('默认插入文件路径')
-                .setDesc('选择文件或使用格式化路径（例如：{{date}}-notes.md）')
+                .setName(t('默认插入文件路径'))
+                .setDesc(t('选择文件或使用格式化路径（例如：{{date}}-notes.md）'))
                 .addText(text => {
                     defaultCapturePathInputEl = text.inputEl;
                     text
                         .setValue(this.config.defaultCapturePath)
-                        .setPlaceholder('例如：{{日记}}')
+                        .setPlaceholder(t('例如：{{日记}}'))
                         .onChange(value => {
                             this.config.defaultCapturePath = value;
                         });
                 })
                 .addButton(button => button
-                    .setButtonText('选择')
+                    .setButtonText(t('选择'))
                     .onClick(() => {
                         new FileSelectModal(this.app, (file) => {
                             this.config.defaultCapturePath = file.path;
@@ -109,7 +110,7 @@ export class CaptureToConfigModal extends Modal {
                     }));
             // Create file if it doesn't exist
             new Setting(container)
-                .setName('如果文件不存在则创建')
+                .setName(t('如果文件不存在则创建'))
                 .addToggle(toggle => toggle
                     .setValue(this.config.createFileIfItDoesntExist.enabled)
                     .onChange(value => {
@@ -121,8 +122,8 @@ export class CaptureToConfigModal extends Modal {
             if (this.config.createFileIfItDoesntExist.enabled) {
                 // Create with template
                 new Setting(container)
-                    .setName('使用模板创建')
-                    .setDesc('使用指定的模板创建文件')
+                    .setName(t('使用模板创建'))
+                    .setDesc(t('使用指定的模板创建文件'))
                     .addToggle(toggle => toggle
                         .setValue(this.config.createFileIfItDoesntExist.createWithTemplate)
                         .onChange(value => {
@@ -135,19 +136,19 @@ export class CaptureToConfigModal extends Modal {
                     // Template path
                     let templatePathInputEl: HTMLInputElement | null = null;
                     new Setting(container)
-                        .setName('模板路径')
-                        .setDesc('选择要使用的模板文件')
+                        .setName(t('模板路径'))
+                        .setDesc(t('选择要使用的模板文件'))
                         .addText(text => {
                             templatePathInputEl = text.inputEl;
                             text
                                 .setValue(this.config.createFileIfItDoesntExist.template)
-                                .setPlaceholder('例如：模板/日记模板')
+                                .setPlaceholder(t('例如：模板/日记模板'))
                                 .onChange(value => {
                                     this.config.createFileIfItDoesntExist.template = value;
                                 });
                         })
                         .addButton(button => button
-                            .setButtonText('选择')
+                            .setButtonText(t('选择'))
                             .onClick(() => {
                                 new FileSelectModal(this.app, (file) => {
                                     this.config.createFileIfItDoesntExist.template = file.path;
@@ -165,12 +166,12 @@ export class CaptureToConfigModal extends Modal {
     private addPositionSettings(container: HTMLElement) {
         // Insert position dropdown
         new Setting(container)
-            .setName('插入位置')
-            .setDesc('选择内容的插入位置')
-            .addDropdown(dropdown => {
-                dropdown.addOption('top', '顶部');
-                dropdown.addOption('bottom', '底部');
-                dropdown.addOption('after', '章节后');
+.setName(t('插入位置'))
+                .setDesc(t('选择内容的插入位置'))
+                .addDropdown(dropdown => {
+                    dropdown.addOption('top', t('顶部'));
+                    dropdown.addOption('bottom', t('底部'));
+                    dropdown.addOption('after', t('章节后'));
                 
                 // Determine current position
                 let currentPosition = 'top';
@@ -201,8 +202,8 @@ export class CaptureToConfigModal extends Modal {
         if (this.config.insertAfter.enabled) {
             // After
             new Setting(container)
-                .setName('章节文本')
-                .setDesc('在匹配此文本的章节后插入内容（例如：## 章节标题）')
+                .setName(t('章节文本'))
+                .setDesc(t('在匹配此文本的章节后插入内容（例如：## 章节标题）'))
                 .addText(text => text
                     .setValue(this.config.insertAfter.after)
                     .onChange(value => {
@@ -211,8 +212,8 @@ export class CaptureToConfigModal extends Modal {
 
             // Insert at end
             new Setting(container)
-                .setName('在章节末尾插入')
-                .setDesc('在匹配的章节末尾插入内容')
+                .setName(t('在章节末尾插入'))
+                .setDesc(t('在匹配的章节末尾插入内容'))
                 .addToggle(toggle => toggle
                     .setValue(this.config.insertAfter.insertAtEnd)
                     .onChange(value => {
@@ -221,8 +222,8 @@ export class CaptureToConfigModal extends Modal {
 
             // Consider subsections
             new Setting(container)
-                .setName('考虑子章节')
-                .setDesc('也考虑匹配章节的子章节')
+                .setName(t('考虑子章节'))
+                .setDesc(t('也考虑匹配章节的子章节'))
                 .addToggle(toggle => toggle
                     .setValue(this.config.insertAfter.considerSubsections)
                     .onChange(value => {
@@ -231,8 +232,8 @@ export class CaptureToConfigModal extends Modal {
 
             // 如果未找到则创建
             new Setting(container)
-                .setName('如果未找到则创建')
-                .setDesc('如果未找到匹配的文本，则创建它')
+                .setName(t('如果未找到则创建'))
+                .setDesc(t('如果未找到匹配的文本，则创建它'))
                 .addToggle(toggle => toggle
                     .setValue(this.config.insertAfter.createIfNotFound)
                     .onChange(value => {
@@ -244,11 +245,11 @@ export class CaptureToConfigModal extends Modal {
             if (this.config.insertAfter.createIfNotFound) {
                 // 创建位置
                 new Setting(container)
-                    .setName('创建位置')
-                    .setDesc('如果未找到匹配的文本，在哪里创建它')
+                    .setName(t('创建位置'))
+                    .setDesc(t('如果未找到匹配的文本，在哪里创建它'))
                     .addDropdown(dropdown => dropdown
-                        .addOption('top', '顶部')
-                        .addOption('bottom', '底部')
+                        .addOption('top', t('顶部'))
+                        .addOption('bottom', t('底部'))
                         .setValue(this.config.insertAfter.createIfNotFoundLocation)
                         .onChange(value => {
                             this.config.insertAfter.createIfNotFoundLocation = value as 'top' | 'bottom';
@@ -259,7 +260,7 @@ export class CaptureToConfigModal extends Modal {
         // New line capture settings
         if (this.config.captureToActiveFile) {
             new Setting(container)
-                .setName('新行插入')
+                .setName(t('新行插入'))
                 .addToggle(toggle => toggle
                     .setValue(this.config.newLineCapture.enabled)
                     .onChange(value => {
@@ -270,11 +271,11 @@ export class CaptureToConfigModal extends Modal {
 
             if (this.config.newLineCapture.enabled) {
                 new Setting(container)
-                    .setName('新行方向')
-                    .setDesc('在光标上方还是下方添加新行')
+                    .setName(t('新行方向'))
+                    .setDesc(t('在光标上方还是下方添加新行'))
                     .addDropdown(dropdown => dropdown
-                        .addOption('above', '上方')
-                        .addOption('below', '下方')
+                        .addOption('above', t('上方'))
+                        .addOption('below', t('下方'))
                         .setValue(this.config.newLineCapture.direction)
                         .onChange(value => {
                             this.config.newLineCapture.direction = value as 'above' | 'below';
@@ -286,8 +287,8 @@ export class CaptureToConfigModal extends Modal {
     private addLinkingSettings(container: HTMLElement) {
         // Append link
         new Setting(container)
-            .setName('附加链接')
-            .setDesc('在当前文件中附加到捕获文件的链接')
+            .setName(t('附加链接'))
+            .setDesc(t('在当前文件中附加到捕获文件的链接'))
             .addToggle(toggle => toggle
                 .setValue(this.config.appendLink)
                 .onChange(value => {
@@ -298,8 +299,8 @@ export class CaptureToConfigModal extends Modal {
     private addContentSettings(container: HTMLElement) {
         // Task
         new Setting(container)
-            .setName('任务')
-            .setDesc('将内容格式化为任务')
+            .setName(t('任务'))
+            .setDesc(t('将内容格式化为任务'))
             .addToggle(toggle => toggle
                 .setValue(this.config.task)
                 .onChange(value => {
@@ -308,7 +309,7 @@ export class CaptureToConfigModal extends Modal {
 
         // Format enabled
         const formatEnabledSetting = new Setting(container)
-            .setName('启用格式')
+            .setName(t('启用格式'))
             .addToggle(toggle => toggle
                 .setValue(this.config.format.enabled)
                 .onChange(value => {
@@ -317,8 +318,8 @@ export class CaptureToConfigModal extends Modal {
         
         // 自动添加创建日期
         const createdDateSetting = new Setting(container)
-            .setName('自动添加创建日期')
-            .setDesc('自动为捕获的内容添加创建日期')
+            .setName(t('自动添加创建日期'))
+            .setDesc(t('自动为捕获的内容添加创建日期'))
             .addToggle(toggle => toggle
                 .setValue(this.config.autoAddCreatedDate)
                 .onChange(value => {
@@ -327,8 +328,8 @@ export class CaptureToConfigModal extends Modal {
         
         // 自动添加截止日期
         const dueDateSetting = new Setting(container)
-            .setName('自动添加截止日期')
-            .setDesc('自动为捕获的内容添加截止日期')
+            .setName(t('自动添加截止日期'))
+            .setDesc(t('自动为捕获的内容添加截止日期'))
             .addToggle(toggle => toggle
                 .setValue(this.config.autoAddDueDate)
                 .onChange(value => {
@@ -340,14 +341,14 @@ export class CaptureToConfigModal extends Modal {
         // 截止日期选项
         if (this.config.autoAddDueDate) {
             new Setting(container)
-                .setName('截止日期计算方式')
-                .setDesc('选择自动添加截止日期的计算方式')
+                .setName(t('截止日期计算方式'))
+                .setDesc(t('选择自动添加截止日期的计算方式'))
                 .addDropdown(dropdown => {
-                    dropdown.addOption("today", "当天");
-                    dropdown.addOption("custom", "自定义天数");
-                    dropdown.addOption("weekend", "本周末");
-                    dropdown.addOption("monthEnd", "本月底");
-                    dropdown.addOption("yearEnd", "本年底");
+                    dropdown.addOption("today", t("当天"));
+                    dropdown.addOption("custom", t("自定义天数"));
+                    dropdown.addOption("weekend", t("本周末"));
+                    dropdown.addOption("monthEnd", t("本月底"));
+                    dropdown.addOption("yearEnd", t("本年底"));
                     dropdown.setValue(this.config.dueDateOption)
                         .onChange(value => {
                             this.config.dueDateOption = value as "today" | "custom" | "weekend" | "monthEnd" | "yearEnd";
@@ -359,10 +360,10 @@ export class CaptureToConfigModal extends Modal {
             // 自定义天数输入框，只有当选择自定义天数时才显示
             if (this.config.dueDateOption === "custom") {
                 new Setting(container)
-                    .setName('自定义天数')
-                    .setDesc('设置自定义截止日期的天数')
+                    .setName(t('自定义天数'))
+                    .setDesc(t('设置自定义截止日期的天数'))
                     .addText(text => text
-                        .setPlaceholder("输入天数")
+                        .setPlaceholder(t("输入天数"))
                         .setValue(this.config.customDueDays.toString())
                         .onChange((value) => {
                             const days = parseInt(value);
@@ -375,8 +376,8 @@ export class CaptureToConfigModal extends Modal {
         
         // Format
         new Setting(container)
-            .setName('捕获格式')
-            .setDesc('内容的格式，支持 {{VALUE}} 等变量');
+            .setName(t('捕获格式'))
+            .setDesc(t('内容的格式，支持 {{VALUE}} 等变量'));
         
         // 预览区域
         const previewSection = container.createEl('div', {
@@ -391,7 +392,7 @@ export class CaptureToConfigModal extends Modal {
         previewHeader.style.fontSize = '14px';
         previewHeader.style.fontWeight = 'bold';
         previewHeader.style.marginBottom = '8px';
-        previewHeader.textContent = '预览效果：';
+        previewHeader.textContent = t('预览效果：');
         
         const previewEl = previewSection.createEl('div', {
             cls: 'preview-content'
@@ -422,7 +423,7 @@ export class CaptureToConfigModal extends Modal {
         }
         
         const textArea = formatSetting.createEl('textarea', {
-            placeholder: '输入捕获格式，例如：{{VALUE}}'
+            placeholder: t('输入捕获格式，例如：{{VALUE}}')
         });
         
         // 显式设置值，确保默认内容显示出来
@@ -451,28 +452,28 @@ export class CaptureToConfigModal extends Modal {
 
     private renderVariableReference(container: HTMLElement, textArea: HTMLTextAreaElement) {
         const details = container.createEl('details');
-        details.createEl('summary', { text: '📖 可用变量' });
+        details.createEl('summary', { text: t('📖 可用变量') });
         details.style.marginBottom = '8px';
         details.style.cursor = 'pointer';
 
         const variables = [
-            { var: '{{VALUE}}', desc: '选中的文本或手动输入的内容', example: '写周报' },
-            { var: '{{TITLE}}', desc: '目标文件名', example: '2026-06-15' },
-            { var: '{{DATE}}', desc: '默认 YYYY-MM-DD', example: '2026-06-15' },
-            { var: '{{DATE:MM-DD}}', desc: '月-日', example: '06-15' },
-            { var: '{{DATE:YYYY年MM月DD日}}', desc: '年月日', example: '2026年06月15日' },
-            { var: '{{DATE:YYYY-MM-DD HH:mm}}', desc: '日期+时间', example: '2026-06-15 14:30' },
-            { var: '{{DATE:dddd}}', desc: '星期', example: '星期一' },
-            { var: '{{DATE:Q}}', desc: '季度', example: '2' },
-            { var: '{{DATE:WW}}', desc: 'ISO周数', example: '25' },
+            { var: '{{VALUE}}', desc: t('选中的文本或手动输入的内容'), example: t('写周报') },
+            { var: '{{TITLE}}', desc: t('目标文件名'), example: '2026-06-15' },
+            { var: '{{DATE}}', desc: t('默认 YYYY-MM-DD'), example: '2026-06-15' },
+            { var: '{{DATE:MM-DD}}', desc: t('月-日'), example: '06-15' },
+            { var: '{{DATE:YYYY年MM月DD日}}', desc: t('年月日'), example: t('2026年06月15日') },
+            { var: '{{DATE:YYYY-MM-DD HH:mm}}', desc: t('日期+时间'), example: '2026-06-15 14:30' },
+            { var: '{{DATE:dddd}}', desc: t('星期'), example: t('星期一') },
+            { var: '{{DATE:Q}}', desc: t('季度'), example: '2' },
+            { var: '{{DATE:WW}}', desc: t('ISO周数'), example: '25' },
         ];
 
         for (const v of variables) {
             const row = details.createEl('div', { cls: 'variable-ref-row' });
             const codeEl = row.createEl('code', { text: v.var });
             row.createSpan({ text: `  ${v.desc}  ` });
-            const exampleEl = row.createSpan({ text: `(例: ${v.example})`, cls: 'variable-ref-example' });
-            const btn = row.createEl('button', { text: '插入', cls: 'variable-insert-btn' });
+            const exampleEl = row.createSpan({ text: `(${t('例')}: ${v.example})`, cls: 'variable-ref-example' });
+            const btn = row.createEl('button', { text: t('插入'), cls: 'variable-insert-btn' });
             btn.addEventListener('click', () => {
                 const start = textArea.selectionStart;
                 const end = textArea.selectionEnd;
@@ -493,7 +494,7 @@ export class CaptureToConfigModal extends Modal {
     private updatePreview(textArea: HTMLTextAreaElement, previewEl: HTMLElement) {
         const format = textArea.value || "{{VALUE}}\n";
         const previewText = format
-            .replace(/\{\{TASK_TEXT\}\}/g, "示例任务内容")
+            .replace(/\{\{TASK_TEXT\}\}/g, t("示例任务内容"))
             .replace(/\{\{DATE\}\}/g, new Date().toLocaleString());
         
         previewEl.textContent = previewText;
@@ -503,8 +504,8 @@ export class CaptureToConfigModal extends Modal {
         // Open file
         if (!this.config.captureToActiveFile) {
             new Setting(container)
-                .setName('打开文件')
-                .setDesc('捕获后打开文件')
+                .setName(t('打开文件'))
+                .setDesc(t('捕获后打开文件'))
                 .addToggle(toggle => toggle
                     .setValue(this.config.openFile)
                     .onChange(value => {
@@ -516,44 +517,44 @@ export class CaptureToConfigModal extends Modal {
             if (this.config.openFile) {
                 // File opening settings
                 new Setting(container)
-                    .setName('文件打开位置')
+                    .setName(t('文件打开位置'))
                     .addDropdown(dropdown => dropdown
-                        .addOption('reuse', '重用当前标签')
-                        .addOption('tab', '新标签')
-                        .addOption('split', '拆分')
-                        .addOption('window', '新窗口')
-                        .addOption('left-sidebar', '左侧边栏')
-                        .addOption('right-sidebar', '右侧边栏')
+                        .addOption('reuse', t('重用当前标签'))
+                        .addOption('tab', t('新标签'))
+                        .addOption('split', t('拆分'))
+                        .addOption('window', t('新窗口'))
+                        .addOption('left-sidebar', t('左侧边栏'))
+                        .addOption('right-sidebar', t('右侧边栏'))
                         .setValue(this.config.fileOpening.location)
                         .onChange(value => {
                             this.config.fileOpening.location = value as any;
                         }));
 
                 new Setting(container)
-                    .setName('拆分方向')
+                    .setName(t('拆分方向'))
                     .addDropdown(dropdown => dropdown
-                        .addOption('vertical', '垂直')
-                        .addOption('horizontal', '水平')
+                        .addOption('vertical', t('垂直'))
+                        .addOption('horizontal', t('水平'))
                         .setValue(this.config.fileOpening.direction)
                         .onChange(value => {
                             this.config.fileOpening.direction = value as 'vertical' | 'horizontal';
                         }));
 
                 new Setting(container)
-                    .setName('打开模式')
+                    .setName(t('打开模式'))
                     .addDropdown(dropdown => dropdown
-                        .addOption('preview', '预览')
-                        .addOption('source', '源码')
-                        .addOption('live', '实时')
-                        .addOption('live-preview', '实时预览')
-                        .addOption('default', '默认')
+                        .addOption('preview', t('预览'))
+                        .addOption('source', t('源码'))
+                        .addOption('live', t('实时'))
+                        .addOption('live-preview', t('实时预览'))
+                        .addOption('default', t('默认'))
                         .setValue(this.config.fileOpening.mode)
                         .onChange(value => {
                             this.config.fileOpening.mode = value as any;
                         }));
 
                 new Setting(container)
-                    .setName('获取焦点')
+                    .setName(t('获取焦点'))
                     .addToggle(toggle => toggle
                         .setValue(this.config.fileOpening.focus)
                         .onChange(value => {
@@ -568,12 +569,12 @@ export class CaptureToConfigModal extends Modal {
     private addInputMethodSettings(container: HTMLElement) {
         // Input Method
         new Setting(container)
-            .setName('输入方式')
-            .setDesc('选择触发此配置时的输入方式')
+            .setName(t('输入方式'))
+            .setDesc(t('选择触发此配置时的输入方式'))
             .addDropdown(dropdown => {
-                dropdown.addOption('single-line', '单行输入')
-                    .addOption('multi-line', '多行输入')
-                    .addOption('none', '不输入')
+                dropdown.addOption('single-line', t('单行输入'))
+                    .addOption('multi-line', t('多行输入'))
+                    .addOption('none', t('不输入'))
                     .setValue(this.config.inputMethod || 'single-line')
                     .onChange(value => {
                         this.config.inputMethod = value as "single-line" | "multi-line" | "none";

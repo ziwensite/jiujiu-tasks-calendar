@@ -1,4 +1,5 @@
 import { Editor, MarkdownView, Notice } from 'obsidian';
+import { t } from '../i18n';
 import type MyPlugin from '../main';
 import { TaskEditModal } from '../modals/TaskEditModal';
 import type { Task } from '../types/task';

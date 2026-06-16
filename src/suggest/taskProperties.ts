@@ -1,4 +1,5 @@
 import { addDays, getWeekend, getMonthEnd, getNextMonth, getYearEnd, formatLocalDate } from './dateCalculator';
+import { t } from '../i18n';
 
 // ===== 日期 =====
 export const DATE_OPTIONS = [
@@ -83,18 +84,18 @@ export function isPriorityEmoji(emoji: string): boolean {
 }
 
 const PROPERTY_EMOJI_LABELS: Record<string, string> = {
-    '📅': '截止日期',
-    '⏳': '计划日期',
-    '🛫': '开始日期',
-    '➕': '创建日期',
-    '🔁': '重复规则',
+    '📅': t('截止日期'),
+    '⏳': t('计划日期'),
+    '🛫': t('开始日期'),
+    '➕': t('创建日期'),
+    '🔁': t('重复规则'),
     '⏬️': '最低',
     '🔽': '低',
     '🔼': '中',
     '⏫': '高',
     '🔺': '最高',
-    '✅': '完成日期',
-    '❌': '取消日期',
+    '✅': t('完成日期'),
+    '❌': t('取消日期'),
 };
 
 export interface SuggesterItem {

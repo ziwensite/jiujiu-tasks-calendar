@@ -1,4 +1,5 @@
 import { App, Modal, Notice } from 'obsidian';
+import { t } from '../i18n';
 import { Task } from '../services/taskService';
 import { generateTaskDateMarkers } from '../utils/taskUtils';
 import { InputSuggest } from './PromptModal';
@@ -59,7 +60,7 @@ export class TaskEditModal extends Modal {
 
     onOpen() {
         const { contentEl } = this;
-        this.titleEl.textContent = '编辑任务';
+        this.titleEl.textContent = t('编辑任务');
 
         contentEl.empty();
         contentEl.style.padding = '20px';
@@ -71,7 +72,7 @@ export class TaskEditModal extends Modal {
         contentContainer.style.marginBottom = '1rem';
         
         this.contentTextArea = contentContainer.createEl('textarea');
-        this.contentTextArea.placeholder = '任务内容';
+        this.contentTextArea.placeholder = t('任务内容');
         this.contentTextArea.value = this.task.text;
         this.contentTextArea.style.width = '100%';
         this.contentTextArea.style.height = '50px';
@@ -95,7 +96,7 @@ export class TaskEditModal extends Modal {
 
         // Status label
         const statusLabel = statusContainer.createEl('span');
-        statusLabel.textContent = '状态';
+        statusLabel.textContent = t('状态');
         statusLabel.style.width = '40px';
         statusLabel.style.whiteSpace = 'nowrap';
 
@@ -107,10 +108,10 @@ export class TaskEditModal extends Modal {
         this.statusSelect.style.padding = '4px 4px';
 
         const statusOptions = [
-            { value: ' ', label: '待办 [ ]' },
-            { value: 'x', label: '完成 [x]' },
-            { value: '/', label: '进行中 [/]' },
-            { value: '-', label: '取消 [-]' },
+            { value: ' ', label: t('待办 [ ]') },
+            { value: 'x', label: t('完成 [x]') },
+            { value: '/', label: t('进行中 [/]') },
+            { value: '-', label: t('取消 [-]') },
         ];
 
         // 初始化状态选择
@@ -163,7 +164,7 @@ export class TaskEditModal extends Modal {
 
         // Priority label
         const priorityLabel = priorityContainer.createEl('span');
-        priorityLabel.textContent = '优先';
+        priorityLabel.textContent = t('优先');
         priorityLabel.style.width = '40px';
         priorityLabel.style.whiteSpace = 'nowrap';
 
@@ -175,7 +176,7 @@ export class TaskEditModal extends Modal {
         this.prioritySelect.style.padding = '4px 4px';
 
         const priorityOptions = [
-            { value: '', label: '无' },
+            { value: '', label: t('无') },
             ...PRIORITY_OPTIONS.map(o => ({ value: o.value, label: getPriorityDisplay(o) })),
         ];
 
@@ -200,7 +201,7 @@ export class TaskEditModal extends Modal {
 
         // Recurrence label
         const recurrenceLabel = recurrenceContainer.createEl('span');
-        recurrenceLabel.textContent = '重复';
+        recurrenceLabel.textContent = t('重复');
         recurrenceLabel.style.width = '40px';
         recurrenceLabel.style.whiteSpace = 'nowrap';
         
@@ -211,7 +212,7 @@ export class TaskEditModal extends Modal {
         this.recurrenceInput.style.flex = '1';
         this.recurrenceInput.style.padding = '4px 4px';
         this.recurrenceInput.style.minWidth = '120px';
-        this.recurrenceInput.placeholder = 'Try "every day when done"';
+        this.recurrenceInput.placeholder = t('Try "every day when done"');
 
         // Recurrence emoji
         const recurrenceEmoji = recurrenceContainer.createEl('span');
@@ -314,7 +315,7 @@ export class TaskEditModal extends Modal {
         // End date and time
         this.createDateTimePicker(
             contentEl,
-            '截止',
+            t('截止'),
             '📅',
             (date) => {
                 // 检查截止日期是否小于开始日期
@@ -323,7 +324,7 @@ export class TaskEditModal extends Modal {
                     const endDate = new Date(date);
                     if (endDate < startDate) {
                         this.endDateInput.value = this.startDateInput.value;
-                        new Notice('截止日期不能小于开始日期', 3000);
+                        new Notice(t('截止日期不能小于开始日期'), 3000);
                     }
                 }
             },
@@ -334,7 +335,7 @@ export class TaskEditModal extends Modal {
         // Planned date
         this.createDateTimePicker(
             contentEl,
-            '计划',
+            t('计划'),
             '⏳',
             () => {},
             this.task.plannedDate,
@@ -345,7 +346,7 @@ export class TaskEditModal extends Modal {
         // Start date and time
         this.createDateTimePicker(
             contentEl,
-            '开始',
+            t('开始'),
             '🛫',
             (date) => {
                 // 检查开始日期是否大于截止日期
@@ -354,7 +355,7 @@ export class TaskEditModal extends Modal {
                     const endDate = new Date(this.endDateInput.value);
                     if (startDate > endDate) {
                         this.startDateInput.value = this.endDateInput.value;
-                        new Notice('开始日期不能大于截止日期', 3000);
+                        new Notice(t('开始日期不能大于截止日期'), 3000);
                     }
                 }
                 
@@ -376,7 +377,7 @@ export class TaskEditModal extends Modal {
         // Created date
         this.createDateTimePicker(
             contentEl,
-            '创建',
+            t('创建'),
             '➕',
             () => {},
             this.task.createdAt,
@@ -387,7 +388,7 @@ export class TaskEditModal extends Modal {
         // Completed date
         this.createDateTimePicker(
             contentEl,
-            '完成',
+            t('完成'),
             '✅',
             (date) => {
                 // 当设置完成日期时，自动切换到完成状态
@@ -403,7 +404,7 @@ export class TaskEditModal extends Modal {
         // Cancelled date
         this.createDateTimePicker(
             contentEl,
-            '取消',
+            t('取消'),
             '❌',
             (date) => {
                 // 当设置取消日期时，自动切换到取消状态
@@ -424,12 +425,12 @@ export class TaskEditModal extends Modal {
         buttonBar.style.marginTop = '1rem';
 
         const cancelBtn = buttonBar.createEl('button', {
-            text: '取消',
+            text: t('取消'),
             cls: 'task-edit-modal-btn task-edit-modal-btn-cancel'
         });
 
         const saveBtn = buttonBar.createEl('button', {
-            text: '保存',
+            text: t('保存'),
             cls: 'task-edit-modal-btn task-edit-modal-btn-save'
         });
 
@@ -656,14 +657,14 @@ export class TaskEditModal extends Modal {
 
     private validateRecurrence(input: string): { isValid: boolean; parsedRecurrence: string } {
         if (!input) {
-            return { isValid: true, parsedRecurrence: '无重复' };
+            return { isValid: true, parsedRecurrence: t('无重复') };
         }
 
         // 参考 obsidian-tasks 项目的验证逻辑
         try {
             const match = input.match(/^([a-zA-Z0-9, !]+?)( when done)?$/i);
             if (match == null) {
-                return { isValid: false, parsedRecurrence: '无效的重复规则' };
+                return { isValid: false, parsedRecurrence: t('无效的重复规则') };
             }
 
             const isolatedRuleText = match[1]?.trim() || '';
@@ -688,7 +689,7 @@ export class TaskEditModal extends Modal {
                 parsedRecurrence: isValid ? `重复: ${input}` : '无效的重复规则'
             };
         } catch (e) {
-            return { isValid: false, parsedRecurrence: '无效的重复规则' };
+            return { isValid: false, parsedRecurrence: t('无效的重复规则') };
         }
     }
 
@@ -696,7 +697,7 @@ export class TaskEditModal extends Modal {
         const errors: string[] = [];
 
         if (!this.contentTextArea.value.trim()) {
-            errors.push('任务内容不能为空');
+            errors.push(t('任务内容不能为空'));
         }
 
         // 验证日期
@@ -704,7 +705,7 @@ export class TaskEditModal extends Modal {
             const startDate = new Date(this.startDateInput.value);
             const endDate = new Date(this.endDateInput.value);
             if (startDate > endDate) {
-                errors.push('开始日期不能大于截止日期');
+                errors.push(t('开始日期不能大于截止日期'));
             }
         }
 

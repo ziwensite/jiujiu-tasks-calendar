@@ -7,6 +7,7 @@ import { noteExists } from '../services/noteService';
 import { extractTasks, filterTasks, updateTaskInNote, Task, parseCustomFilter, evaluateExpression } from '../services/taskService';
 import { CalendarRenderer, TaskListRenderer, IndicatorRenderer, EventHandler } from './calendar';
 import { CommandSelectModal } from '../modals/CommandSelectModal';
+import { t } from '../i18n';
 import { updateDaySelection, updateIndicators, updateYearViewMonthIndicators, updateAllDayIndicators, updateWeekIndicators } from './CalendarView/indicators';
 import { installNavigationListeners, installCellListeners } from './CalendarView/eventListeners';
 import { adjustTaskListHeight, toggleCalendarView } from './CalendarView/layout';
@@ -384,7 +385,7 @@ export class CalendarView extends ItemView {
         const flashButton = actionButtons.createEl("button", {
             text: " 💡 ",
             cls: "task-action-button flash-button",
-            title: "新建闪念"
+            title: t('新建闪念')
         });
         flashButton.addEventListener("click", async () => {
             // 获取闪念配置
@@ -401,7 +402,7 @@ export class CalendarView extends ItemView {
         const recordButton = actionButtons.createEl("button", {
             text: " 📝 ",
             cls: "task-action-button record-button",
-            title: "新建记录"
+            title: t('新建记录')
         });
         recordButton.addEventListener("click", async () => {
             // 获取记录配置
@@ -418,7 +419,7 @@ export class CalendarView extends ItemView {
         const taskButton = actionButtons.createEl("button", {
             text: " ⏰ ",
             cls: "task-action-button task-button",
-            title: "新建任务"
+            title: t('新建任务')
         });
         taskButton.addEventListener("click", async () => {
             // 获取任务配置
@@ -434,7 +435,7 @@ export class CalendarView extends ItemView {
         // 排序箭头 - 放到任务按钮的后面
         const sortArrow = actionButtons.createEl("div", {
             cls: `task-sort-arrow ${this.taskSortDirection}`,
-            title: "点击切换排序方向"
+            title: t('点击切换排序方向')
         });
         sortArrow.textContent = this.taskSortDirection === 'desc' ? '↑' : '↓';
         sortArrow.style.cursor = 'pointer';
@@ -694,7 +695,7 @@ export class CalendarView extends ItemView {
                 if (this.selectedDate) {
                     const date = this.selectedDate;
                     const day = date.getDate();
-                    const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+                    const weekdays = [t('周日'), t('周一'), t('周二'), t('周三'), t('周四'), t('周五'), t('周六')];
                     const weekday = weekdays[date.getDay()];
                     
                     // 获取阴历信息
@@ -740,7 +741,7 @@ export class CalendarView extends ItemView {
                         lunarSpan.className = 'lunar-part';
                     }
                 } else {
-                    container.textContent = '未选择日期';
+                    container.textContent = t('未选择日期');
                 }
                 break;
             case 'week':
@@ -751,7 +752,7 @@ export class CalendarView extends ItemView {
                     const weekNumber = weekInfo.week.toString().padStart(2, '0');
                     container.textContent = `${year}年${weekNumber}周`;
                 } else {
-                    container.textContent = '未选择周';
+                    container.textContent = t('未选择周');
                 }
                 break;
             case 'month':
@@ -764,7 +765,7 @@ export class CalendarView extends ItemView {
                     const quarterYear = this.currentDate.getFullYear();
                     container.textContent = `${quarterYear}年${this.selectedQuarter}季度`;
                 } else {
-                    container.textContent = '未选择季度';
+                    container.textContent = t('未选择季度');
                 }
                 break;
             case 'year':
@@ -772,7 +773,7 @@ export class CalendarView extends ItemView {
                 container.textContent = `${fullYear}年`;
                 break;
             default:
-                container.textContent = '未选择';
+                container.textContent = t('未选择');
                 break;
         }
     }

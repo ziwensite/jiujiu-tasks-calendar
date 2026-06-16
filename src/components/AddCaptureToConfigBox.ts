@@ -1,4 +1,5 @@
 import { App, Notice } from "obsidian";
+import { t } from "../i18n";
 
 export class AddCaptureToConfigBox {
     private containerEl: HTMLElement;
@@ -29,7 +30,7 @@ export class AddCaptureToConfigBox {
         // 名称输入
         const nameInput = addConfigBox.createEl("input", {
             type: "text",
-            placeholder: "配置名称"
+            placeholder: t("配置名称")
         });
         nameInput.style.flex = "1";
         nameInput.style.padding = "8px";
@@ -39,7 +40,7 @@ export class AddCaptureToConfigBox {
         // 描述输入
         const descriptionInput = addConfigBox.createEl("input", {
             type: "text",
-            placeholder: "描述"
+            placeholder: t("描述")
         });
         descriptionInput.style.flex = "1";
         descriptionInput.style.padding = "8px";
@@ -48,7 +49,7 @@ export class AddCaptureToConfigBox {
 
         // 添加按钮
         const addButton = addConfigBox.createEl("button", {
-            text: "添加配置",
+            text: t("添加配置"),
             cls: "mod-cta"
         });
         addButton.style.padding = "8px 16px";
@@ -70,7 +71,7 @@ export class AddCaptureToConfigBox {
 
     private addConfig(name: string, description: string): void {
         if (!name || name.trim() === "") {
-            new Notice("配置名称不能为空");
+            new Notice(t("配置名称不能为空"));
             return;
         }
 

@@ -6,6 +6,7 @@ import { templaterParseTemplate } from "../utilityObsidian";
 import type MyPlugin from "../main";
 import { PromptModal } from "../modals/PromptModal";
 import { formatDate } from "../utils/dateUtils";
+import { t } from '../i18n';
 
 function localDateStr(date: Date): string {
     const y = date.getFullYear();
@@ -310,8 +311,8 @@ export class CaptureChoiceFormatter {
 		return new Promise<string>((resolve) => {
 			const modal = new PromptModal({
 				app: this.app,
-				title: this.choice?.name || "输入内容",
-				placeholder: "输入内容",
+				title: this.choice?.name || t('输入内容'),
+				placeholder: t('输入内容'),
 				inputMethod: this.inputMethod as 'single-line' | 'multi-line',
 				onSubmit: (value) => {
 					resolve(value);

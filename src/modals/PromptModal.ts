@@ -1,4 +1,5 @@
 import { Modal, App, Notice } from 'obsidian';
+import { t } from '../i18n';
 import { TagManager } from '../services/tagManager';
 
 interface PromptModalOptions {
@@ -439,7 +440,7 @@ inputEl.addEventListener('input', this.handleInput);
             suggestions.push({
                 label: tagName,
                 value: tagName,
-                description: `${tagInfo.count} 次使用`,
+                description: `${tagInfo.count}${t('次使用')}`,
                 type: 'tag'
             });
         });
@@ -533,7 +534,7 @@ export class PromptModal extends Modal {
             type: 'checkbox'
         });
 
-        multiLineToggle.createSpan({ text: '多行输入' });
+        multiLineToggle.createSpan({ text: t('多行输入') });
         toggleCheckbox.checked = this.inputMethod === 'multi-line';
 
         toggleCheckbox.addEventListener('change', () => {
@@ -551,7 +552,7 @@ export class PromptModal extends Modal {
                 
                 // 创建新输入框
                 if (this.inputMethod === 'single-line') {
-                    const placeholder = this.placeholder ? `${this.placeholder} (回车确定)` : '回车确定';
+const placeholder = this.placeholder ? `${this.placeholder} (${t('回车确定')})` : t('回车确定');
                     this.inputEl = content.createEl('input', {
                         type: 'text',
                         placeholder: placeholder,
@@ -559,7 +560,7 @@ export class PromptModal extends Modal {
                         cls: 'prompt-modal-input'
                     });
                 } else {
-                    const placeholder = this.placeholder ? `${this.placeholder} (ctrl+回车 确定)` : 'ctrl+回车 确定';
+const placeholder = this.placeholder ? `${this.placeholder} (${t('ctrl+回车 确定')})` : t('ctrl+回车 确定');
                     this.inputEl = content.createEl('textarea', {
                         placeholder: placeholder,
                         cls: 'prompt-modal-textarea'
@@ -579,12 +580,12 @@ export class PromptModal extends Modal {
         });
 
         const cancelBtn = footer.createEl('button', {
-            text: '取消',
+            text: t('取消'),
             cls: 'prompt-modal-btn prompt-modal-btn-cancel'
         });
 
         const submitBtn = footer.createEl('button', {
-            text: '确定',
+            text: t('确定'),
             cls: 'prompt-modal-btn prompt-modal-btn-submit'
         });
 
@@ -632,7 +633,7 @@ export class PromptModal extends Modal {
         
         const value = this.inputEl.value.trim();
         if (!value) {
-            new Notice('请输入内容', 2000);
+            new Notice(t('请输入内容'), 2000);
             return;
         }
 

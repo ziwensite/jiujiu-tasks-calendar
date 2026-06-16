@@ -1,6 +1,7 @@
 import { MyPlugin } from '../../../main';
 import { getLunarDate, getHolidayStatus, formatDate, getWeekInfo, calculateCellDate, calculateWeekStartDate } from '../../../utils/dateUtils';
 import { noteExists } from '../../../services/noteService';
+import { t } from '../../../i18n';
 
 export class CalendarRenderer {
     private plugin: MyPlugin;
@@ -109,13 +110,13 @@ export class CalendarRenderer {
         
         // 中间：年按钮
         singleRow.createEl("div", { 
-            text: "年",
+            text: t('年'),
             cls: "calendar-header-label-year today-unselected"
         });
         
         // 右侧：今按钮（显示"今"）
         singleRow.createEl("div", { 
-            text: "今",
+            text: t('今'),
             cls: "calendar-header-label-today today-unselected"
         });
         
@@ -149,7 +150,7 @@ export class CalendarRenderer {
         
         const yearContent = yearNavBody.createEl("div", {cls: "calendar-header-content"});
         yearContent.createEl("span", { 
-            text: `${currentDate.getFullYear()}年`,
+            text: `${currentDate.getFullYear()}${t('年')}`,
         });
         
         yearNavBody.createEl("span", {text: "›", cls: "nav-btn next-btn"});
@@ -167,7 +168,7 @@ export class CalendarRenderer {
         
         const monthContent = monthNavBody.createEl("div", {cls: "calendar-header-content"});
         monthContent.createEl("span", { 
-            text: `${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月`,
+            text: `${currentDate.getFullYear()}${t('年')}${currentDate.getMonth() + 1}${t('月')}`,
         });
         
         monthNavBody.createEl("span", {text: "›", cls: "nav-btn next-btn"});
@@ -180,10 +181,10 @@ export class CalendarRenderer {
         const thead = table.createEl("thead");
         const headerRow = thead.createEl("tr");
         // 周数标题
-        headerRow.createEl("th", {text: "周", cls: "week-number-header"});
+        headerRow.createEl("th", {text: t('周'), cls: "week-number-header"});
         
         // 星期标题，默认周一为第一天
-        const weekdays = ["一", "二", "三", "四", "五", "六", "日"];
+        const weekdays = [t('一'), t('二'), t('三'), t('四'), t('五'), t('六'), t('日')];
         for (const day of weekdays) {
             headerRow.createEl("th", {text: day});
         }
@@ -498,7 +499,7 @@ export class CalendarRenderer {
         if (yearContent) {
             const yearSpan = yearContent.querySelector('span');
             if (yearSpan) {
-                yearSpan.textContent = `${currentDate.getFullYear()}年`;
+                yearSpan.textContent = `${currentDate.getFullYear()}${t('年')}`;
             }
         }
 
@@ -506,7 +507,7 @@ export class CalendarRenderer {
         if (monthContent) {
             const monthSpan = monthContent.querySelector('span');
             if (monthSpan) {
-                monthSpan.textContent = `${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月`;
+                monthSpan.textContent = `${currentDate.getFullYear()}${t('年')}${currentDate.getMonth() + 1}${t('月')}`;
             }
         }
 

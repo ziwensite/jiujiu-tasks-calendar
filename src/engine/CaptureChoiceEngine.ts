@@ -1,4 +1,5 @@
 import { Notice, type App, TFile } from "obsidian";
+import { t } from "../i18n";
 import type { IChoiceExecutor } from "../IChoiceExecutor";
 import { normalizeAppendLinkOptions, type AppendLinkOptions } from "../types/linkPlacement";
 import { getCaptureAction, type CaptureAction } from "./captureAction";
@@ -111,7 +112,7 @@ export class CaptureChoiceEngine {
 			if (isEditorInsertionAction && fileAlreadyExists) {
 				// Parse Templater syntax in the capture content
 				if (captureContent.includes('<%') && !getTemplaterPlugin(this.plugin.app)) {
-					new Notice('模板包含 <% tp %> 语法，请安装 Templater 插件以启用完整模板功能', 5000);
+					new Notice(t('模板包含 <% tp %> 语法，请安装 Templater 插件以启用完整模板功能'), 5000);
 				}
 				const content = await templaterParseTemplate(
 					this.plugin.app,
@@ -335,7 +336,7 @@ export class CaptureChoiceEngine {
 			fileContent
 		) {
 			if (fileContent.includes('<%') && !getTemplaterPlugin(this.plugin.app)) {
-				new Notice('模板文件包含 <% tp %> 语法，请安装 Templater 插件以启用完整模板功能', 5000);
+				new Notice(t('模板文件包含 <% tp %> 语法，请安装 Templater 插件以启用完整模板功能'), 5000);
 			}
 			await overwriteTemplaterOnce(this.plugin.app, file);
 		} else if (isTemplaterTriggerOnCreateEnabled(this.plugin.app)) {
