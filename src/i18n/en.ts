@@ -249,9 +249,9 @@ export const en: Dict = {
     '周五': 'Fri',
     '周六': 'Sat',
 
-    '年': 'Year',
-    '今': 'Today',
-    '月': 'Month',
+    '年': 'Y',
+    '今': 'D',
+    '月': 'M',
 
     '上一月': 'Previous month',
     '下一月': 'Next month',
