@@ -1,10 +1,13 @@
-import {App, Plugin, WorkspaceLeaf, Notice} from 'obsidian';
+import {App, Plugin, WorkspaceLeaf, Notice, MarkdownView} from 'obsidian';
 import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
 import {CalendarView} from "./views/CalendarView";
 import { CalendarViewController } from './core/CalendarViewController';
 import { CalendarDataManager } from './core/CalendarDataManager';
 import { TaskSuggester } from './suggest/TaskSuggester';
 import { registerTaskCommands } from './commands/taskCommands';
+import { TaskEditModal } from './modals/TaskEditModal';
+import { parseTaskFromLine, updateTaskInNote } from './services/taskService';
+import type { Task } from './services/taskService';
 import { loadEn } from './i18n';
 import { en } from './i18n/en';
 
@@ -80,6 +83,76 @@ async onload() {
             // 注册编辑器自动补全
             this.registerEditorSuggest(new TaskSuggester(this.app, this));
             registerTaskCommands(this);
+
+            this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
+                const target = evt.target as HTMLElement;
+
+                if (target.closest('.jiujiu-calendar-view')) return;
+
+                const checkbox = target.closest('input[type="checkbox"]');
+                if (!checkbox) return;
+
+                const taskItem = target.closest('li[data-line], .cm-line');
+                if (!taskItem) return;
+
+                if (!(this.settings.taskSettings?.taskClickEdit ?? true)) return;
+
+                evt.preventDefault();
+                evt.stopPropagation();
+
+                const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+                if (!activeView || !activeView.file) return;
+
+                const file = activeView.file;
+
+                if (taskItem.matches('li[data-line]')) {
+                    const lineNumber = parseInt(taskItem.getAttribute('data-line') || '0', 10);
+                    this.app.vault.read(file).then(content => {
+                        const lines = content.split('\n');
+                        const line = lines[lineNumber];
+                        if (!line) return;
+
+                        const task = parseTaskFromLine(line, file.path, lineNumber);
+                        if (!task) return;
+
+                        const modal = new TaskEditModal({
+                            app: this.app,
+                            task,
+                            onSubmit: async (updatedTask: Task) => {
+                                await updateTaskInNote(this.app, updatedTask, updatedTask.completed, this.settings);
+                                await this.calendarDataManager.refreshTasks();
+                                this.updateAllViews('tasks');
+                            }
+                        });
+                        modal.open();
+                    });
+                } else {
+                    const editor = activeView.editor;
+                    const cmView = (editor as any).cm as any;
+                    if (!cmView || typeof cmView.posAtDOM !== 'function') return;
+
+                    const docOffset = cmView.posAtDOM(checkbox, 0, 1);
+                    if (docOffset === undefined || docOffset === null) return;
+
+                    const editorPos = editor.offsetToPos(docOffset);
+                    const lineNumber = editorPos.line;
+                    const line = editor.getLine(lineNumber);
+
+                    const task = parseTaskFromLine(line, file.path, lineNumber);
+                    if (!task) return;
+
+                    const modal = new TaskEditModal({
+                        app: this.app,
+                        task,
+                        onSubmit: async (updatedTask: Task) => {
+                            await updateTaskInNote(this.app, updatedTask, updatedTask.completed, this.settings);
+                            await this.calendarDataManager.refreshTasks();
+                            this.updateAllViews('tasks');
+                        }
+                    });
+                    modal.open();
+                }
+            }, true);
 
             // 一次性注册捕获插入快捷键命令
             this.registerCaptureToHotkeys();

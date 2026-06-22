@@ -7,7 +7,7 @@ import type { IChoiceExecutor } from '../IChoiceExecutor';
 import { ChoiceType } from '../types/choices/choiceType';
 import type MyPlugin from '../main';
 
-export { extractTasks, clearTaskCache } from './taskExtractor';
+export { extractTasks, clearTaskCache, parseTaskFromLine } from './taskExtractor';
 export type { Task } from '../types/task';
 import type { Task } from '../types/task';
 

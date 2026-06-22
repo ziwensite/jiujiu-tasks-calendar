@@ -82,6 +82,7 @@ export interface TaskSettings {
         newTaskPosition: "above" | "below";
     };
     enableTaskPropertyHints: boolean;
+    taskClickEdit: boolean;
 }
 
 export interface TaskFilterSettings {

@@ -366,7 +366,7 @@ export class SampleSettingTab extends PluginSettingTab {
                     .onChange((value) => {
                         // 确保 recurrenceSettings 对象存在
                         if (!this.plugin.settings.taskSettings) {
-                            this.plugin.settings.taskSettings = { enableTaskPropertyHints: false, captureToSettings: { enabled: false, fleetingNoteConfigId: "", recordConfigId: "", taskConfigId: "", configs: [] }, recurrenceSettings: { newTaskPosition: "below" } };
+                                this.plugin.settings.taskSettings = { enableTaskPropertyHints: false, taskClickEdit: true, captureToSettings: { enabled: false, fleetingNoteConfigId: "", recordConfigId: "", taskConfigId: "", configs: [] }, recurrenceSettings: { newTaskPosition: "below" } };
                         }
                         if (!this.plugin.settings.taskSettings.recurrenceSettings) {
                             this.plugin.settings.taskSettings.recurrenceSettings = { newTaskPosition: "below" };
@@ -384,9 +384,23 @@ export class SampleSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.taskSettings?.enableTaskPropertyHints ?? false)
                 .onChange((value) => {
                     if (!this.plugin.settings.taskSettings) {
-                        this.plugin.settings.taskSettings = { enableTaskPropertyHints: false, captureToSettings: { enabled: false, fleetingNoteConfigId: "", recordConfigId: "", taskConfigId: "", configs: [] }, recurrenceSettings: { newTaskPosition: "below" } };
+                        this.plugin.settings.taskSettings = { enableTaskPropertyHints: false, taskClickEdit: true, captureToSettings: { enabled: false, fleetingNoteConfigId: "", recordConfigId: "", taskConfigId: "", configs: [] }, recurrenceSettings: { newTaskPosition: "below" } };
                     }
                     this.plugin.settings.taskSettings.enableTaskPropertyHints = value;
+                    this.scheduleSave();
+                }));
+
+        // 点击任务复选框编辑
+        new Setting(taskSection)
+            .setName(t("点击编辑任务"))
+            .setDesc(t("点击笔记中的任务复选框时，打开编辑窗口修改任务属性"))
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.taskSettings?.taskClickEdit ?? true)
+                .onChange((value) => {
+                    if (!this.plugin.settings.taskSettings) {
+                        this.plugin.settings.taskSettings = { enableTaskPropertyHints: false, taskClickEdit: true, captureToSettings: { enabled: false, fleetingNoteConfigId: "", recordConfigId: "", taskConfigId: "", configs: [] }, recurrenceSettings: { newTaskPosition: "below" } };
+                    }
+                    this.plugin.settings.taskSettings.taskClickEdit = value;
                     this.scheduleSave();
                 }));
     }

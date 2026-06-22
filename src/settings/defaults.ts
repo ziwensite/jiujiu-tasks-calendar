@@ -36,6 +36,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
     },
     taskSettings: {
         enableTaskPropertyHints: false,
+        taskClickEdit: true,
         captureToSettings: {
             enabled: true,
             fleetingNoteConfigId: "fleetingNote",
