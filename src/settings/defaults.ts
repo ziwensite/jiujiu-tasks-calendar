@@ -59,7 +59,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     },
                     format: {
                         enabled: true,
-                        format: "-   ==💡{{DATE:YYYY-MM-DD HH:mm}}==  {{VALUE}}  \n"
+                        format: "- ==💡{{DATE:YYYY-MM-DD HH:mm}}==  {{VALUE}}  \n"
                     },
                     prepend: false,
                     appendLink: false,
@@ -104,7 +104,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
                     },
                     format: {
                         enabled: true,
-                        format: "-   📝  {{VALUE}}  \n"
+                        format: "- 📝  {{VALUE}}  \n"
                     },
                     prepend: false,
                     appendLink: false,
