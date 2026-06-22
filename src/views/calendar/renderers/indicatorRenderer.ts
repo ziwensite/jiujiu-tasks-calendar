@@ -2,6 +2,7 @@ import { MyPlugin } from '../../../main';
 import { getLunarDate, formatDate, getWeekInfo } from '../../../utils/dateUtils';
 import { noteExists } from '../../../services/noteService';
 import { Task, filterTasks } from '../../../services/taskService';
+import { TFile } from 'obsidian';
 
 export class IndicatorRenderer {
     private plugin: MyPlugin;
@@ -344,13 +345,46 @@ export class IndicatorRenderer {
                 for (const task of allTasks) {
                     if (task.dueDate && task.dueDate >= weekStartDate && task.dueDate <= weekEndDate) {
                         if (task.status === "x" || task.status === "-") {
-                            // 已完成或已取消的任务
                             hasWeeklyCompletedTask = true;
                         } else {
-                            // 未完成的任务（待办或进行中）
                             hasWeeklyIncompleteTask = true;
                         }
                     }
+                }
+            }
+
+            // 检查周报文件中没有截止日期的本地任务
+            if (hasWeeklyNote) {
+                try {
+                    const weeklyFile = this.plugin.app.vault.getAbstractFileByPath(weeklyNotePath);
+                    if (weeklyFile && 'stat' in weeklyFile) {
+                        const content = await this.plugin.app.vault.read(weeklyFile as TFile);
+                        const taskRegex = /^\s*-\s*\[(.)\]\s*(.*)$/gm;
+                        let match;
+                        while ((match = taskRegex.exec(content)) !== null) {
+                            const status = match[1] || '';
+                            const taskText = match[2] || '';
+                            if (status.toLowerCase() !== 'x' && status.toLowerCase() !== '-') {
+                                const dueDateRegex = /(?:[@#]|due:\s?|📅\s?)(\d{4}-\d{2}-\d{2})/;
+                                const hasDueDate = dueDateRegex.test(taskText);
+                                if (!hasDueDate) {
+                                    hasWeeklyIncompleteTask = true;
+                                    break;
+                                } else {
+                                    const dueDateMatch = taskText.match(dueDateRegex);
+                                    if (dueDateMatch && dueDateMatch[1]) {
+                                        const dueDate = new Date(dueDateMatch[1]);
+                                        if (dueDate >= weekStartDate && dueDate <= weekEndDate) {
+                                            hasWeeklyIncompleteTask = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to check weekly note tasks:', error);
                 }
             }
             
@@ -392,6 +426,129 @@ export class IndicatorRenderer {
                     if (data.hasCompletedTask) {
                         indicators.createEl('div', {cls: 'indicator-dot check-dot'});
                     }
+                }
+            }
+        }
+    }
+
+    /**
+     * 更新年视图的月份和季度指示器
+     */
+    async updateYearViewIndicators(container: any) {
+        let allTasks: Task[] = [];
+        try {
+            allTasks = await this.plugin.calendarDataManager.getTasks();
+        } catch (error) {
+            console.error('Failed to extract tasks for year indicators:', error);
+        }
+
+        const yearViewContainer = container.querySelector('.year-view-container');
+        if (!yearViewContainer) return;
+
+        const quarterContainers = Array.from(yearViewContainer.querySelectorAll('.quarter-container')) as HTMLElement[];
+        for (const quarterContainer of quarterContainers) {
+            const quarterHeader = quarterContainer.querySelector('.month-header');
+            if (!quarterHeader) continue;
+
+            const quarterText = quarterHeader.textContent || '';
+            const quarterMatch = quarterText.match(/(\d+)季度/);
+            if (!quarterMatch || !quarterMatch[1]) continue;
+
+            const quarterIndex = parseInt(quarterMatch[1]) - 1;
+            if (isNaN(quarterIndex) || quarterIndex < 0 || quarterIndex > 3) continue;
+
+            const year = new Date().getFullYear();
+            const quarterStartMonth = quarterIndex * 3;
+            const quarterEndMonth = quarterIndex * 3 + 2;
+            const quarterStartDate = new Date(year, quarterStartMonth, 1);
+            const quarterEndDate = new Date(year, quarterEndMonth + 1, 0);
+            quarterEndDate.setHours(23, 59, 59, 999);
+
+            let hasQuarterlyNote = false;
+            let hasIncomplete = false;
+            let hasCompleted = false;
+
+            const quarterlySettings = this.plugin.settings.quarterlyNote;
+            const quarterlyFileName = formatDate(quarterStartDate, quarterlySettings.fileNameFormat);
+            const quarterlyNotePath = `${quarterlySettings.savePath}/${quarterlyFileName}.md`;
+            if (await noteExists(this.plugin.app, quarterlyNotePath)) {
+                hasQuarterlyNote = true;
+            }
+
+            for (const task of allTasks) {
+                if (task.dueDate && task.dueDate >= quarterStartDate && task.dueDate <= quarterEndDate) {
+                    if (task.status === "x" || task.status === "-") {
+                        hasCompleted = true;
+                    } else {
+                        hasIncomplete = true;
+                    }
+                }
+            }
+
+            const quarterIndicators = quarterContainer.querySelector('.month-indicators');
+            if (quarterIndicators) {
+                quarterIndicators.empty();
+                if (hasQuarterlyNote) {
+                    quarterIndicators.createEl('div', { cls: 'indicator-dot solid-dot' });
+                }
+                if (hasIncomplete) {
+                    quarterIndicators.createEl('div', { cls: 'indicator-dot hollow-dot' });
+                }
+                if (hasCompleted) {
+                    quarterIndicators.createEl('div', { cls: 'indicator-dot check-dot' });
+                }
+            }
+        }
+
+        const monthContainers = Array.from(yearViewContainer.querySelectorAll('.month-container:not(.quarter-container)')) as HTMLElement[];
+        for (const monthContainer of monthContainers) {
+            const monthHeader = monthContainer.querySelector('.month-header');
+            if (!monthHeader) continue;
+
+            const monthText = monthHeader.textContent || '';
+            const monthMatch = monthText.match(/(\d+)月/);
+            if (!monthMatch || !monthMatch[1]) continue;
+
+            const monthIndex = parseInt(monthMatch[1]) - 1;
+            if (isNaN(monthIndex) || monthIndex < 0 || monthIndex > 11) continue;
+
+            const year = new Date().getFullYear();
+            const monthStartDate = new Date(year, monthIndex, 1);
+            const monthEndDate = new Date(year, monthIndex + 1, 0);
+            monthEndDate.setHours(23, 59, 59, 999);
+
+            let hasMonthlyNote = false;
+            let hasIncomplete = false;
+            let hasCompleted = false;
+
+            const monthlySettings = this.plugin.settings.monthlyNote;
+            const monthlyFileName = formatDate(monthStartDate, monthlySettings.fileNameFormat);
+            const monthlyNotePath = `${monthlySettings.savePath}/${monthlyFileName}.md`;
+            if (await noteExists(this.plugin.app, monthlyNotePath)) {
+                hasMonthlyNote = true;
+            }
+
+            for (const task of allTasks) {
+                if (task.dueDate && task.dueDate >= monthStartDate && task.dueDate <= monthEndDate) {
+                    if (task.status === "x" || task.status === "-") {
+                        hasCompleted = true;
+                    } else {
+                        hasIncomplete = true;
+                    }
+                }
+            }
+
+            const monthIndicators = monthContainer.querySelector('.month-indicators');
+            if (monthIndicators) {
+                monthIndicators.empty();
+                if (hasMonthlyNote) {
+                    monthIndicators.createEl('div', { cls: 'indicator-dot solid-dot' });
+                }
+                if (hasIncomplete) {
+                    monthIndicators.createEl('div', { cls: 'indicator-dot hollow-dot' });
+                }
+                if (hasCompleted) {
+                    monthIndicators.createEl('div', { cls: 'indicator-dot check-dot' });
                 }
             }
         }

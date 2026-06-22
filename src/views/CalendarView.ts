@@ -6,9 +6,8 @@ import { Solar } from 'lunar-typescript';
 import { noteExists } from '../services/noteService';
 import { extractTasks, filterTasks, updateTaskInNote, Task, parseCustomFilter, evaluateExpression } from '../services/taskService';
 import { CalendarRenderer, TaskListRenderer, IndicatorRenderer, EventHandler } from './calendar';
-import { CommandSelectModal } from '../modals/CommandSelectModal';
 import { t } from '../i18n';
-import { updateDaySelection, updateIndicators, updateYearViewMonthIndicators, updateAllDayIndicators, updateWeekIndicators } from './CalendarView/indicators';
+
 import { installNavigationListeners, installCellListeners } from './CalendarView/eventListeners';
 import { adjustTaskListHeight, toggleCalendarView } from './CalendarView/layout';
 
@@ -199,12 +198,11 @@ export class CalendarView extends ItemView {
         
         // 4. 最后更新非关键的指示器，这些操作不影响用户核心体验
         if (this.viewType === 'month') {
-            // 使用异步方式更新所有指示器，不阻塞主线程
-            setTimeout(async () => {
-                const targetDate = this.selectedDate || this.currentDate;
-                await this.indicatorRenderer.updateAllDayIndicators(this.containerEl, targetDate);
-                this.indicatorRenderer.updateWeekIndicators(this.containerEl, targetDate);
-            }, 0);
+            const targetDate = this.selectedDate || this.currentDate;
+            this.indicatorRenderer.updateAllDayIndicators(this.containerEl, targetDate);
+            this.indicatorRenderer.updateWeekIndicators(this.containerEl, targetDate);
+        } else if (this.viewType === 'year') {
+            this.indicatorRenderer.updateYearViewIndicators(this.containerEl);
         }
     }
 
@@ -223,7 +221,7 @@ export class CalendarView extends ItemView {
             this.updateCalendarHeader();
             
             // 更新年视图的月份和指示器
-            await this.updateYearViewMonthIndicators();
+            await this.indicatorRenderer.updateYearViewIndicators(this.containerEl);
         }
     }
 
@@ -318,34 +316,9 @@ export class CalendarView extends ItemView {
                             dayNumber.addClass("holiday-date");
                         }
                     }
-                    
-                    // 更新农历日期
-                    const existingLunar = cell.querySelector('.lunar-date') as HTMLElement | null;
-                    if (this.plugin.settings.showLunarCalendar) {
-                        const lunarDateResult = getLunarDate(date);
-                        if (existingLunar) {
-                            existingLunar.textContent = lunarDateResult.text;
-                            existingLunar.className = `lunar-date lunar-${lunarDateResult.type}`;
-                            existingLunar.style.display = '';
-                        } else {
-                            const indicators = cell.querySelector('.day-indicators');
-                            const lunarEl = cell.createEl("div", {
-                                text: lunarDateResult.text,
-                                cls: `lunar-date lunar-${lunarDateResult.type}`
-                            });
-                            if (indicators) {
-                                cell.insertBefore(lunarEl, indicators);
-                            }
-                        }
-                    } else if (existingLunar) {
-                        existingLunar.style.display = 'none';
-                    }
                 }
             }
         }
-        
-        // 更新所有指示器
-        await this.updateIndicators();
     }
 
     /**
@@ -621,7 +594,13 @@ export class CalendarView extends ItemView {
         }
         
         // 更新指示器
-        await this.updateIndicators();
+        if (this.viewType === 'month') {
+            const targetDate = this.selectedDate || this.currentDate;
+            this.indicatorRenderer.updateAllDayIndicators(this.containerEl, targetDate);
+            this.indicatorRenderer.updateWeekIndicators(this.containerEl, targetDate);
+        } else {
+            this.indicatorRenderer.updateYearViewIndicators(this.containerEl);
+        }
     }
 
     async onDayClick(date: Date) {
@@ -644,7 +623,28 @@ export class CalendarView extends ItemView {
     }
 
     updateDaySelection() {
-        updateDaySelection(this);
+        const container = this.containerEl;
+        const selectedDate = this.selectedDate;
+        container.querySelectorAll(".day-cell.selected-day").forEach((cell: any) => cell.removeClass('selected-day'));
+        if (!selectedDate) return;
+        const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+        const targetCell = container.querySelector(`.day-cell[data-date="${dateStr}"]:not(.other-month)`);
+        if (targetCell) {
+            targetCell.addClass('selected-day');
+        }
+        const currentToday = new Date();
+        const isTodaySelected = selectedDate.toDateString() === currentToday.toDateString();
+        const todayBtn = container.querySelector(".calendar-header-label-today");
+        if (todayBtn) {
+            if (isTodaySelected) {
+                todayBtn.addClass("today-selected");
+                todayBtn.removeClass("today-unselected");
+            } else {
+                todayBtn.addClass("today-unselected");
+                todayBtn.removeClass("today-selected");
+            }
+        }
+        this.updateWeekSelectionIfNeeded();
     }
 
     public updateWeekSelectionIfNeeded() {
@@ -889,14 +889,6 @@ export class CalendarView extends ItemView {
                 await this.eventHandler.handleTaskDoubleClick(task);
             }
                 );
-    }
-
-    private async updateIndicators() {
-        await updateIndicators(this);
-    }
-
-    private async updateYearViewMonthIndicators() {
-        await updateYearViewMonthIndicators(this);
     }
 
     adjustTaskListHeight() {

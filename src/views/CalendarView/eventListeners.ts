@@ -1,7 +1,6 @@
 import { CalendarView } from '../CalendarView';
 import { t } from '../../i18n';
 import { getWeekInfo } from '../../utils/dateUtils';
-import { checkWeekNoteAndTasks, checkQuarterNoteAndTasks, checkMonthNoteAndTasks, addDayIndicators } from './indicators';
 
 function handleLabelAction(view: CalendarView, key: 'lb1' | 'lb2') {
     const cfg = view.plugin.settings.moreLabelSettings[key];
@@ -252,11 +251,6 @@ export async function installCellListeners(view: CalendarView) {
             const weekInfo = getWeekInfo(adjustedDate);
             const weekNumber = weekInfo.week;
             
-            const weekIndicators = cell.querySelector(".week-indicators");
-            if (weekIndicators) {
-                await checkWeekNoteAndTasks(view, adjustedDate, weekNumber, weekIndicators as HTMLElement);
-            }
-            
             cell.addEventListener("click", async () => {
                 view.selectedDate = null;
 
@@ -320,12 +314,7 @@ export async function installCellListeners(view: CalendarView) {
                 nextMonthDay++;
                 isOtherMonth = true;
             }
-            
-            const indicatorsContainer = cell.querySelector(".day-indicators");
-            if (indicatorsContainer) {
-                await addDayIndicators(indicatorsContainer as HTMLElement, view, date);
-            }
-            
+
             if (view.selectedDate) {
                 const isSelected = view.selectedDate.getFullYear() === date.getFullYear() &&
                                   view.selectedDate.getMonth() === date.getMonth() &&
@@ -391,24 +380,8 @@ export async function installCellListeners(view: CalendarView) {
                 const quarterDate = new Date(view.currentDate.getFullYear(), quarter * 3, 1);
                 await view.eventHandler.handleQuarterDoubleClick(quarterDate);
             });
-            
-            const quarterIndicators = container.querySelector(".month-indicators");
-            if (quarterIndicators) {
-                const quarterResult = await checkQuarterNoteAndTasks(view, quarter);
-                const indicators = quarterIndicators as HTMLElement;
-                indicators.empty();
-                if (quarterResult.hasNote) {
-                    indicators.createEl('div', { cls: 'indicator-dot solid-dot' });
-                }
-                if (quarterResult.hasIncomplete) {
-                    indicators.createEl('div', { cls: 'indicator-dot hollow-dot' });
-                }
-                if (quarterResult.hasCompleted) {
-                    indicators.createEl('div', { cls: 'indicator-dot check-dot' });
-                }
-            }
         });
-        
+
         const monthContainers = view.containerEl.querySelectorAll(".month-container:not(.quarter-container)");
         monthContainers.forEach(async (container, index) => {
             const currentMonthIndex = index;
@@ -444,22 +417,7 @@ export async function installCellListeners(view: CalendarView) {
                 const monthDate = new Date(view.currentDate.getFullYear(), currentMonthIndex, 1);
                 await view.eventHandler.handleMonthDoubleClick(monthDate);
             });
-            
-            const monthIndicators = container.querySelector(".month-indicators");
-            if (monthIndicators) {
-                const monthResult = await checkMonthNoteAndTasks(view, currentMonthIndex);
-                const indicators = monthIndicators as HTMLElement;
-                indicators.empty();
-                if (monthResult.hasNote) {
-                    indicators.createEl('div', { cls: 'indicator-dot solid-dot' });
-                }
-                if (monthResult.hasIncomplete) {
-                    indicators.createEl('div', { cls: 'indicator-dot hollow-dot' });
-                }
-                if (monthResult.hasCompleted) {
-                    indicators.createEl('div', { cls: 'indicator-dot check-dot' });
-                }
-            }
+
         });
     }
 }
