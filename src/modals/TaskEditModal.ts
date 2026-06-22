@@ -597,33 +597,30 @@ export class TaskEditModal extends Modal {
             this.startDateInput = dateInput;
         }
 
-        // Event listener for text input (Chinese date descriptions)
         const updateFromTextInput = () => {
             const textValue = textInput.value;
             const parsedDate = this.parseDateInput(textValue);
-            
+
             if (textValue === '无') {
-                // Clear date
                 dateInput.value = '';
-                // Trigger date change event
-                const dateChangeEvent = new Event('change');
-                dateInput.dispatchEvent(dateChangeEvent);
             } else if (parsedDate) {
-                // Update date picker
                 dateInput.value = this.formatDate(parsedDate);
-                // Trigger date change event
-                const dateChangeEvent = new Event('change');
-                dateInput.dispatchEvent(dateChangeEvent);
+                onChange(this.formatDate(parsedDate));
             }
         };
 
-        // Event listener for date changes
         const updateDate = () => {
             const dateValue = dateInput.value;
 
-            // 用户从日期选择器选日期时，将下拉框设为默认选项
             if (dateValue) {
-                textInput.value = '';
+                let matchedLabel = '';
+                for (const opt of DATE_OPTIONS) {
+                    if (this.formatDate(opt.getValue()) === dateValue) {
+                        matchedLabel = opt.label;
+                        break;
+                    }
+                }
+                textInput.value = matchedLabel;
                 onChange(dateValue);
             }
         };
