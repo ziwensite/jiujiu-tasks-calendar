@@ -6,7 +6,7 @@ import { CalendarDataManager } from './core/CalendarDataManager';
 import { TaskSuggester } from './suggest/TaskSuggester';
 import { registerTaskCommands } from './commands/taskCommands';
 import { TaskEditModal } from './modals/TaskEditModal';
-import { parseTaskFromLine, updateTaskInNote } from './services/taskService';
+import { updateTaskInNote } from './services/taskService';
 import type { Task } from './services/taskService';
 import { loadEn } from './i18n';
 import { en } from './i18n/en';
@@ -84,109 +84,78 @@ async onload() {
             this.registerEditorSuggest(new TaskSuggester(this.app, this));
             registerTaskCommands(this);
 
-            this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
+            this.registerDomEvent(document, 'click', async (evt: MouseEvent) => {
                 const target = evt.target as HTMLElement;
 
                 if (target.closest('.jiujiu-calendar-view')) return;
 
                 const checkbox = target.closest('input[type="checkbox"]');
-                if (!checkbox) {
-                    console.log('[JiuJiu-DBG] 1: no input[checkbox] found, tagName=', target.tagName, 'classList=', Array.from(target.classList).join('.'));
-                    return;
-                }
+                if (!checkbox) return;
 
                 const taskItem = target.closest('li[data-line], .cm-line');
-                if (!taskItem) {
-                    console.log('[JiuJiu-DBG] 2: no taskItem (li[data-line]/.cm-line)');
-                    return;
-                }
+                if (!taskItem) return;
 
-                console.log('[JiuJiu-DBG] 3: taskItem tagName=', taskItem.tagName, 'matches[data-line]=', taskItem.matches('li[data-line]'), 'matches[cm-line]=', taskItem.matches('.cm-line'));
-
-                if (!(this.settings.taskSettings?.taskClickEdit ?? true)) {
-                    console.log('[JiuJiu-DBG] 4: taskClickEdit disabled');
-                    return;
-                }
+                if (!(this.settings.taskSettings?.taskClickEdit ?? true)) return;
 
                 evt.preventDefault();
                 evt.stopPropagation();
 
-                console.log('[JiuJiu-DBG] 5: handler active');
-
                 const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-                console.log('[JiuJiu-DBG] 6: activeView=', !!activeView, 'file=', activeView?.file?.path);
-                if (!activeView || !activeView.file) {
-                    const allLeaves: WorkspaceLeaf[] = [];
-                    this.app.workspace.iterateAllLeaves((leaf) => allLeaves.push(leaf));
-                    console.log('[JiuJiu-DBG] 6b: iterateAllLeaves count=', allLeaves.length);
-                    for (const leaf of allLeaves) {
-                        const v = leaf.view as any;
-                        console.log('[JiuJiu-DBG] 6b: leaf viewType=', v.viewType || v.constructor?.name, '| isMDV=', v instanceof MarkdownView, '| hasFile=', !!v.file, '| contains=', leaf.view.containerEl.contains(checkbox));
-                    }
-                    return;
-                }
-
+                if (!activeView || !activeView.file) return;
                 const file = activeView.file;
 
+                let domRaw = '';
                 if (taskItem.matches('li[data-line]')) {
-                    const lineNumber = parseInt(taskItem.getAttribute('data-line') || '0', 10);
-                    console.log('[JiuJiu-DBG] 7: readingView lineNumber=', lineNumber, 'file=', file.path);
-                    this.app.vault.read(file).then(content => {
-                        const lines = content.split('\n');
-                        const line = lines[lineNumber];
-                        console.log('[JiuJiu-DBG] 8: lines.length=', lines.length, 'line exists=', !!line, 'text=', line?.substring(0, 60));
-                        if (!line) return;
-
-                        const task = parseTaskFromLine(line, file.path, lineNumber);
-                        console.log('[JiuJiu-DBG] 9: parsed task=', !!task, 'rawText=', task?.rawText?.substring(0, 60));
-                        if (!task) return;
-
-                        const modal = new TaskEditModal({
-                            app: this.app,
-                            task,
-                            onSubmit: async (updatedTask: Task) => {
-                                await updateTaskInNote(this.app, updatedTask, updatedTask.completed, this.settings);
-                                await this.calendarDataManager.refreshTasks();
-                                this.updateAllViews('tasks');
-                            }
-                        });
-                        modal.open();
-                        console.log('[JiuJiu-DBG] 10: modal opened');
-                    });
+                    domRaw = (taskItem.textContent || '').replace(/\s+/g, ' ').trim();
                 } else {
-                    const editor = activeView.editor;
-                    console.log('[JiuJiu-DBG] 11: livePreview hasEditor=', !!editor);
-                    const cmView = (editor as any).cm as any;
-                    if (!cmView || typeof cmView.posAtDOM !== 'function') {
-                        console.log('[JiuJiu-DBG] 12: cmView invalid');
-                        return;
-                    }
-
-                    const docOffset = cmView.posAtDOM(checkbox, 0, 1);
-                    console.log('[JiuJiu-DBG] 13: docOffset=', docOffset);
-                    if (docOffset === undefined || docOffset === null) return;
-
-                    const editorPos = editor.offsetToPos(docOffset);
-                    const lineNumber = editorPos.line;
-                    const line = editor.getLine(lineNumber);
-                    console.log('[JiuJiu-DBG] 14: lineNumber=', lineNumber, 'line exists=', !!line, 'text=', line?.substring(0, 60));
-
-                    const task = parseTaskFromLine(line, file.path, lineNumber);
-                    console.log('[JiuJiu-DBG] 15: parsed task=', !!task, 'rawText=', task?.rawText?.substring(0, 60));
-                    if (!task) return;
-
-                    const modal = new TaskEditModal({
-                        app: this.app,
-                        task,
-                        onSubmit: async (updatedTask: Task) => {
-                            await updateTaskInNote(this.app, updatedTask, updatedTask.completed, this.settings);
-                            await this.calendarDataManager.refreshTasks();
-                            this.updateAllViews('tasks');
-                        }
-                    });
-                    modal.open();
-                    console.log('[JiuJiu-DBG] 16: modal opened');
+                    const lineText = (taskItem.textContent || '').replace(/\s+/g, ' ').trim();
+                    const m = lineText.match(/^\s*-\s*\[(.)\]\s*(.*)$/);
+                    if (!m) return;
+                    domRaw = (m[2] || '').trim();
                 }
+
+                const allTasks = await this.calendarDataManager.getTasks(false);
+                const fileTasks = allTasks.filter(t => t.filePath === file.path);
+
+                let matchedTask = fileTasks.find(t =>
+                    (t.rawText || '').replace(/\s+/g, ' ').trim() === domRaw
+                );
+
+                if (!matchedTask) {
+                    const refreshedTasks = await this.calendarDataManager.getTasks(true);
+                    const refreshedFileTasks = refreshedTasks.filter(t => t.filePath === file.path);
+                    matchedTask = refreshedFileTasks.find(t =>
+                        (t.rawText || '').replace(/\s+/g, ' ').trim() === domRaw
+                    );
+                }
+
+                if (!matchedTask) {
+                    const cleanForMatch = (text: string) =>
+                        text
+                            .replace(/[📅🛫➕⏳✅❌🔁⏰🔺⏫🔼🔽⏬️][^📅🛫➕⏳✅❌🔁⏰🔺⏫🔼🔽⏬️\s]*/g, '')
+                            .replace(/\s+/g, ' ')
+                            .trim();
+                    const domClean = cleanForMatch(domRaw);
+
+                    const fallbackAllTasks = await this.calendarDataManager.getTasks(false);
+                    const fallbackFileTasks = fallbackAllTasks.filter(t => t.filePath === file.path);
+                    matchedTask = fallbackFileTasks.find(t =>
+                        cleanForMatch(t.rawText || t.text || '') === domClean
+                    );
+                }
+
+                if (!matchedTask) return;
+
+                const modal = new TaskEditModal({
+                    app: this.app,
+                    task: matchedTask,
+                    onSubmit: async (updatedTask: Task) => {
+                        await updateTaskInNote(this.app, updatedTask, updatedTask.completed, this.settings);
+                        await this.calendarDataManager.refreshTasks();
+                        this.updateAllViews('tasks');
+                    }
+                });
+                modal.open();
             }, true);
 
             // 一次性注册捕获插入快捷键命令
