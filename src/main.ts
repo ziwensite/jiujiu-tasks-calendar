@@ -1,4 +1,4 @@
-import {App, Plugin, WorkspaceLeaf, Notice, MarkdownView, TFile, Editor} from 'obsidian';
+import {App, Plugin, WorkspaceLeaf, Notice, MarkdownView} from 'obsidian';
 import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
 import {CalendarView} from "./views/CalendarView";
 import { CalendarViewController } from './core/CalendarViewController';
@@ -97,30 +97,22 @@ async onload() {
 
                 if (!(this.settings.taskSettings?.taskClickEdit ?? true)) return;
 
-evt.preventDefault();
+                evt.preventDefault();
                 evt.stopPropagation();
 
-                let mdView: MarkdownView | null = null;
-                const allLeaves: WorkspaceLeaf[] = [];
-                this.app.workspace.iterateAllLeaves((leaf) => allLeaves.push(leaf));
-                for (const leaf of allLeaves) {
-                    if (leaf.view instanceof MarkdownView && leaf.view.containerEl.contains(checkbox)) {
-                        mdView = leaf.view;
-                        break;
-                    }
-                }
-                if (!mdView || !mdView.file) return;
-                const mdFile = mdView.file;
-                const editor = mdView.editor;
+                const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+                if (!activeView || !activeView.file) return;
+
+                const file = activeView.file;
 
                 if (taskItem.matches('li[data-line]')) {
                     const lineNumber = parseInt(taskItem.getAttribute('data-line') || '0', 10);
-                    this.app.vault.read(mdFile).then(content => {
+                    this.app.vault.read(file).then(content => {
                         const lines = content.split('\n');
                         const line = lines[lineNumber];
                         if (!line) return;
 
-                        const task = parseTaskFromLine(line, mdFile.path, lineNumber);
+                        const task = parseTaskFromLine(line, file.path, lineNumber);
                         if (!task) return;
 
                         const modal = new TaskEditModal({
@@ -135,18 +127,18 @@ evt.preventDefault();
                         modal.open();
                     });
                 } else {
-                    if (!editor) return;
+                    const editor = activeView.editor;
                     const cmView = (editor as any).cm as any;
                     if (!cmView || typeof cmView.posAtDOM !== 'function') return;
 
                     const docOffset = cmView.posAtDOM(checkbox, 0, 1);
                     if (docOffset === undefined || docOffset === null) return;
 
-                    const editorPos = (editor as any).offsetToPos(docOffset);
+                    const editorPos = editor.offsetToPos(docOffset);
                     const lineNumber = editorPos.line;
-                    const line = (editor as any).getLine(lineNumber);
+                    const line = editor.getLine(lineNumber);
 
-                    const task = parseTaskFromLine(line, mdFile.path, lineNumber);
+                    const task = parseTaskFromLine(line, file.path, lineNumber);
                     if (!task) return;
 
                     const modal = new TaskEditModal({
