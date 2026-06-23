@@ -90,29 +90,55 @@ async onload() {
                 if (target.closest('.jiujiu-calendar-view')) return;
 
                 const checkbox = target.closest('input[type="checkbox"]');
-                if (!checkbox) return;
+                if (!checkbox) {
+                    console.log('[JiuJiu-DBG] 1: no input[checkbox] found, tagName=', target.tagName, 'classList=', Array.from(target.classList).join('.'));
+                    return;
+                }
 
                 const taskItem = target.closest('li[data-line], .cm-line');
-                if (!taskItem) return;
+                if (!taskItem) {
+                    console.log('[JiuJiu-DBG] 2: no taskItem (li[data-line]/.cm-line)');
+                    return;
+                }
 
-                if (!(this.settings.taskSettings?.taskClickEdit ?? true)) return;
+                console.log('[JiuJiu-DBG] 3: taskItem tagName=', taskItem.tagName, 'matches[data-line]=', taskItem.matches('li[data-line]'), 'matches[cm-line]=', taskItem.matches('.cm-line'));
+
+                if (!(this.settings.taskSettings?.taskClickEdit ?? true)) {
+                    console.log('[JiuJiu-DBG] 4: taskClickEdit disabled');
+                    return;
+                }
 
                 evt.preventDefault();
                 evt.stopPropagation();
 
+                console.log('[JiuJiu-DBG] 5: handler active');
+
                 const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-                if (!activeView || !activeView.file) return;
+                console.log('[JiuJiu-DBG] 6: activeView=', !!activeView, 'file=', activeView?.file?.path);
+                if (!activeView || !activeView.file) {
+                    const allLeaves: WorkspaceLeaf[] = [];
+                    this.app.workspace.iterateAllLeaves((leaf) => allLeaves.push(leaf));
+                    console.log('[JiuJiu-DBG] 6b: iterateAllLeaves count=', allLeaves.length);
+                    for (const leaf of allLeaves) {
+                        const v = leaf.view as any;
+                        console.log('[JiuJiu-DBG] 6b: leaf viewType=', v.viewType || v.constructor?.name, '| isMDV=', v instanceof MarkdownView, '| hasFile=', !!v.file, '| contains=', leaf.view.containerEl.contains(checkbox));
+                    }
+                    return;
+                }
 
                 const file = activeView.file;
 
                 if (taskItem.matches('li[data-line]')) {
                     const lineNumber = parseInt(taskItem.getAttribute('data-line') || '0', 10);
+                    console.log('[JiuJiu-DBG] 7: readingView lineNumber=', lineNumber, 'file=', file.path);
                     this.app.vault.read(file).then(content => {
                         const lines = content.split('\n');
                         const line = lines[lineNumber];
+                        console.log('[JiuJiu-DBG] 8: lines.length=', lines.length, 'line exists=', !!line, 'text=', line?.substring(0, 60));
                         if (!line) return;
 
                         const task = parseTaskFromLine(line, file.path, lineNumber);
+                        console.log('[JiuJiu-DBG] 9: parsed task=', !!task, 'rawText=', task?.rawText?.substring(0, 60));
                         if (!task) return;
 
                         const modal = new TaskEditModal({
@@ -125,20 +151,28 @@ async onload() {
                             }
                         });
                         modal.open();
+                        console.log('[JiuJiu-DBG] 10: modal opened');
                     });
                 } else {
                     const editor = activeView.editor;
+                    console.log('[JiuJiu-DBG] 11: livePreview hasEditor=', !!editor);
                     const cmView = (editor as any).cm as any;
-                    if (!cmView || typeof cmView.posAtDOM !== 'function') return;
+                    if (!cmView || typeof cmView.posAtDOM !== 'function') {
+                        console.log('[JiuJiu-DBG] 12: cmView invalid');
+                        return;
+                    }
 
                     const docOffset = cmView.posAtDOM(checkbox, 0, 1);
+                    console.log('[JiuJiu-DBG] 13: docOffset=', docOffset);
                     if (docOffset === undefined || docOffset === null) return;
 
                     const editorPos = editor.offsetToPos(docOffset);
                     const lineNumber = editorPos.line;
                     const line = editor.getLine(lineNumber);
+                    console.log('[JiuJiu-DBG] 14: lineNumber=', lineNumber, 'line exists=', !!line, 'text=', line?.substring(0, 60));
 
                     const task = parseTaskFromLine(line, file.path, lineNumber);
+                    console.log('[JiuJiu-DBG] 15: parsed task=', !!task, 'rawText=', task?.rawText?.substring(0, 60));
                     if (!task) return;
 
                     const modal = new TaskEditModal({
@@ -151,6 +185,7 @@ async onload() {
                         }
                     });
                     modal.open();
+                    console.log('[JiuJiu-DBG] 16: modal opened');
                 }
             }, true);
 
