@@ -101,9 +101,14 @@ evt.preventDefault();
                 evt.stopPropagation();
 
                 let mdView: MarkdownView | null = null;
-                for (const leaf of this.app.workspace.getLeavesOfType('markdown')) {
-                    if (leaf.view instanceof MarkdownView && leaf.view.containerEl.contains(checkbox)) {
-                        mdView = leaf.view;
+                const allLeaves: WorkspaceLeaf[] = [];
+                this.app.workspace.iterateAllLeaves((leaf) => allLeaves.push(leaf));
+                for (const leaf of allLeaves) {
+                    if (leaf.view.containerEl.contains(checkbox)) {
+                        const v = leaf.view as any;
+                        if (v.file) {
+                            mdView = v instanceof MarkdownView ? v : null;
+                        }
                         break;
                     }
                 }
