@@ -6,7 +6,7 @@ import { CalendarDataManager } from './core/CalendarDataManager';
 import { TaskSuggester } from './suggest/TaskSuggester';
 import { registerTaskCommands } from './commands/taskCommands';
 import { TaskEditModal } from './modals/TaskEditModal';
-import { updateTaskInNote } from './services/taskService';
+import { parseTaskFromLine, updateTaskInNote } from './services/taskService';
 import type { Task } from './services/taskService';
 import { loadEn } from './i18n';
 import { en } from './i18n/en';
@@ -104,58 +104,79 @@ async onload() {
                 if (!activeView || !activeView.file) return;
                 const file = activeView.file;
 
-                let domRaw = '';
                 if (taskItem.matches('li[data-line]')) {
-                    domRaw = (taskItem.textContent || '').replace(/\s+/g, ' ').trim();
-                } else {
-                    const lineText = (taskItem.textContent || '').replace(/\s+/g, ' ').trim();
-                    const m = lineText.match(/^\s*-\s*\[(.)\]\s*(.*)$/);
-                    if (!m) return;
-                    domRaw = (m[2] || '').trim();
-                }
+                    const domRaw = (taskItem.textContent || '').replace(/\s+/g, ' ').trim();
 
-                const allTasks = await this.calendarDataManager.getTasks(false);
-                const fileTasks = allTasks.filter(t => t.filePath === file.path);
+                    const allTasks = await this.calendarDataManager.getTasks(false);
+                    const fileTasks = allTasks.filter(t => t.filePath === file.path);
 
-                let matchedTask = fileTasks.find(t =>
-                    (t.rawText || '').replace(/\s+/g, ' ').trim() === domRaw
-                );
-
-                if (!matchedTask) {
-                    const refreshedTasks = await this.calendarDataManager.getTasks(true);
-                    const refreshedFileTasks = refreshedTasks.filter(t => t.filePath === file.path);
-                    matchedTask = refreshedFileTasks.find(t =>
+                    let matchedTask = fileTasks.find(t =>
                         (t.rawText || '').replace(/\s+/g, ' ').trim() === domRaw
                     );
-                }
 
-                if (!matchedTask) {
-                    const cleanForMatch = (text: string) =>
-                        text
-                            .replace(/[📅🛫➕⏳✅❌🔁⏰🔺⏫🔼🔽⏬️][^📅🛫➕⏳✅❌🔁⏰🔺⏫🔼🔽⏬️\s]*/g, '')
-                            .replace(/\s+/g, ' ')
-                            .trim();
-                    const domClean = cleanForMatch(domRaw);
-
-                    const fallbackAllTasks = await this.calendarDataManager.getTasks(false);
-                    const fallbackFileTasks = fallbackAllTasks.filter(t => t.filePath === file.path);
-                    matchedTask = fallbackFileTasks.find(t =>
-                        cleanForMatch(t.rawText || t.text || '') === domClean
-                    );
-                }
-
-                if (!matchedTask) return;
-
-                const modal = new TaskEditModal({
-                    app: this.app,
-                    task: matchedTask,
-                    onSubmit: async (updatedTask: Task) => {
-                        await updateTaskInNote(this.app, updatedTask, updatedTask.completed, this.settings);
-                        await this.calendarDataManager.refreshTasks();
-                        this.updateAllViews('tasks');
+                    if (!matchedTask) {
+                        const refreshedTasks = await this.calendarDataManager.getTasks(true);
+                        const refreshedFileTasks = refreshedTasks.filter(t => t.filePath === file.path);
+                        matchedTask = refreshedFileTasks.find(t =>
+                            (t.rawText || '').replace(/\s+/g, ' ').trim() === domRaw
+                        );
                     }
-                });
-                modal.open();
+
+                    if (!matchedTask) {
+                        const cleanForMatch = (text: string) =>
+                            text
+                                .replace(/[📅🛫➕⏳✅❌🔁⏰🔺⏫🔼🔽⏬️][^📅🛫➕⏳✅❌🔁⏰🔺⏫🔼🔽⏬️\s]*/g, '')
+                                .replace(/\s+/g, ' ')
+                                .trim();
+                        const domClean = cleanForMatch(domRaw);
+
+                        const fallbackAllTasks = await this.calendarDataManager.getTasks(false);
+                        const fallbackFileTasks = fallbackAllTasks.filter(t => t.filePath === file.path);
+                        matchedTask = fallbackFileTasks.find(t =>
+                            cleanForMatch(t.rawText || t.text || '') === domClean
+                        );
+                    }
+
+                    if (!matchedTask) return;
+
+                    const modal = new TaskEditModal({
+                        app: this.app,
+                        task: matchedTask,
+                        onSubmit: async (updatedTask: Task) => {
+                            await updateTaskInNote(this.app, updatedTask, updatedTask.completed, this.settings);
+                            await this.calendarDataManager.refreshTasks();
+                            this.updateAllViews('tasks');
+                        }
+                    });
+                    modal.open();
+                } else {
+                    const editor = activeView.editor;
+                    if (!editor) return;
+
+                    const cmView = (editor as any).cm as any;
+                    if (!cmView || typeof cmView.posAtDOM !== 'function') return;
+
+                    const docOffset = cmView.posAtDOM(checkbox, 0, 1);
+                    if (docOffset === undefined || docOffset === null) return;
+
+                    const editorPos = (editor as any).offsetToPos(docOffset);
+                    const lineNumber = editorPos.line;
+                    const line = (editor as any).getLine(lineNumber);
+
+                    const task = parseTaskFromLine(line, file.path, lineNumber);
+                    if (!task) return;
+
+                    const modal = new TaskEditModal({
+                        app: this.app,
+                        task,
+                        onSubmit: async (updatedTask: Task) => {
+                            await updateTaskInNote(this.app, updatedTask, updatedTask.completed, this.settings);
+                            await this.calendarDataManager.refreshTasks();
+                            this.updateAllViews('tasks');
+                        }
+                    });
+                    modal.open();
+                }
             }, true);
 
             // 一次性注册捕获插入快捷键命令
