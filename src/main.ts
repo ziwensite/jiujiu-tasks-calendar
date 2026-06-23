@@ -104,11 +104,8 @@ evt.preventDefault();
                 const allLeaves: WorkspaceLeaf[] = [];
                 this.app.workspace.iterateAllLeaves((leaf) => allLeaves.push(leaf));
                 for (const leaf of allLeaves) {
-                    if (leaf.view.containerEl.contains(checkbox)) {
-                        const v = leaf.view as any;
-                        if (v.file) {
-                            mdView = v instanceof MarkdownView ? v : null;
-                        }
+                    if (leaf.view instanceof MarkdownView && leaf.view.containerEl.contains(checkbox)) {
+                        mdView = leaf.view;
                         break;
                     }
                 }
